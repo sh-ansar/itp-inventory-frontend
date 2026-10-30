@@ -103,7 +103,7 @@ onMounted(boot);
         <div class="brand-text"><strong>ITP Inventory</strong><span>{{ ui.t("brand.subtitle") }}</span></div>
       </div>
       <nav v-if="user" class="main-navigation" aria-label="Inventory">
-        <RouterLink to="/assets" class="nav-item" active-class="nav-item--active">
+        <RouterLink to="/registry" class="nav-item" active-class="nav-item--active">
           <Package :size="19" aria-hidden="true"/>{{ ui.t("nav.assets") }}
         </RouterLink>
         <RouterLink to="/references" class="nav-item" active-class="nav-item--active">
