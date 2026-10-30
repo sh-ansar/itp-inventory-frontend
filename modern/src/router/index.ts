@@ -6,11 +6,11 @@ import ScanPage from "../pages/ScanPage.vue";
 export const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
   routes: [
-    { path: "/", redirect: "/assets" },
-    { path: "/assets", component: AssetsPage, name: "assets" },
+    { path: "/", redirect: "/registry" },
+    { path: "/registry", component: AssetsPage, name: "assets" },
     { path: "/references", component: ReferencesPage, name: "references" },
     { path: "/scan/:publicId", component: ScanPage, name: "scan" },
-    { path: "/:pathMatch(.*)*", redirect: "/assets" },
+    { path: "/:pathMatch(.*)*", redirect: "/registry" },
   ],
   scrollBehavior: () => ({ top: 0 }),
 });

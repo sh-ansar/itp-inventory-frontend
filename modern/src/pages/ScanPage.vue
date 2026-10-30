@@ -59,7 +59,7 @@ function moved(updated: Asset) {
   <div class="scan-page">
     <div class="scan-heading">
       <div><h2>{{ ui.t("qr.scanTitle") }}</h2><p class="muted">{{ companyName }}</p></div>
-      <RouterLink to="/assets" class="back-link"><ArrowLeft :size="17" aria-hidden="true"/>{{ ui.t("nav.assets") }}</RouterLink>
+      <RouterLink to="/registry" class="back-link"><ArrowLeft :size="17" aria-hidden="true"/>{{ ui.t("nav.assets") }}</RouterLink>
     </div>
     <BaseLoadingState v-if="loading" :label="ui.t('qr.load')" />
     <div v-else-if="issue" class="error" role="alert">
