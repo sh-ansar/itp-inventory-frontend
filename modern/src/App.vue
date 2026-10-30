@@ -25,6 +25,8 @@ const signoutBusy = ref(false);
 const error = ref("");
 const credentials = reactive({ email:"", password:"" });
 const passwordVisible = ref(false);
+const currentTitle = computed(() => ui.t(route.name === "references" ? "heading.references" :
+  route.name === "scan" ? "qr.scanTitle" : "heading.assets"));
 const selectedCompany = computed(() =>
   availableCompanies.value.find(c => c.id === companyId.value) ?? null
 );
@@ -88,7 +90,7 @@ function switchLocale(event: Event) {
   if (["ru","en","ka"].includes(next)) ui.locale = next as InventoryLocale;
 }
 watch(() => [route.name,ui.locale], () => {
-  document.title = (route.name === "references" ? ui.t("heading.references") : ui.t("heading.assets")) + " · ITP Inventory";
+  document.title = currentTitle.value + " · ITP Inventory";
 });
 onMounted(boot);
 </script>
@@ -122,7 +124,7 @@ onMounted(boot);
     <div class="app-main">
       <header class="topbar">
         <div class="topbar-leading">
-          <div class="workspace-title"><h1>{{ ui.t(route.name === "references" ? "heading.references" : "heading.assets") }}</h1>
+          <div class="workspace-title"><h1>{{ currentTitle }}</h1>
             <p>{{ ui.t("heading.description") }}</p>
           </div>
         </div>

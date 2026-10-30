@@ -35,15 +35,16 @@ function label(key: string): string {
     inventory_number: "table.number", name: "table.name",
     serial_number: "table.serial", description: "form.description",
     category_id: "form.category", accounting_location_id: "form.accounting",
-    physical_location_id: "form.physical", status: "table.status",
+    physical_location_id: "form.physical", physical_location_name: "form.physical", status: "table.status",
   };
   return ui.t(map[key] ?? key);
 }
 function changes(e: AssetEvent): Array<{name:string, oldValue:string, newValue:string}> {
   const before = e.before ?? {};
   const after = e.after ?? {};
-  const fields = ["inventory_number", "name", "serial_number", "description",
-    "category_id", "accounting_location_id", "physical_location_id", "status"];
+  const fields = e.event_type === "moved" ? ["physical_location_name"] :
+    ["inventory_number", "name", "serial_number", "description",
+      "category_id", "accounting_location_id", "physical_location_id", "status"];
   return fields.filter(key => JSON.stringify(before[key]) !== JSON.stringify(after[key]))
     .map(key => ({
       name: label(key),

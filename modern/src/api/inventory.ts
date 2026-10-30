@@ -35,9 +35,22 @@ export interface ReferenceData {
   accounting_locations: RefItem[];
   physical_locations: RefItem[];
 }
+export interface AssetMovement {
+  id: string;
+  asset_id: string;
+  from_location_id: string | null;
+  to_location_id: string;
+  from_location_name: string | null;
+  to_location_name: string;
+  actor_name: string;
+  reason: string;
+  version: number;
+  created_at: string;
+}
+
 export interface AssetEvent {
   id: string;
-  event_type: "created" | "updated" | "archived";
+  event_type: "created" | "updated" | "archived" | "moved";
   version: number;
   actor_name: string;
   before: Record<string, unknown> | null;
@@ -85,6 +98,21 @@ export const archiveAsset = (companyId: string, assetId: string, version: number
   });
 export const assetEvents = (companyId: string, assetId: string) =>
   inventoryRequest<Page<AssetEvent>>(assetPath(companyId, assetId) + "/events");
+
+/** QR public_id identifies an asset but never bypasses tenant membership. */
+export const resolveQrAsset = (companyId: string, publicId: string) =>
+  inventoryRequest<{data: Asset}>(companyPath(companyId) + "/assets/scan/" + encodeURIComponent(publicId));
+
+export const assetMovements = (companyId: string, assetId: string) =>
+  inventoryRequest<Page<AssetMovement>>(assetPath(companyId, assetId) + "/movements");
+
+export const moveAsset = (
+  companyId: string, assetId: string, version: number,
+  toLocationId: string, reason: string
+) => inventoryRequest<{ data: { asset: Asset; movement: AssetMovement } }>(
+  assetPath(companyId, assetId) + "/movements",
+  { method: "POST", body: JSON.stringify({ version, to_location_id: toLocationId, reason }) },
+);
 
 export const createCategory = (companyId: string, code: string, name: string) =>
   inventoryRequest<RefItem>(companyPath(companyId) + "/categories", {

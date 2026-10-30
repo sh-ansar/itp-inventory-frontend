@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { InventoryApiError, inventoryRequest, initializeCsrf } from "../../src/api/client";
-import { companyAssets } from "../../src/api/inventory";
+import { companyAssets, resolveQrAsset, moveAsset } from "../../src/api/inventory";
 
 beforeEach(() => {
   vi.unstubAllGlobals();
@@ -64,5 +64,38 @@ describe("Inventory API client", () => {
       expect(apiError.fields.name).toEqual(["Name invalid"]);
       expect(apiError.requestId).toBe("request-qa");
     }
+  });
+});
+
+
+describe("Tenant-scoped QR and movement API", () => {
+  it("resolves a QR under the selected company and not via a public external endpoint", async () => {
+    const mock = vi.fn(async () => new Response(JSON.stringify({data:{id:"asset-1"}}), {
+      status:200,headers:{"Content-Type":"application/json"},
+    }));
+    vi.stubGlobal("fetch",mock);
+    await resolveQrAsset("company-123", "public-uuid");
+    const [url,options] = mock.mock.calls[0] as unknown as [string, RequestInit];
+    expect(url).toBe("/inventory-api/api/v1/companies/company-123/assets/scan/public-uuid");
+    expect(options.credentials).toBe("same-origin");
+    expect(options.method).toBe("GET");
+  });
+
+  it("sends a physical movement with version, reason and Inventory CSRF header", async () => {
+    document.cookie = "INVENTORY-XSRF-TOKEN=qa-token;path=/";
+    const mock = vi.fn(async () => new Response(JSON.stringify({
+      data:{asset:{id:"asset-1"},movement:{id:"movement-1"}},
+    }), {status:201,headers:{"Content-Type":"application/json"}}));
+    vi.stubGlobal("fetch",mock);
+    const result = await moveAsset("company-123", "asset-1", 4, "physical-2", "Moved to new office");
+    const [url,options] = mock.mock.calls[0] as unknown as [string, RequestInit];
+    expect(url).toBe("/inventory-api/api/v1/companies/company-123/assets/asset-1/movements");
+    expect(options.method).toBe("POST");
+    expect(options.credentials).toBe("same-origin");
+    expect(new Headers(options.headers).get("X-XSRF-TOKEN")).toBe("qa-token");
+    expect(JSON.parse(options.body as string)).toEqual({
+      version:4,to_location_id:"physical-2",reason:"Moved to new office",
+    });
+    expect(result.data.movement.id).toBe("movement-1");
   });
 });

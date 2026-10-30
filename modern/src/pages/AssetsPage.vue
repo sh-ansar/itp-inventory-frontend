@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed, onUnmounted, ref, watch } from "vue";
-import { Archive, History, Pencil, Plus, RefreshCw, PackageOpen } from "lucide-vue-next";
+import { Archive, History, Pencil, Plus, RefreshCw, PackageOpen, QrCode, ArrowRightLeft, Route } from "lucide-vue-next";
 import BaseButton from "../components/ui/BaseButton.vue";
 import BaseCard from "../components/ui/BaseCard.vue";
 import BaseDataTable from "../components/ui/BaseDataTable.vue";
@@ -10,6 +10,9 @@ import BaseStatusPill from "../components/ui/BaseStatusPill.vue";
 import AssetEditorDialog from "../components/registry/AssetEditorDialog.vue";
 import ArchiveAssetDialog from "../components/registry/ArchiveAssetDialog.vue";
 import AssetHistoryDialog from "../components/registry/AssetHistoryDialog.vue";
+import QrLabelDialog from "../components/registry/QrLabelDialog.vue";
+import MoveAssetDialog from "../components/registry/MoveAssetDialog.vue";
+import AssetMovementHistoryDialog from "../components/registry/AssetMovementHistoryDialog.vue";
 import { companyAssets, referenceData } from "../api/inventory";
 import type { Asset, ReferenceData } from "../api/inventory";
 import { useUiSettings } from "../stores/uiSettings";
@@ -36,6 +39,9 @@ const showForm = ref(false);
 const editing = ref<Asset | null>(null);
 const history = ref<Asset | null>(null);
 const archiving = ref<Asset | null>(null);
+const qrAsset = ref<Asset | null>(null);
+const moving = ref<Asset | null>(null);
+const movementHistory = ref<Asset | null>(null);
 
 const canWrite = computed(() => ["company_admin", "inventory_manager"].includes(props.role));
 const canArchive = computed(() => props.role === "company_admin");
@@ -45,7 +51,7 @@ const columns = computed(() => [
   { key:"category_name", label:ui.t("table.category"), minWidth:145 },
   { key:"physical_location_name", label:ui.t("table.location"), minWidth:150 },
   { key:"status", label:ui.t("table.status"), minWidth:110 },
-  { key:"actions", label:ui.t("table.actions"), minWidth:124, align:"right" as const },
+  { key:"actions", label:ui.t("table.actions"), minWidth:268, align:"right" as const },
 ]);
 
 let requestSerial = 0;
@@ -70,6 +76,7 @@ watch(() => props.companyId, id => {
   status.value = ""; page.value = 1;
   showForm.value = false; editing.value = null;
   history.value = null; archiving.value = null;
+  qrAsset.value = null; moving.value = null; movementHistory.value = null;
   references.value = { categories: [], accounting_locations: [], physical_locations: [] };
   referenceController?.abort();
   const controller = new AbortController();
@@ -133,6 +140,12 @@ function afterSave() {
   showForm.value = false; editing.value = null;
   void loadAssets();
 }
+function afterMove(updated: Asset) {
+  moving.value = null;
+  message.value = ui.t("movement.saved");
+  rows.value = rows.value.map(row => row.id === updated.id ? updated : row);
+  void loadAssets();
+}
 function afterArchive() {
   archiving.value = null;
   message.value = ui.t("form.archived");
@@ -186,7 +199,7 @@ onUnmounted(() => {
       <BaseDataTable
         :rows="rows" row-key="id" :columns="columns" :loading="loading"
         :sort-key="sortKey" :sort-direction="sortDirection"
-        :caption="ui.t('table.assets')" :empty-title="ui.t('table.empty')" :min-table-width="950"
+        :caption="ui.t('table.assets')" :empty-title="ui.t('table.empty')" :min-table-width="1100"
         @sort="sortBy">
         <template #cell-name="{row}">
           <span class="truncate" :title="row.name">{{ row.name }}</span>
@@ -201,6 +214,15 @@ onUnmounted(() => {
             <button type="button" class="icon-action" :title="ui.t('actions.history')"
               :aria-label="ui.t('actions.history') + ': ' + row.inventory_number"
               @click="history=row"><History :size="17" /></button>
+            <button type="button" class="icon-action" :title="ui.t('actions.qr')"
+              :aria-label="ui.t('actions.qr') + ': ' + row.inventory_number"
+              @click="qrAsset=row"><QrCode :size="17" /></button>
+            <button type="button" class="icon-action" :title="ui.t('actions.movements')"
+              :aria-label="ui.t('actions.movements') + ': ' + row.inventory_number"
+              @click="movementHistory=row"><Route :size="17" /></button>
+            <button v-if="canWrite && row.status === 'active'" type="button" class="icon-action" :title="ui.t('actions.move')"
+              :aria-label="ui.t('actions.move') + ': ' + row.inventory_number"
+              @click="moving=row"><ArrowRightLeft :size="17" /></button>
             <button v-if="canWrite" type="button" class="icon-action" :title="ui.t('actions.edit')"
               :aria-label="ui.t('actions.edit') + ': ' + row.inventory_number"
               @click="edit(row)"><Pencil :size="17" /></button>
@@ -221,6 +243,9 @@ onUnmounted(() => {
     <ArchiveAssetDialog :asset="archiving" :company-id="companyId"
       @close="archiving=null" @archived="afterArchive"/>
     <AssetHistoryDialog :asset="history" :company-id="companyId" @close="history=null" />
+    <QrLabelDialog :asset="qrAsset" @close="qrAsset=null"/>
+    <MoveAssetDialog :asset="moving" :company-id="companyId" @close="moving=null" @moved="afterMove"/>
+    <AssetMovementHistoryDialog :asset="movementHistory" :company-id="companyId" @close="movementHistory=null"/>
   </div>
 </template>
 

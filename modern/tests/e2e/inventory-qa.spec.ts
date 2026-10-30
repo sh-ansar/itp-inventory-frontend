@@ -1,25 +1,15 @@
 import { test, expect, type Page } from "@playwright/test";
-import { readFileSync } from "node:fs";
 
-const secretFile = process.env.INVENTORY_QA_SECRET_FILE;
-test.skip(!secretFile, "Set INVENTORY_QA_SECRET_FILE to a private local-only QA secret path");
+test.skip(!process.env.INVENTORY_QA_SECRET_FILE, "Local-only synthetic QA login is required");
 
-function password(): string {
-  if (!secretFile) throw new Error("QA secret file not configured");
-  return readFileSync(secretFile, "utf8").trim();
-}
-
-async function login(page: Page, asViewer = false): Promise<void> {
-  await page.goto("http://127.0.0.1:5174/inventory/");
-  await expect(page.getByRole("heading", { name: "Вход в Inventory" })).toBeVisible();
-  await page.getByLabel("Электронная почта").fill(asViewer ? "inventory.viewer@example.test" : "inventory.qa@example.test");
-  await page.locator("#inventory-password").fill(password());
-  await page.getByRole("button", { name: "Войти" }).click();
+async function openInventory(page: Page): Promise<void> {
+  // Cookie/session state is established once by auth.setup.ts.
+  await page.goto("/inventory/");
   await expect(page.getByRole("heading", { name: "Реестр активов" })).toBeVisible();
 }
 
 test("session, server-side search, company switch, create/edit/history/archive", async ({ page }) => {
-  await login(page);
+  await openInventory(page);
   // Company order is not guaranteed by DB; select the target tenant explicitly.
   await page.locator('select[aria-label="Компания"]').selectOption({label:"Inventory QA - Mining"});
   await expect(page.getByText("MIN-0001")).toBeVisible();
@@ -68,16 +58,19 @@ test("session, server-side search, company switch, create/edit/history/archive",
   await expect(page.getByText("IT equipment")).toBeVisible();
 });
 
-test("viewer cannot see mutation actions", async ({ page }) => {
-  await login(page,true);
+test.describe("read-only viewer", () => {
+  test.use({ storageState: "test-results/.auth/viewer.json" });
+  test("viewer cannot see mutation actions", async ({ page }) => {
+  await openInventory(page);
   await expect(page.getByRole("button",{name:"Добавить актив"})).toHaveCount(0);
   await expect(page.getByRole("button",{name:/Редактировать:/})).toHaveCount(0);
   await expect(page.getByRole("button",{name:/Архивировать:/})).toHaveCount(0);
   await expect(page.getByRole("button",{name:/История:/}).first()).toBeVisible();
+  });
 });
 
 test("mobile, tablet, desktop: no document overflow and accessible navigation", async ({ page }, testInfo) => {
-  await login(page);
+  await openInventory(page);
   for (const width of [360,390,768,1440]) {
     await page.setViewportSize({width,height:900});
     await expect(page.getByRole("link",{name:"Основные средства"})).toBeVisible();
