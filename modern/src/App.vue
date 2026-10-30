@@ -1,122 +1,195 @@
 <script setup lang="ts">
-import { computed, onMounted, reactive, ref } from "vue";
-import { Package, Search, ShieldCheck, Boxes, LogOut } from "lucide-vue-next";
+import { computed, onMounted, reactive, ref, watch } from "vue";
+import { RouterLink, RouterView, useRoute } from "vue-router";
+import { Boxes, ClipboardList, BookOpen, Package, ShieldCheck, LogOut, Sun, Moon, Eye, EyeOff, RefreshCw } from "lucide-vue-next";
 import BaseButton from "./components/ui/BaseButton.vue";
 import BaseCard from "./components/ui/BaseCard.vue";
 import BaseLoadingState from "./components/ui/BaseLoadingState.vue";
 import BaseStatusPill from "./components/ui/BaseStatusPill.vue";
-import { health, login, currentUser, logout, companies, companyAssets } from "./api/session";
-import type { InventoryUser, CompanyAccess, Asset } from "./api/session";
+import { health, login, currentUser, logout, companies } from "./api/session";
+import type { InventoryUser, CompanyAccess } from "./api/session";
+import { InventoryApiError } from "./api/client";
+import { useUiSettings } from "./stores/uiSettings";
+import type { InventoryLocale } from "./i18n";
 
+const ui = useUiSettings();
+const route = useRoute();
 const user = ref<InventoryUser | null>(null);
+const availableCompanies = ref<CompanyAccess[]>([]);
+const companyId = ref("");
 const connected = ref(false);
 const browserLoginEnabled = ref(false);
-const busy = ref(true);
+const booting = ref(true);
 const loginBusy = ref(false);
+const signoutBusy = ref(false);
 const error = ref("");
-const credentials = reactive({ email: "", password: "" });
-const availableCompanies = ref<CompanyAccess[]>([]);
-const company = ref("");
-const assets = ref<Asset[]>([]);
-const query = ref("");
-const visible = computed(() => assets.value.filter(a =>
-  (a.name + " " + a.inventory_number).toLocaleLowerCase().includes(query.value.toLocaleLowerCase())
-));
-const selectedCompany = computed(() => availableCompanies.value.find(c => c.id === company.value));
+const credentials = reactive({ email:"", password:"" });
+const passwordVisible = ref(false);
+const selectedCompany = computed(() =>
+  availableCompanies.value.find(c => c.id === companyId.value) ?? null
+);
 
-async function loadCompany() {
-  assets.value = [];
-  if (!company.value) return;
-  try { assets.value = (await companyAssets(company.value)).data; }
-  catch (e) { error.value = e instanceof Error ? e.message : "Ошибка загрузки активов"; }
-}
-
-async function loadSession() {
-  try {
-    user.value = await currentUser();
-    availableCompanies.value = await companies();
-    company.value = availableCompanies.value[0]?.id || "";
-    await loadCompany();
-  } catch { user.value = null; availableCompanies.value = []; company.value = ""; assets.value = []; }
+async function loadIdentity(): Promise<void> {
+  const [identity, memberships] = await Promise.all([currentUser(), companies()]);
+  user.value = identity;
+  availableCompanies.value = memberships;
+  companyId.value = memberships.some(c => c.id === companyId.value)
+    ? companyId.value : memberships[0]?.id ?? "";
 }
 
 async function boot() {
-  busy.value = true;
+  booting.value = true;
+  error.value = "";
   try {
     const status = await health();
     connected.value = status.status === "ok";
     browserLoginEnabled.value = status.browser_login === true;
-    if (connected.value) await loadSession();
-  } catch (e) { error.value = "Сервер Inventory пока не подключён."; }
-  finally { busy.value = false; }
+    try { await loadIdentity(); }
+    catch (e) {
+      if (!(e instanceof InventoryApiError && e.status === 401)) {
+        error.value = e instanceof Error ? e.message : ui.t("generic.unknownError");
+      }
+      user.value = null;
+      availableCompanies.value = []; companyId.value = "";
+    }
+  } catch(e) {
+    connected.value = false;
+    error.value = e instanceof Error ? ui.t("generic.notConnected") : ui.t("auth.unavailable");
+  } finally { booting.value = false; }
 }
 
 async function signIn() {
-  error.value = "";
-  loginBusy.value = true;
+  if (loginBusy.value || !browserLoginEnabled.value) return;
+  loginBusy.value = true; error.value = "";
   try {
     await login(credentials.email.trim(), credentials.password);
     credentials.password = "";
-    await loadSession();
-  } catch (e) { error.value = e instanceof Error ? e.message : "Ошибка авторизации"; }
-  finally { loginBusy.value = false; }
+    await loadIdentity();
+  } catch(e) {
+    error.value = e instanceof Error ? e.message : ui.t("generic.unknownError");
+  } finally { loginBusy.value = false; }
 }
 
 async function signOut() {
-  error.value = "";
-  try { await logout(); }
-  catch (e) { error.value = e instanceof Error ? e.message : "Не удалось завершить сессию"; return; }
-  user.value = null; company.value = ""; assets.value = []; availableCompanies.value = [];
+  if (signoutBusy.value) return;
+  signoutBusy.value = true; error.value = "";
+  try {
+    await logout();
+    user.value = null;
+    availableCompanies.value = [];
+    companyId.value = "";
+    credentials.password = "";
+  } catch(e) { error.value = e instanceof Error ? e.message : ui.t("generic.unknownError"); }
+  finally { signoutBusy.value = false; }
 }
+
+function switchLocale(event: Event) {
+  const next = (event.target as HTMLSelectElement).value;
+  if (["ru","en","ka"].includes(next)) ui.locale = next as InventoryLocale;
+}
+watch(() => [route.name,ui.locale], () => {
+  document.title = (route.name === "references" ? ui.t("heading.references") : ui.t("heading.assets")) + " · ITP Inventory";
+});
 onMounted(boot);
 </script>
 
 <template>
   <div class="shell">
     <aside class="sidebar">
-      <div class="brand"><Boxes :size="23" aria-hidden="true" /><strong>ITP Inventory</strong></div>
-      <p class="muted">Управление основными средствами</p>
-      <nav aria-label="Навигация"><a href="#assets">Основные средства</a><span class="nav-disabled">Инвентаризации · следующий этап</span><span class="nav-disabled">Справочники · следующий этап</span></nav>
+      <div class="brand">
+        <div class="brand-mark"><Boxes :size="24" aria-hidden="true"/></div>
+        <div class="brand-text"><strong>ITP Inventory</strong><span>{{ ui.t("brand.subtitle") }}</span></div>
+      </div>
+      <nav v-if="user" class="main-navigation" aria-label="Inventory">
+        <RouterLink to="/assets" class="nav-item" active-class="nav-item--active">
+          <Package :size="19" aria-hidden="true"/>{{ ui.t("nav.assets") }}
+        </RouterLink>
+        <RouterLink to="/references" class="nav-item" active-class="nav-item--active">
+          <BookOpen :size="19" aria-hidden="true"/>{{ ui.t("nav.references") }}
+        </RouterLink>
+        <span class="nav-item nav-item--disabled" :title="ui.t('nav.soon')" aria-disabled="true">
+          <ClipboardList :size="19" aria-hidden="true"/>{{ ui.t("nav.stocktakes") }}
+        </span>
+      </nav>
+      <div class="sidebar-footer">
+        <p class="muted">ITP · Inventory</p>
+        <BaseStatusPill :tone="connected ? 'success' : 'warning'">
+          <ShieldCheck :size="14" aria-hidden="true"/>
+          {{ ui.t(connected ? "auth.ready" : "auth.down") }}
+        </BaseStatusPill>
+      </div>
     </aside>
-    <main class="main">
-      <header class="top">
-        <div><h1>Основные средства</h1><p class="muted">Учёт имущества и инвентаризация</p></div>
-        <div class="top-status"><BaseStatusPill :tone="connected ? 'success' : 'warning'"><ShieldCheck :size="16" aria-hidden="true" />{{ connected ? "Laravel API подключён" : "API не подключён" }}</BaseStatusPill><BaseButton v-if="user" variant="secondary" @click="signOut"><LogOut :size="17" /> Выход</BaseButton></div>
-      </header>
-      <p v-if="error" role="alert" class="error">{{ error }}</p>
-      <BaseLoadingState v-if="busy" label="Проверка API и сессии" />
-      <BaseCard v-else-if="!user" class="login-card">
-        <h2>Вход в Inventory</h2>
-        <p class="muted">Отдельная авторизация, как в HRM. Общий вход будет добавлен позднее.</p>
-        <form @submit.prevent="signIn" class="login-form">
-          <label>Email <input v-model="credentials.email" type="email" autocomplete="username" required :disabled="!browserLoginEnabled || loginBusy" /></label>
-          <label>Пароль <input v-model="credentials.password" type="password" autocomplete="current-password" required :disabled="!browserLoginEnabled || loginBusy" /></label>
-          <BaseButton type="submit" :disabled="!browserLoginEnabled || loginBusy">{{ loginBusy ? "Проверка…" : "Войти" }}</BaseButton>
-        </form>
-        <p v-if="!browserLoginEnabled" class="muted">Вход по паролю не активирован. Он включается только после проверки HTTPS и настроек сессий.</p>
-      </BaseCard>
-      <template v-else>
-        <div class="top company-bar">
-          <p class="muted">Пользователь: <strong>{{ user.name }}</strong></p>
-          <label>Компания
-            <select v-model="company" @change="loadCompany" aria-label="Компания" class="company-select">
-              <option v-for="c in availableCompanies" :key="c.id" :value="c.id">{{ c.name }}</option>
+    <div class="app-main">
+      <header class="topbar">
+        <div class="topbar-leading">
+          <div class="workspace-title"><h1>{{ ui.t(route.name === "references" ? "heading.references" : "heading.assets") }}</h1>
+            <p>{{ ui.t("heading.description") }}</p>
+          </div>
+        </div>
+        <div class="topbar-trailing">
+          <label v-if="user && availableCompanies.length > 0" class="company-switcher">
+            <span>{{ ui.t("auth.company") }}</span>
+            <select v-model="companyId" :aria-label="ui.t('auth.company')">
+              <option v-for="company in availableCompanies" :key="company.id" :value="company.id">{{ company.name }}</option>
             </select>
           </label>
+          <select :value="ui.locale" @change="switchLocale" class="locale-select" aria-label="Язык / Language">
+            <option value="ru">RU</option><option value="en">EN</option><option value="ka">GE</option>
+          </select>
+          <button type="button" class="theme-toggle"
+            :title="ui.t(ui.theme === 'dark' ? 'generic.light' : 'generic.dark')"
+            :aria-label="ui.t(ui.theme === 'dark' ? 'generic.light' : 'generic.dark')"
+            @click="ui.toggleTheme">
+            <Sun v-if="ui.theme==='dark'" :size="18" aria-hidden="true"/>
+            <Moon v-else :size="18" aria-hidden="true"/>
+          </button>
+          <BaseButton v-if="user" variant="secondary" :disabled="signoutBusy" @click="signOut">
+            <LogOut :size="16" aria-hidden="true"/> {{ ui.t("auth.logout") }}
+          </BaseButton>
         </div>
-        <section class="grid" aria-label="Показатели">
-          <BaseCard><Package :size="22" aria-hidden="true"/><h2>{{ assets.length }}</h2><p class="muted">Активов на текущей странице</p></BaseCard>
-          <BaseCard><h2>{{ selectedCompany?.name || "—" }}</h2><p class="muted">Текущая компания</p></BaseCard>
-        </section>
-        <BaseCard id="assets" class="registry">
-          <div class="top"><h2>Реестр имущества</h2><label class="search"><Search :size="16" aria-hidden="true" /><input v-model="query" aria-label="Поиск по текущей странице" placeholder="Поиск"/></label></div>
-          <div class="table-scroll"><table><thead><tr><th>Инвентарный №</th><th>Название</th><th>Статус</th></tr></thead><tbody>
-            <tr v-for="a in visible" :key="a.id"><td>{{ a.inventory_number }}</td><td>{{ a.name }}</td><td><BaseStatusPill tone="neutral">{{ a.status }}</BaseStatusPill></td></tr>
-            <tr v-if="visible.length===0"><td colspan="3">Нет записей по выбранному условию.</td></tr>
-          </tbody></table></div>
-          <p class="muted">Это первый функциональный срез: реестр читает настоящий Laravel API. Редактирование, история, QR и инвентаризация переносятся далее.</p>
+      </header>
+      <main class="view-content">
+        <div v-if="error" role="alert" class="error">{{ error }}
+          <BaseButton v-if="!connected" variant="secondary" @click="boot"><RefreshCw :size="16"/>{{ ui.t("actions.retry") }}</BaseButton>
+        </div>
+        <BaseLoadingState v-if="booting" :label="ui.t('generic.loading')" />
+        <BaseCard v-else-if="!user" class="login-card">
+          <div class="login-heading"><div class="login-icon"><Boxes :size="25" aria-hidden="true"/></div>
+            <div><h2>{{ ui.t("heading.login") }}</h2><p class="muted">{{ ui.t("auth.independent") }}</p></div>
+          </div>
+          <form class="login-form" @submit.prevent="signIn">
+            <label>{{ ui.t("auth.email") }}
+              <input v-model="credentials.email" type="email" autocomplete="username"
+                :disabled="!browserLoginEnabled || loginBusy || !connected" required/>
+            </label>
+            <div class="password-field">
+              <label for="inventory-password">{{ ui.t("auth.password") }}</label>
+              <div class="password-control">
+                <input id="inventory-password" v-model="credentials.password" :type="passwordVisible?'text':'password'"
+                  autocomplete="current-password" minlength="8"
+                  :disabled="!browserLoginEnabled || loginBusy || !connected" required/>
+                <button type="button" :aria-label="ui.t(passwordVisible?'actions.hidePassword':'actions.showPassword')"
+                  :disabled="loginBusy" @click="passwordVisible=!passwordVisible">
+                  <EyeOff v-if="passwordVisible" :size="18" aria-hidden="true"/>
+                  <Eye v-else :size="18" aria-hidden="true"/>
+                </button>
+              </div>
+            </div>
+            <BaseButton type="submit" :disabled="!browserLoginEnabled || loginBusy || !connected">
+              {{ loginBusy ? ui.t("auth.signing") : ui.t("auth.login") }}
+            </BaseButton>
+          </form>
+          <p v-if="!browserLoginEnabled" class="muted login-note">{{ ui.t("auth.disabled") }}</p>
         </BaseCard>
-      </template>
-    </main>
+        <div v-else-if="!selectedCompany" class="no-company">
+          <Package :size="28" aria-hidden="true"/>
+          <h2>{{ ui.t("auth.noCompanies") }}</h2>
+        </div>
+        <RouterView v-else v-slot="{Component}">
+          <component :is="Component" :company-id="selectedCompany.id"
+            :company-name="selectedCompany.name" :role="selectedCompany.role_code"/>
+        </RouterView>
+      </main>
+    </div>
   </div>
 </template>
