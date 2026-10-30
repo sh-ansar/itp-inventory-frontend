@@ -1,0 +1,156 @@
+/* HRM visual contract aligned to sh-ansar/demo_bnt_dt.
+   Page components should consume semantic tokens instead of page-local values. */
+
+:root {
+  font-family:"Golos Text",Golos,"Segoe UI",Arial,sans-serif;
+  color:#093044;
+  background:#f8fafb;
+  font-synthesis:none;
+
+  /* Prototype semantic palette. */
+  --color-primary:#0697e0;
+  --color-primary-hover:#087eb9;
+  --color-primary-stroke:rgba(68,112,134,.24);
+  --color-text:#093044;
+  --color-text-secondary:#051c27;
+  --color-muted:#7199ac;
+  --color-page:#f8fafb;
+  --color-surface:#fff;
+  --color-surface-raised:rgba(255,255,255,.8);
+  --color-soft:#f8fafb;
+  --color-stroke:rgba(68,112,134,.08);
+  --color-stroke-strong:rgba(68,112,134,.24);
+  --color-accent-soft:#e5f6ff;
+  --color-hover:rgba(35,142,195,.06);
+  --color-focus:#82b8f5;
+  --color-table-heading:#edf4f8;
+  --color-table-border:rgba(90,139,166,.18);
+  --color-table-heading-text:#093044;
+  --color-table-hover:rgba(35,142,195,.04);
+  --color-on-primary:#fefefe;
+  --color-overlay:rgba(9,35,52,.38);
+
+  /* Prototype semantic statuses. */
+  --color-danger:#d01717;
+  --color-danger-border:rgba(208,23,23,.28);
+  --color-danger-surface:#fde8e8;
+  --color-warning:#e5a500;
+  --color-warning-surface:#f7f1e2;
+  --color-success:#12a131;
+  --color-success-surface:#e2f1e7;
+
+  /* Production-calendar cells: consistent status colors in grid and editor. */
+  --calendar-work-bg:#d9f5de;
+  --calendar-work-border:#86cd98;
+  --calendar-work-text:#174f2c;
+  --calendar-weekend-bg:#fce1e1;
+  --calendar-weekend-border:#edaaaa;
+  --calendar-weekend-text:#8e2020;
+  --calendar-holiday-bg:#fff0b8;
+  --calendar-holiday-border:#eecb67;
+  --calendar-holiday-text:#764f05;
+
+  /* Corporate typography scale used by the source prototype. */
+  --font-page-heading:clamp(22px,1.4vw,27px);
+  --font-section-heading:clamp(18px,1.2vw,23px);
+  --font-label-size:13px;
+  --font-body-size:14px;
+  --font-caption-size:12px;
+  --font-table-size:13px;
+  --line-body:20px;
+  --line-caption:17px;
+
+  /* Shared geometry from demo_bnt_dt. */
+  --control-height:40px;
+  --space-1:4px;
+  --space-2:8px;
+  --space-3:12px;
+  --space-4:16px;
+  --space-5:24px;
+  --space-6:32px;
+  --space-7:48px;
+  --radius-sm:8px;
+  --radius-md:8px;
+  --radius-lg:14px;
+
+  /* Prototype elevation. */
+  --shadow-card:0 2px 4px rgba(56,83,97,.05);
+  --shadow-control:0 2px 4px rgba(56,83,97,.05);
+  --shadow-float:0 117px 70px rgba(8,31,43,.03),0 52px 52px rgba(8,31,43,.04),0 13px 29px rgba(8,31,43,.05);
+
+  /* Shell geometry from the reference, capped for HRM desktop layouts. */
+  --shell-sidebar:clamp(264px,18.333333vw,352px);
+  --shell-topbar:clamp(52px,3.611111vw,69.333333px);
+  --shell-gutter:clamp(24px,1.666667vw,32px);
+  --shell-search-max:clamp(380px,26.388889vw,506.666667px);
+}
+
+
+/* Keep Georgian glyphs legible: Golos Text does not guarantee Georgian coverage. */
+:root[lang="ka"] {
+  font-family:"Golos Text","Noto Sans Georgian","Segoe UI",Arial,sans-serif;
+}
+
+:root[data-theme="dark"] {
+  /* Slate / neutral dark surface: the source prototype must not become a blue wash. */
+  color:#e8edf1;
+  background:#171b20;
+  --color-primary:#45bce9;
+  --color-primary-hover:#63caef;
+  --color-primary-stroke:rgba(93,184,221,.35);
+  --color-text:#e8edf1;
+  --color-text-secondary:#f8fafb;
+  --color-muted:#a5b2bd;
+  --color-page:#171b20;
+  --color-surface:#20252b;
+  --color-surface-raised:#292f35;
+  --color-soft:#252b31;
+  --color-stroke:rgba(203,217,227,.13);
+  --color-stroke-strong:rgba(203,217,227,.28);
+  --color-accent-soft:rgba(69,188,233,.15);
+  --color-hover:rgba(226,238,247,.075);
+  --color-focus:#7cccf0;
+  --color-table-heading:#2b343b;
+  --color-table-border:rgba(197,211,222,.22);
+  --color-table-heading-text:#e8edf1;
+  --color-table-hover:rgba(220,235,245,.055);
+  --color-on-primary:#08222f;
+  --color-overlay:rgba(7,9,12,.68);
+  --color-danger:#ff7777;
+  --color-danger-border:rgba(255,119,119,.38);
+  --color-danger-surface:rgba(185,56,61,.2);
+  --color-warning:#f5bb54;
+  --color-warning-surface:rgba(215,166,59,.19);
+  --color-success:#65d89a;
+  --color-success-surface:rgba(65,166,116,.22);
+  --calendar-work-bg:#1d4130;
+  --calendar-work-border:#478962;
+  --calendar-work-text:#d5f1df;
+  --calendar-weekend-bg:#492b30;
+  --calendar-weekend-border:#a66a6a;
+  --calendar-weekend-text:#ffdcda;
+  --calendar-holiday-bg:#4b3c22;
+  --calendar-holiday-border:#ae8d4a;
+  --calendar-holiday-text:#ffebb9;
+  --shadow-card:0 2px 10px rgba(0,0,0,.16);
+  --shadow-control:0 2px 7px rgba(0,0,0,.13);
+  --shadow-float:0 35px 80px rgba(0,0,0,.4),0 12px 30px rgba(0,0,0,.22);
+}
+
+@media(max-width:959px){
+  :root{
+    --shell-sidebar:0px;
+    --shell-topbar:64px;
+    --shell-gutter:16px;
+  }
+}
+
+@media(max-width:600px){
+  :root{
+    --font-page-heading:20px;
+    --font-section-heading:18px;
+    --font-body-size:14px;
+    --font-caption-size:12px;
+    --font-table-size:12px;
+  }
+}
