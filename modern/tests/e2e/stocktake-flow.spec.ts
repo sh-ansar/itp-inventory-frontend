@@ -26,7 +26,8 @@ test("stocktake end-to-end: snapshot, QR count, recount, complete, reopen, CSV, 
   await mining(page);
   const name="Playwright stocktake "+Date.now();
   await startStocktake(page,name);
-  await expect(page.getByText("52",{exact:true}).first()).toBeVisible();
+  const totalAssets=Number((await page.locator(".detail-kpis strong").first().innerText()).trim());
+  expect(totalAssets).toBeGreaterThanOrEqual(52); // E2E runs can add synthetic QA assets to the same company.
   const first=page.locator("tbody tr").filter({hasText:"MIN-0001"});
   await expect(first).toBeVisible();
   await first.getByRole("button",{name:"Проверить: MIN-0001"}).click();
@@ -55,7 +56,7 @@ test("stocktake end-to-end: snapshot, QR count, recount, complete, reopen, CSV, 
 
   await page.getByRole("button",{name:"Завершить проверку"}).click();
   const dialog=page.getByRole("dialog",{name:"Завершить проверку"});
-  await expect(dialog.getByText("51",{exact:true})).toBeVisible();
+  await expect(dialog.getByText(String(totalAssets-1),{exact:true})).toBeVisible();
   await dialog.getByRole("button",{name:"Завершить проверку"}).click();
   await expect(dialog).toBeHidden();
   await expect(page.locator(".notice[role=status]")).toContainText("Инвентаризация завершена");

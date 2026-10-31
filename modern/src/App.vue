@@ -30,6 +30,7 @@ const currentTitle = computed(() => ui.t(
    route.name === "scan" ? "qr.scanTitle" :
    route.name === "stocktake" || route.name === "stocktakes" ? "heading.stocktakes" :
    route.name === "facilities" ? "topology.title" :
+   route.name === "facility-plan" ? "plan.title" :
    route.name === "people" ? "people.title" :
    route.name === "warehouses" ? "stock.warehouseTitle" : "heading.assets"
  ));

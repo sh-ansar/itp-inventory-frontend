@@ -5,6 +5,7 @@ import ScanPage from "../pages/ScanPage.vue";
 import StocktakesPage from "../pages/StocktakesPage.vue";
 import StocktakeDetailPage from "../pages/StocktakeDetailPage.vue";
 import FacilitiesPage from "../pages/FacilitiesPage.vue";
+import FacilityPlanPage from "../pages/FacilityPlanPage.vue";
 import ResponsiblePeoplePage from "../pages/ResponsiblePeoplePage.vue";
 import WarehousesPage from "../pages/WarehousesPage.vue";
 
@@ -15,6 +16,7 @@ export const router = createRouter({
     { path: "/registry", component: AssetsPage, name: "assets" },
     { path: "/references", component: ReferencesPage, name: "references" },
     { path: "/facilities", component: FacilitiesPage, name: "facilities" },
+    { path: "/facilities/:nodeId/plan", component: FacilityPlanPage, name: "facility-plan" },
     { path: "/people", component: ResponsiblePeoplePage, name: "people" },
     { path: "/warehouses", component: WarehousesPage, name: "warehouses" },
     { path: "/stocktakes", component: StocktakesPage, name: "stocktakes" },
