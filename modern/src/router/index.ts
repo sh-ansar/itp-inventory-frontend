@@ -1,5 +1,6 @@
 import { createRouter, createWebHistory } from "vue-router";
 import AssetsPage from "../pages/AssetsPage.vue";
+import DisposalCasesPage from "../pages/DisposalCasesPage.vue";
 import ReferencesPage from "../pages/ReferencesPage.vue";
 import ScanPage from "../pages/ScanPage.vue";
 import StocktakesPage from "../pages/StocktakesPage.vue";
@@ -14,6 +15,7 @@ export const router = createRouter({
   routes: [
     { path: "/", redirect: "/registry" },
     { path: "/registry", component: AssetsPage, name: "assets" },
+    { path: "/disposals", component: DisposalCasesPage, name: "disposals" },
     { path: "/references", component: ReferencesPage, name: "references" },
     { path: "/facilities", component: FacilitiesPage, name: "facilities" },
     { path: "/facilities/:nodeId/plan", component: FacilityPlanPage, name: "facility-plan" },
