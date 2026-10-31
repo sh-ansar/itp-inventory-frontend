@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, onMounted, reactive, ref, watch } from "vue";
 import { RouterLink, RouterView, useRoute } from "vue-router";
-import { Boxes, ClipboardList, BookOpen, Package, Building2, Users, Warehouse, ExternalLink, LogOut, Sun, Moon, Eye, EyeOff, RefreshCw } from "lucide-vue-next";
+import { Boxes, ClipboardList, BookOpen, Package, Building2, Users, Warehouse, ExternalLink, LogOut, Sun, Moon, Eye, EyeOff, RefreshCw, FileCheck2 } from "lucide-vue-next";
 import BaseButton from "./components/ui/BaseButton.vue";
 import BaseCard from "./components/ui/BaseCard.vue";
 import BaseLoadingState from "./components/ui/BaseLoadingState.vue";
@@ -26,6 +26,8 @@ const error = ref("");
 const credentials = reactive({ email:"", password:"" });
 const passwordVisible = ref(false);
 const currentTitle = computed(() => ui.t(
+   route.name === "disposals" ? "disposal.title" :
+   route.name === "disposals" ? "disposal.title" :
    route.name === "references" ? "heading.references" :
    route.name === "scan" ? "qr.scanTitle" :
    route.name === "stocktake" || route.name === "stocktakes" ? "heading.stocktakes" :
@@ -112,6 +114,9 @@ onMounted(boot);
       <nav v-if="user" class="main-navigation" aria-label="Inventory">
         <RouterLink to="/registry" class="nav-item" active-class="nav-item--active">
           <Package :size="19" aria-hidden="true"/>{{ ui.t("nav.assets") }}
+        </RouterLink>
+        <RouterLink to="/disposals" class="nav-item" active-class="nav-item--active">
+          <FileCheck2 :size="19" aria-hidden="true"/>{{ ui.t("nav.disposals") }}
         </RouterLink>
         <RouterLink to="/facilities" class="nav-item" active-class="nav-item--active">
           <Building2 :size="19" aria-hidden="true"/>{{ ui.t("nav.facilities") }}

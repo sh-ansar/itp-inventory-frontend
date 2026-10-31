@@ -19,6 +19,7 @@ export interface Asset {
   responsible_person_id: string|null;
   responsible_person_name?: string|null;
   version: number;
+  has_disposal_case?: boolean;
   created_at: string;
   updated_at: string;
 }

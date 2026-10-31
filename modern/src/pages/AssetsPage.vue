@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, onUnmounted, ref, watch } from "vue";
 import { useRouter } from "vue-router";
-import { Archive, History, Pencil, Plus, RefreshCw, PackageOpen, QrCode, ArrowRightLeft, Route } from "lucide-vue-next";
+import { Archive, History, Pencil, Plus, RefreshCw, PackageOpen, QrCode, ArrowRightLeft, Route, FileCheck2 } from "lucide-vue-next";
 import BaseButton from "../components/ui/BaseButton.vue";
 import BaseCard from "../components/ui/BaseCard.vue";
 import BaseDataTable from "../components/ui/BaseDataTable.vue";
@@ -10,6 +10,7 @@ import BaseSearchField from "../components/ui/BaseSearchField.vue";
 import BaseStatusPill from "../components/ui/BaseStatusPill.vue";
 import AssetEditorDialog from "../components/registry/AssetEditorDialog.vue";
 import ArchiveAssetDialog from "../components/registry/ArchiveAssetDialog.vue";
+import AssetDisposalDialog from "../components/registry/AssetDisposalDialog.vue";
 import AssetHistoryDialog from "../components/registry/AssetHistoryDialog.vue";
 import QrLabelDialog from "../components/registry/QrLabelDialog.vue";
 import MoveAssetDialog from "../components/registry/MoveAssetDialog.vue";
@@ -48,6 +49,7 @@ const showForm = ref(false);
 const editing = ref<Asset | null>(null);
 const history = ref<Asset | null>(null);
 const archiving = ref<Asset | null>(null);
+const disposing = ref<Asset | null>(null);
 const qrAsset = ref<Asset | null>(null);
 const moving = ref<Asset | null>(null);
 const movementHistory = ref<Asset | null>(null);
@@ -62,7 +64,7 @@ const columns = computed(() => [
   { key:"responsible_person_name", label:ui.t("asset.responsiblePerson"), minWidth:180 },
   { key:"physical_location_name", label:ui.t("table.location"), minWidth:150 },
   { key:"status", label:ui.t("table.status"), minWidth:110 },
-  { key:"actions", label:ui.t("table.actions"), minWidth:268, align:"right" as const },
+  { key:"actions", label:ui.t("table.actions"), minWidth:320, align:"right" as const },
 ]);
 
 let requestSerial = 0;
@@ -87,7 +89,7 @@ watch(() => props.companyId, id => {
   search.value = ""; debouncedSearch.value = "";
   status.value = "";facilityFilter.value="";personFilter.value="";page.value = 1;
   showForm.value = false; editing.value = null;
-  history.value = null; archiving.value = null;
+  history.value = null; archiving.value = null; disposing.value = null;
   qrAsset.value = null; moving.value = null; movementHistory.value = null;
   references.value = { categories: [], accounting_locations: [], physical_locations: [] };
   facilities.value=[];people.value=[];
@@ -169,6 +171,10 @@ function afterMove(updated: Asset) {
   moving.value = null;
   message.value = ui.t("movement.saved");
   rows.value = rows.value.map(row => row.id === updated.id ? updated : row);
+  void loadAssets();
+}
+function afterDisposalChanged() {
+  message.value = ui.t("disposal.recordUpdated");
   void loadAssets();
 }
 function afterArchive() {
@@ -269,10 +275,13 @@ onUnmounted(() => {
             <button v-if="canWrite && row.status === 'active'" type="button" class="icon-action" :title="ui.t('actions.move')"
               :aria-label="ui.t('actions.move') + ': ' + row.inventory_number"
               @click="moving=row"><ArrowRightLeft :size="17" /></button>
-            <button v-if="canWrite" type="button" class="icon-action" :title="ui.t('actions.edit')"
+            <button type="button" class="icon-action" :title="ui.t('disposal.title')"
+              :aria-label="ui.t('disposal.open') + ': ' + row.inventory_number"
+              @click="disposing=row"><FileCheck2 :size="17" /></button>
+            <button v-if="canWrite && row.status === 'active'" type="button" class="icon-action" :title="ui.t('actions.edit')"
               :aria-label="ui.t('actions.edit') + ': ' + row.inventory_number"
               @click="edit(row)"><Pencil :size="17" /></button>
-            <button v-if="canArchive" type="button" class="icon-action danger-action" :title="ui.t('actions.archive')"
+            <button v-if="canArchive && row.status === 'active' && !row.has_disposal_case" type="button" class="icon-action danger-action" :title="ui.t('actions.archive')"
               :aria-label="ui.t('actions.archive') + ': ' + row.inventory_number"
               @click="archiving=row"><Archive :size="17" /></button>
           </div>
@@ -286,6 +295,10 @@ onUnmounted(() => {
     </BaseCard>
     <AssetEditorDialog :open="showForm" :asset="editing" :company-id="companyId"
       :references="references" :facilities="facilities" :people="people" @close="showForm=false" @saved="afterSave" />
+    <AssetDisposalDialog :asset-id="disposing?.id??null" :company-id="companyId" :role="role"
+      :asset-name="disposing?.name" :inventory-number="disposing?.inventory_number"
+      :asset-version="disposing?.version" :asset-status="disposing?.status"
+      @close="disposing=null" @changed="afterDisposalChanged"/>
     <ArchiveAssetDialog :asset="archiving" :company-id="companyId"
       @close="archiving=null" @archived="afterArchive"/>
     <AssetHistoryDialog :asset="history" :company-id="companyId" @close="history=null" />
