@@ -1,5 +1,6 @@
 import { stocktakeTranslations } from "./stocktakeTranslations";
 import { topologyTranslations } from "./topologyTranslations";
+import { floorplanTranslations } from "./floorplanTranslations";
 
 export type InventoryLocale = "ru" | "en" | "ka";
 
@@ -8,6 +9,7 @@ const words: Record<InventoryLocale, Record<string, string>> = {
     "brand.subtitle": "Управление имуществом",
     ...stocktakeTranslations.ru,
     ...topologyTranslations.ru,
+    ...floorplanTranslations.ru,
     "nav.assets": "Основные средства", "nav.references": "Справочники",
     "nav.stocktakes": "Инвентаризации", "nav.soon": "В разработке",
     "heading.assets": "Основные средства", "heading.references": "Справочники",
@@ -74,6 +76,7 @@ const words: Record<InventoryLocale, Record<string, string>> = {
     "brand.subtitle": "Asset management",
     ...stocktakeTranslations.en,
     ...topologyTranslations.en,
+    ...floorplanTranslations.en,
     "nav.assets": "Fixed assets", "nav.references": "Directories",
     "nav.stocktakes": "Stocktakes", "nav.soon": "Coming next",
     "heading.assets": "Fixed assets", "heading.references": "Directories",
@@ -140,6 +143,7 @@ const words: Record<InventoryLocale, Record<string, string>> = {
     "brand.subtitle": "ქონების მართვა",
     ...stocktakeTranslations.ka,
     ...topologyTranslations.ka,
+    ...floorplanTranslations.ka,
     "nav.assets": "ძირითადი საშუალებები", "nav.references": "ცნობარები",
     "nav.stocktakes": "ინვენტარიზაცია", "nav.soon": "მზადების პროცესში",
     "heading.assets": "ძირითადი საშუალებები", "heading.references": "ცნობარები",

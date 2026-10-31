@@ -4,7 +4,7 @@ import { useRoute, useRouter } from "vue-router";
 import {
   Building2, MapPinned, Warehouse, Layers, DoorOpen, Grid2X2, Package, Boxes,
   Plus, Pencil, ChevronRight, ChevronLeft, Search, ZoomIn, ZoomOut,
-  Maximize2, RefreshCw, LayoutGrid, Table2, ClipboardList, ArrowUpRight, Users, History,
+  Maximize2, RefreshCw, LayoutGrid, Table2, ClipboardList, ArrowUpRight, Users, History, Map as MapIcon,
 } from "lucide-vue-next";
 import BaseButton from "../components/ui/BaseButton.vue";
 import BaseCard from "../components/ui/BaseCard.vue";
@@ -152,6 +152,10 @@ function saved(node:FacilityNode){
   const isNew=!editing.value;dialogOpen.value=false;
   notice.value=ui.t(isNew?"topology.created":"topology.updated");
   void refresh().then(()=>{if(isNew)navigate(node.id);});
+}
+function openPlan(id:string|null=selectedId.value){
+  if(!id)return;
+  void router.push({name:"facility-plan",params:{nodeId:id}});
 }
 function stocktake(){
   if(!canWrite.value||!selectedId.value)return;
@@ -338,6 +342,8 @@ onUnmounted(()=>{ctrl?.abort();assetCtrl?.abort();});
               <div class="footer-actions">
                 <BaseButton v-if="canWrite" variant="secondary" @click="create(selectedId)">
                   <Plus :size="17" aria-hidden="true"/>{{ ui.t("topology.addInside") }}</BaseButton>
+                <BaseButton v-if="currentNode" variant="secondary" @click="openPlan()">
+                  <MapIcon :size="17" aria-hidden="true"/>{{ ui.t("plan.title") }}</BaseButton>
                 <BaseButton v-if="canWrite&&currentNode" variant="secondary"
                   @click="edit(currentNode)"><Pencil :size="17" aria-hidden="true"/>{{ ui.t("actions.edit") }}</BaseButton>
                 <BaseButton v-if="canWrite&&currentNode" @click="stocktake">
@@ -362,6 +368,8 @@ onUnmounted(()=>{ctrl?.abort();assetCtrl?.abort();});
                 <div class="table-actions">
                   <button type="button" :title="ui.t('topology.openInside')" @click="navigate(row.id)">
                     <ArrowUpRight :size="17" aria-hidden="true"/></button>
+                  <button type="button" :title="ui.t('plan.title')" @click="openPlan(row.id)">
+                    <MapIcon :size="17" aria-hidden="true"/></button>
                   <button v-if="canWrite" type="button" :title="ui.t('topology.addInside')" @click="create(row.id)">
                     <Plus :size="17" aria-hidden="true"/></button>
                   <button v-if="canWrite" type="button" :title="ui.t('actions.edit')" @click="edit(row)">
