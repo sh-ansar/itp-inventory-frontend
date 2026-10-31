@@ -6,6 +6,7 @@ import BaseButton from "../ui/BaseButton.vue";
 import { InventoryApiError } from "../../api/client";
 import { createAsset, updateAsset } from "../../api/inventory";
 import type { Asset, AssetInput, ReferenceData } from "../../api/inventory";
+import type { FacilityNode, ResponsiblePerson } from "../../api/topology";
 import { useUiSettings } from "../../stores/uiSettings";
 
 const props = defineProps<{
@@ -13,12 +14,15 @@ const props = defineProps<{
   companyId: string;
   asset: Asset | null;
   references: ReferenceData;
+  facilities: FacilityNode[];
+  people: ResponsiblePerson[];
 }>();
 const emit = defineEmits<{close: []; saved: [asset: Asset]}>();
 const ui = useUiSettings();
 const fields = reactive({
   inventory_number: "", name: "", serial_number: "", description: "",
   category_id: "", accounting_location_id: "", physical_location_id: "",
+  facility_node_id:"", responsible_person_id:"",
 });
 const busy = ref(false);
 const error = ref("");
@@ -34,6 +38,8 @@ function normalize() {
   fields.category_id = asset?.category_id ?? "";
   fields.accounting_location_id = asset?.accounting_location_id ?? "";
   fields.physical_location_id = asset?.physical_location_id ?? "";
+  fields.facility_node_id=asset?.facility_node_id??"";
+  fields.responsible_person_id=asset?.responsible_person_id??"";
   original.value = JSON.stringify(fields);
   error.value = "";
   validation.value = {};
@@ -56,6 +62,8 @@ function inputData(): AssetInput {
     category_id: fields.category_id || null,
     accounting_location_id: fields.accounting_location_id || null,
     physical_location_id: fields.physical_location_id || null,
+    facility_node_id: fields.facility_node_id || null,
+    responsible_person_id: fields.responsible_person_id || null,
   };
 }
 async function save() {
@@ -105,6 +113,26 @@ async function save() {
             <option v-for="item in references.categories" :key="item.id" :value="item.id">{{ item.name }}</option>
           </select>
           <small v-if="validation.category_id" role="alert">{{ validation.category_id[0] }}</small>
+        </label>
+        <label class="field">
+          <span>{{ ui.t("asset.facilityNode") }}</span>
+          <select v-model="fields.facility_node_id" :disabled="busy">
+            <option value="">{{ ui.t("form.none") }}</option>
+            <option v-for="item in facilities" :key="item.id" :value="item.id">
+              {{ ui.t("topology.type."+item.node_type) }} · {{ item.name }}
+            </option>
+          </select>
+          <small v-if="validation.facility_node_id" role="alert">{{ validation.facility_node_id[0] }}</small>
+        </label>
+        <label class="field">
+          <span>{{ ui.t("asset.responsiblePerson") }}</span>
+          <select v-model="fields.responsible_person_id" :disabled="busy">
+            <option value="">{{ ui.t("form.none") }}</option>
+            <option v-for="person in people.filter(p=>p.is_active)" :key="person.id" :value="person.id">
+              {{ person.name }} · {{ person.code }}
+            </option>
+          </select>
+          <small v-if="validation.responsible_person_id" role="alert">{{ validation.responsible_person_id[0] }}</small>
         </label>
         <label class="field">
           <span>{{ ui.t("form.accounting") }}</span>

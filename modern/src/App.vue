@@ -1,11 +1,11 @@
 <script setup lang="ts">
 import { computed, onMounted, reactive, ref, watch } from "vue";
 import { RouterLink, RouterView, useRoute } from "vue-router";
-import { Boxes, ClipboardList, BookOpen, Package, ShieldCheck, LogOut, Sun, Moon, Eye, EyeOff, RefreshCw } from "lucide-vue-next";
+import { Boxes, ClipboardList, BookOpen, Package, Building2, Users, Warehouse, ExternalLink, LogOut, Sun, Moon, Eye, EyeOff, RefreshCw } from "lucide-vue-next";
 import BaseButton from "./components/ui/BaseButton.vue";
 import BaseCard from "./components/ui/BaseCard.vue";
 import BaseLoadingState from "./components/ui/BaseLoadingState.vue";
-import BaseStatusPill from "./components/ui/BaseStatusPill.vue";
+
 import { health, login, currentUser, logout, companies } from "./api/session";
 import type { InventoryUser, CompanyAccess } from "./api/session";
 import { InventoryApiError } from "./api/client";
@@ -25,8 +25,14 @@ const signoutBusy = ref(false);
 const error = ref("");
 const credentials = reactive({ email:"", password:"" });
 const passwordVisible = ref(false);
-const currentTitle = computed(() => ui.t(route.name === "references" ? "heading.references" :
-  route.name === "scan" ? "qr.scanTitle" : "heading.assets"));
+const currentTitle = computed(() => ui.t(
+   route.name === "references" ? "heading.references" :
+   route.name === "scan" ? "qr.scanTitle" :
+   route.name === "stocktake" || route.name === "stocktakes" ? "heading.stocktakes" :
+   route.name === "facilities" ? "topology.title" :
+   route.name === "people" ? "people.title" :
+   route.name === "warehouses" ? "stock.warehouseTitle" : "heading.assets"
+ ));
 const selectedCompany = computed(() =>
   availableCompanies.value.find(c => c.id === companyId.value) ?? null
 );
@@ -106,19 +112,28 @@ onMounted(boot);
         <RouterLink to="/registry" class="nav-item" active-class="nav-item--active">
           <Package :size="19" aria-hidden="true"/>{{ ui.t("nav.assets") }}
         </RouterLink>
+        <RouterLink to="/facilities" class="nav-item" active-class="nav-item--active">
+          <Building2 :size="19" aria-hidden="true"/>{{ ui.t("nav.facilities") }}
+        </RouterLink>
         <RouterLink to="/references" class="nav-item" active-class="nav-item--active">
           <BookOpen :size="19" aria-hidden="true"/>{{ ui.t("nav.references") }}
         </RouterLink>
-        <span class="nav-item nav-item--disabled" :title="ui.t('nav.soon')" aria-disabled="true">
+        <RouterLink to="/people" class="nav-item" active-class="nav-item--active">
+          <Users :size="19" aria-hidden="true"/>{{ ui.t("nav.people") }}
+        </RouterLink>
+        <RouterLink to="/warehouses" class="nav-item" active-class="nav-item--active">
+          <Warehouse :size="19" aria-hidden="true"/>{{ ui.t("nav.warehouses") }}
+        </RouterLink>
+        <RouterLink to="/stocktakes" class="nav-item" active-class="nav-item--active">
           <ClipboardList :size="19" aria-hidden="true"/>{{ ui.t("nav.stocktakes") }}
-        </span>
+        </RouterLink>
       </nav>
       <div class="sidebar-footer">
+        <a href="https://platform.itpmining.kz/" class="portal-link" :title="ui.t('portal.back')">
+          <ExternalLink :size="18" aria-hidden="true"/>
+          <span>{{ ui.t("portal.back") }}</span>
+        </a>
         <p class="muted">ITP · Inventory</p>
-        <BaseStatusPill :tone="connected ? 'success' : 'warning'">
-          <ShieldCheck :size="14" aria-hidden="true"/>
-          {{ ui.t(connected ? "auth.ready" : "auth.down") }}
-        </BaseStatusPill>
       </div>
     </aside>
     <div class="app-main">
@@ -129,6 +144,11 @@ onMounted(boot);
           </div>
         </div>
         <div class="topbar-trailing">
+          <a href="https://platform.itpmining.kz/" class="portal-link portal-link--mobile"
+            :title="ui.t('portal.back')" :aria-label="ui.t('portal.back')">
+            <ExternalLink :size="18" aria-hidden="true"/>
+            <span>{{ ui.t("portal.back") }}</span>
+          </a>
           <label v-if="user && availableCompanies.length > 0" class="company-switcher">
             <span>{{ ui.t("auth.company") }}</span>
             <select v-model="companyId" :aria-label="ui.t('auth.company')">

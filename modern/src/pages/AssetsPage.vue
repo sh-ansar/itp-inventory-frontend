@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed, onUnmounted, ref, watch } from "vue";
+import { useRouter } from "vue-router";
 import { Archive, History, Pencil, Plus, RefreshCw, PackageOpen, QrCode, ArrowRightLeft, Route } from "lucide-vue-next";
 import BaseButton from "../components/ui/BaseButton.vue";
 import BaseCard from "../components/ui/BaseCard.vue";
@@ -15,10 +16,14 @@ import MoveAssetDialog from "../components/registry/MoveAssetDialog.vue";
 import AssetMovementHistoryDialog from "../components/registry/AssetMovementHistoryDialog.vue";
 import { companyAssets, referenceData } from "../api/inventory";
 import type { Asset, ReferenceData } from "../api/inventory";
+import { getFacilityNodes, getResponsiblePeople } from "../api/topology";
+import type { FacilityNode, ResponsiblePerson } from "../api/topology";
 import { useUiSettings } from "../stores/uiSettings";
 
 const props = defineProps<{companyId: string; companyName: string; role: string}>();
 const ui = useUiSettings();
+const router = useRouter();
+const selectedKeys = ref<string[]>([]);
 const rows = ref<Asset[]>([]);
 const loading = ref(false);
 const issue = ref("");
@@ -30,6 +35,10 @@ const lastPage = ref(1);
 const search = ref("");
 const debouncedSearch = ref("");
 const status = ref("");
+const facilityFilter=ref("");
+const personFilter=ref("");
+const facilities=ref<FacilityNode[]>([]);
+const people=ref<ResponsiblePerson[]>([]);
 const sortKey = ref("inventory_number");
 const sortDirection = ref<"asc" | "desc">("asc");
 const references = ref<ReferenceData>({
@@ -49,6 +58,8 @@ const columns = computed(() => [
   { key:"inventory_number", label:ui.t("table.number"), sortable:true, minWidth:135 },
   { key:"name", label:ui.t("table.name"), sortable:true, minWidth:215 },
   { key:"category_name", label:ui.t("table.category"), minWidth:145 },
+  { key:"facility_node_name", label:ui.t("asset.facilityNode"), minWidth:185 },
+  { key:"responsible_person_name", label:ui.t("asset.responsiblePerson"), minWidth:180 },
   { key:"physical_location_name", label:ui.t("table.location"), minWidth:150 },
   { key:"status", label:ui.t("table.status"), minWidth:110 },
   { key:"actions", label:ui.t("table.actions"), minWidth:268, align:"right" as const },
@@ -70,20 +81,27 @@ watch(search, value => {
 watch(() => props.companyId, id => {
   // Clear old tenant state BEFORE any new network request is initiated.
   rows.value = [];
+  selectedKeys.value = [];
   total.value = 0;
   issue.value = ""; message.value = "";
   search.value = ""; debouncedSearch.value = "";
-  status.value = ""; page.value = 1;
+  status.value = "";facilityFilter.value="";personFilter.value="";page.value = 1;
   showForm.value = false; editing.value = null;
   history.value = null; archiving.value = null;
   qrAsset.value = null; moving.value = null; movementHistory.value = null;
   references.value = { categories: [], accounting_locations: [], physical_locations: [] };
+  facilities.value=[];people.value=[];
   referenceController?.abort();
   const controller = new AbortController();
   referenceController = controller;
   const current = ++referenceSerial;
-  if (id) void referenceData(id, controller.signal).then(data => {
-    if (current === referenceSerial && !controller.signal.aborted) references.value = data;
+  if (id) void Promise.all([
+    referenceData(id,controller.signal),getFacilityNodes(id,controller.signal),
+    getResponsiblePeople(id,{per_page:100,active:"1"},controller.signal),
+  ]).then(([data,map,persons])=>{
+    if (current === referenceSerial && !controller.signal.aborted){
+      references.value=data;facilities.value=map.data;people.value=persons.data;
+    }
   }).catch(error => {
     if (current === referenceSerial && !controller.signal.aborted) {
       issue.value = error instanceof Error ? error.message : ui.t("generic.unknownError");
@@ -92,7 +110,7 @@ watch(() => props.companyId, id => {
 }, { immediate:true });
 
 watch(
-  [() => props.companyId, page, perPage, debouncedSearch, status, sortKey, sortDirection],
+  [() => props.companyId, page, perPage, debouncedSearch, status, sortKey, sortDirection, facilityFilter, personFilter],
   () => { void loadAssets(); }, { immediate:true },
 );
 
@@ -111,6 +129,9 @@ async function loadAssets() {
       page: page.value, per_page: perPage.value,
       search: debouncedSearch.value, status: status.value,
       sort: sortKey.value, direction: sortDirection.value,
+      facility_node_id:facilityFilter.value||undefined,
+      responsible_person_id:personFilter.value||undefined,
+      include_descendants:true,
     }, controller.signal);
     if (controller.signal.aborted || current !== requestSerial) return;
     rows.value = data.data;
@@ -132,6 +153,10 @@ function sortBy(key: string) {
 function changeStatus(event: Event) {
   status.value = (event.target as HTMLSelectElement).value;
   page.value = 1;
+}
+function createStocktakeForSelected() {
+  if (!canWrite.value || selectedKeys.value.length === 0) return;
+  void router.push({ name:"stocktakes", query:{ assets: selectedKeys.value.slice(0, 30).join(",") }});
 }
 function create() { if (!canWrite.value) return; editing.value = null; showForm.value = true; }
 function edit(asset: Asset) { if (!canWrite.value) return; editing.value = asset; showForm.value = true; }
@@ -167,6 +192,9 @@ onUnmounted(() => {
       <div class="page-actions">
         <BaseButton variant="secondary" :disabled="loading" :aria-label="ui.t('actions.refresh')"
           @click="loadAssets"><RefreshCw :size="17" aria-hidden="true" /> {{ ui.t("actions.refresh") }}</BaseButton>
+        <BaseButton v-if="canWrite && selectedKeys.length" variant="secondary" @click="createStocktakeForSelected">
+          {{ ui.t("stock.createFromSelected") }} ({{ selectedKeys.length }})
+        </BaseButton>
         <BaseButton v-if="canWrite" @click="create"><Plus :size="17" aria-hidden="true" /> {{ ui.t("actions.create") }}</BaseButton>
       </div>
     </div>
@@ -187,6 +215,20 @@ onUnmounted(() => {
       <div class="toolbar">
         <BaseSearchField v-model="search" :label="ui.t('table.search')" :placeholder="ui.t('table.search')" />
         <label class="filter-field">
+          <span>{{ ui.t("asset.facilityNode") }}</span>
+          <select v-model="facilityFilter" :aria-label="ui.t('asset.facilityNode')" @change="page=1">
+            <option value="">{{ ui.t("form.none") }}</option>
+            <option v-for="node in facilities" :key="node.id" :value="node.id">{{ node.name }}</option>
+          </select>
+        </label>
+        <label class="filter-field">
+          <span>{{ ui.t("asset.responsiblePerson") }}</span>
+          <select v-model="personFilter" :aria-label="ui.t('asset.responsiblePerson')" @change="page=1">
+            <option value="">{{ ui.t("form.none") }}</option>
+            <option v-for="person in people" :key="person.id" :value="person.id">{{ person.name }}</option>
+          </select>
+        </label>
+        <label class="filter-field">
           <span>{{ ui.t("filter.status") }}</span>
           <select :value="status" :aria-label="ui.t('filter.status')" @change="changeStatus">
             <option value="">{{ ui.t("filter.all") }}</option>
@@ -198,13 +240,17 @@ onUnmounted(() => {
       </div>
       <BaseDataTable
         :rows="rows" row-key="id" :columns="columns" :loading="loading"
+        :selectable="canWrite" :selected-keys="selectedKeys"
+        @update:selectedKeys="selectedKeys=$event.slice(0,30)"
         :sort-key="sortKey" :sort-direction="sortDirection"
-        :caption="ui.t('table.assets')" :empty-title="ui.t('table.empty')" :min-table-width="1100"
+        :caption="ui.t('table.assets')" :empty-title="ui.t('table.empty')" :min-table-width="1500"
         @sort="sortBy">
         <template #cell-name="{row}">
           <span class="truncate" :title="row.name">{{ row.name }}</span>
         </template>
         <template #cell-category_name="{row}">{{ row.category_name || "—" }}</template>
+        <template #cell-facility_node_name="{row}">{{ row.facility_node_name || "—" }}</template>
+        <template #cell-responsible_person_name="{row}">{{ row.responsible_person_name || "—" }}</template>
         <template #cell-physical_location_name="{row}">{{ row.physical_location_name || "—" }}</template>
         <template #cell-status="{row}">
           <BaseStatusPill :tone="row.status === 'active' ? 'success' : 'warning'">{{ ui.t("status." + row.status) }}</BaseStatusPill>
@@ -239,7 +285,7 @@ onUnmounted(() => {
         @change:size="perPage=$event; page=1" />
     </BaseCard>
     <AssetEditorDialog :open="showForm" :asset="editing" :company-id="companyId"
-      :references="references" @close="showForm=false" @saved="afterSave" />
+      :references="references" :facilities="facilities" :people="people" @close="showForm=false" @saved="afterSave" />
     <ArchiveAssetDialog :asset="archiving" :company-id="companyId"
       @close="archiving=null" @archived="afterArchive"/>
     <AssetHistoryDialog :asset="history" :company-id="companyId" @close="history=null" />

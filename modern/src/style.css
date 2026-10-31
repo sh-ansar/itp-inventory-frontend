@@ -115,3 +115,14 @@ input:disabled,select:disabled,textarea:disabled{opacity:.55}
   .nav-item{transition:none}
   *{scroll-behavior:auto!important}
 }
+.portal-link{display:flex;align-items:center;gap:11px;width:100%;min-height:44px;
+  padding:10px 12px;border:1px solid var(--color-stroke-strong);border-radius:var(--radius-sm);
+  background:var(--color-soft);text-decoration:none;color:var(--color-text);
+  font-size:12px;font-weight:500}
+.portal-link svg{flex:none;color:var(--color-primary)}
+.portal-link:hover{border-color:var(--color-primary-stroke);background:var(--color-accent-soft)}
+.portal-link--mobile{display:none;width:auto;min-height:38px;padding:8px 10px}
+@media(max-width:760px){
+  .portal-link--mobile{display:flex}
+  .portal-link--mobile span{display:none}
+}

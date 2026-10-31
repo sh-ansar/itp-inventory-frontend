@@ -14,6 +14,10 @@ export interface Asset {
   accounting_location_name?: string | null;
   physical_location_id: string | null;
   physical_location_name?: string | null;
+  facility_node_id: string|null;
+  facility_node_name?: string|null;
+  responsible_person_id: string|null;
+  responsible_person_name?: string|null;
   version: number;
   created_at: string;
   updated_at: string;
@@ -21,7 +25,7 @@ export interface Asset {
 
 export type AssetInput = Pick<Asset, "inventory_number" | "name"> &
   Partial<Pick<Asset, "serial_number" | "description" | "category_id" |
-    "accounting_location_id" | "physical_location_id">>;
+    "accounting_location_id" | "physical_location_id" | "facility_node_id" | "responsible_person_id">>;
 
 export interface Page<T> {
   data: T[];
@@ -29,7 +33,7 @@ export interface Page<T> {
   links: { first: string | null; last: string | null; prev: string | null; next: string | null };
 }
 
-export interface RefItem { id: string; code: string; name: string }
+export interface RefItem { id: string; code: string; name: string; icon_key?:string; icon_url?:string|null; is_base?:boolean; version?:number }
 export interface ReferenceData {
   categories: RefItem[];
   accounting_locations: RefItem[];
@@ -62,6 +66,7 @@ export interface AssetFilters {
   page: number; per_page: number;
   search: string; status: string;
   sort: string; direction: "asc" | "desc";
+  facility_node_id?:string; include_descendants?:boolean; responsible_person_id?:string;
 }
 
 const companyPath = (companyId: string) =>
@@ -78,6 +83,9 @@ export function companyAssets(
   });
   if (filters.search.trim()) query.set("search", filters.search.trim());
   if (filters.status) query.set("status", filters.status);
+  if (filters.facility_node_id) query.set("facility_node_id",filters.facility_node_id);
+  if (filters.include_descendants!==undefined) query.set("include_descendants",filters.include_descendants?"1":"0");
+  if (filters.responsible_person_id) query.set("responsible_person_id",filters.responsible_person_id);
   return inventoryRequest<Page<Asset>>(companyPath(companyId) + "/assets?" + query, { signal });
 }
 
