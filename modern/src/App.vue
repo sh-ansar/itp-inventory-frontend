@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, onMounted, reactive, ref, watch } from "vue";
 import { RouterLink, RouterView, useRoute } from "vue-router";
-import { Boxes, ClipboardList, BookOpen, Package, Building2, Users, Warehouse, ExternalLink, LogOut, Sun, Moon, Eye, EyeOff, RefreshCw } from "lucide-vue-next";
+import { Boxes, ClipboardList, BookOpen, Package, Building2, Users, Warehouse, ExternalLink, LogOut, Sun, Moon, Eye, EyeOff, RefreshCw, Recycle } from "lucide-vue-next";
 import BaseButton from "./components/ui/BaseButton.vue";
 import BaseCard from "./components/ui/BaseCard.vue";
 import BaseLoadingState from "./components/ui/BaseLoadingState.vue";
@@ -32,7 +32,8 @@ const currentTitle = computed(() => ui.t(
    route.name === "facilities" ? "topology.title" :
    route.name === "facility-plan" ? "plan.title" :
    route.name === "people" ? "people.title" :
-   route.name === "warehouses" ? "stock.warehouseTitle" : "heading.assets"
+   route.name === "warehouses" ? "stock.warehouseTitle" :
+   route.name === "disposals" ? "disposal.title" : "heading.assets"
  ));
 const selectedCompany = computed(() =>
   availableCompanies.value.find(c => c.id === companyId.value) ?? null
@@ -124,6 +125,9 @@ onMounted(boot);
         </RouterLink>
         <RouterLink to="/warehouses" class="nav-item" active-class="nav-item--active">
           <Warehouse :size="19" aria-hidden="true"/>{{ ui.t("nav.warehouses") }}
+        </RouterLink>
+        <RouterLink to="/disposals" class="nav-item" active-class="nav-item--active">
+          <Recycle :size="19" aria-hidden="true"/>{{ ui.t("disposal.nav") }}
         </RouterLink>
         <RouterLink to="/stocktakes" class="nav-item" active-class="nav-item--active">
           <ClipboardList :size="19" aria-hidden="true"/>{{ ui.t("nav.stocktakes") }}
