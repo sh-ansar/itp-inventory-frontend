@@ -31,7 +31,10 @@ describe("Inventory batch QR printing", () => {
       inventoryNumber:'INV-"><img src=x onerror=alert(1)>',
     }],"en");
     expect(result).not.toContain("<script>");
-    expect(result).not.toContain('src=x onerror');
+    const html = new DOMParser().parseFromString(result, "text/html");
+    expect(html.querySelectorAll("img")).toHaveLength(1);
+    expect(html.querySelector("[onerror]")).toBeNull();
+    expect(result).toContain("&lt;img src=x onerror");
     expect(result).toContain("&lt;script&gt;");
     expect(result).toContain("&quot;");
   });
