@@ -38,7 +38,7 @@ const selectable=computed(()=>visibleOptions.value
 const activeId=computed(()=>opened.value&&highlighted.value>=0
   ?listId+"-option-"+highlighted.value:undefined);
 function focusActive(){
-  nextTick(()=>panel.value?.querySelector("[data-active='true']")?.scrollIntoView({block:"nearest"}));
+  nextTick(()=>{const item=panel.value?.querySelector<HTMLElement>("[data-active='true']");item?.scrollIntoView?.({block:"nearest"});});
 }
 function updatePosition(){
   if(!opened.value)return;
