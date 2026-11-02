@@ -105,3 +105,42 @@ test("styled selects work in pagination/form controls and do not overflow mobile
     expect(await page.evaluate(()=>document.documentElement.scrollWidth-innerWidth)).toBeLessThanOrEqual(1);
   }
 });
+
+test("viewer cannot access company roles through menu, direct URL or API",async({browser})=>{
+  const context=await browser.newContext({
+    baseURL:process.env.INVENTORY_E2E_BASE_URL||"http://127.0.0.1:5215/inventory/",
+    storageState:"test-results/.auth/viewer.json",
+  });
+  try{
+    const page=await context.newPage();
+    await page.goto("/inventory/registry");
+    await expect(page.locator("nav.main-navigation")).toBeVisible();
+    await expect(page.getByRole("link",{name:"Пользователи и роли"})).toHaveCount(0);
+    await page.goto("/inventory/company-roles");
+    await expect(page).toHaveURL(/\/registry$/);
+    const status=await page.evaluate(async()=>{
+      const response=await fetch("/inventory-api/api/v1/companies");
+      const companies=await response.json() as Array<{id:string;role_code:string}>;
+      const company=companies.find(x=>x.role_code==="viewer");
+      if(!company)throw new Error("Viewer QA membership missing");
+      const root="/inventory-api/api/v1/companies/"+encodeURIComponent(company.id);
+      const cookie=document.cookie.split("; ").find(x=>x.startsWith("INVENTORY-XSRF-TOKEN="));
+      const token=cookie?decodeURIComponent(cookie.substring("INVENTORY-XSRF-TOKEN=".length)):"";
+      const headers={"Accept":"application/json","Content-Type":"application/json","X-XSRF-TOKEN":token};
+      const [list,privateRole,create]=await Promise.all([
+        fetch(root+"/assets",{headers,credentials:"same-origin"}),
+        fetch(root+"/members",{headers,credentials:"same-origin"}),
+        fetch(root+"/assets",{method:"POST",headers,credentials:"same-origin",body:"{}"}),
+      ]);
+      return {list:list.status,privateRole:privateRole.status,create:create.status};
+    });
+    expect(status).toEqual({list:200,privateRole:403,create:403});
+  }finally{await context.close()}
+});
+test("company administrator can see role management and inspect membership list",async({page})=>{
+  await page.goto("/inventory/registry");
+  await page.getByRole("combobox",{name:"Компания"}).selectOption({label:"Inventory QA - Mining"});
+  await expect(page.getByRole("link",{name:"Пользователи и роли"})).toBeVisible();
+  await page.getByRole("link",{name:"Пользователи и роли"}).click();
+  await expect(page.getByRole("heading",{name:"Пользователи и роли"})).toBeVisible();
+});
