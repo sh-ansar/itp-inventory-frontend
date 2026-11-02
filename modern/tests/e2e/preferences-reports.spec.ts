@@ -1,4 +1,4 @@
-import {expect,test} from "@playwright/test";
+import {expect,test} from "./fixtures";
 
 test.skip(!process.env.INVENTORY_QA_SECRET_FILE, "Synthetic Inventory QA login is required");
 
