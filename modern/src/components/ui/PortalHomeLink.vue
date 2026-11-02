@@ -4,8 +4,8 @@ const logoFailed = ref(false);
 withDefaults(defineProps<{ compact?: boolean }>(), { compact: false });
 // Runtime URL: HRM serves the shared corporate Portal marks under the same host.
 const logos = {
-  light: "/hrm/brand/itp-portal-light-v2.png",
-  dark: "/hrm/brand/itp-portal-dark-v2.png",
+  light: "/inventory/brand/itp-portal-light-v2.png",
+  dark: "/inventory/brand/itp-portal-dark-v2.png",
 };
 </script>
 
