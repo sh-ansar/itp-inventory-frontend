@@ -96,7 +96,7 @@ test("disposal case: draft, protected order, submit, approve, disposal act, immu
   await expect(page.locator("tbody tr").filter({hasText:number})).toBeVisible();
 
   const viewer=await browser.newContext({
-    baseURL:"http://127.0.0.1:5174/inventory/",
+    baseURL:new URL("/inventory/",page.url()).href,
     storageState:"test-results/.auth/viewer.json",
   });
   try{
