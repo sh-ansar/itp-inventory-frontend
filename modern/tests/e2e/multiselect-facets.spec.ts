@@ -44,7 +44,11 @@ test("multi-select OR facets persist per company and are sent to Laravel and Exc
   const custodianList=page.getByRole("dialog",{name:"Ответственное лицо"}).getByRole("checkbox");
   await expect.poll(()=>custodianList.count()).toBeGreaterThan(1);
   await custodianList.nth(0).check();
+  const persisted=page.waitForResponse(r=>r.url().includes("/preferences/assets")&&
+    r.request().method()==="PUT"&&r.status()===200&&
+    (r.request().postData()??"").includes("responsible_person_ids"));
   await custodianList.nth(1).check();
+  await persisted;
   await page.keyboard.press("Escape");
 
   const exportLink=page.getByRole("link",{name:"Экспорт Excel"});
@@ -55,7 +59,6 @@ test("multi-select OR facets persist per company and are sent to Laravel and Exc
   expect(params.getAll("facility_node_ids[]")).toEqual([first,second]);
   expect(params.getAll("responsible_person_ids[]")).toHaveLength(2);
 
-  await page.waitForResponse(r=>r.url().includes("/preferences/assets")&&r.request().method()==="PUT"&&r.status()===200);
   await page.reload();
   await expect(page.getByRole("button",{name:"Настройки таблицы"})).toBeEnabled();
   await expect(page.getByRole("button",{name:"Статус",exact:true})).toContainText("2 выбрано");
