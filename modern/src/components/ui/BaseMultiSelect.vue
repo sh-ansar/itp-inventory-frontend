@@ -20,6 +20,8 @@ const emit=defineEmits<{"update:modelValue":[values:string[]]}>();
 const root=ref<HTMLElement|null>(null);
 const trigger=ref<HTMLButtonElement|null>(null);
 const searchInput=ref<HTMLInputElement|null>(null);
+const panelRef=ref<HTMLElement|null>(null);
+const opensUp=ref(false);
 const opened=ref(false);
 const search=ref("");
 const id=useId();
@@ -46,14 +48,24 @@ const selectableVisible=computed(()=>visibleOptions.value.filter(item=>!item.dis
 function open(){
   if(props.disabled)return;
   opened.value=!opened.value;
+  opensUp.value=false;
   if(opened.value){
     search.value="";
-    void nextTick(()=>{if(props.options.length>8)searchInput.value?.focus()});
+    void nextTick(()=>{
+      const popup=panelRef.value?.getBoundingClientRect();
+      const anchor=trigger.value?.getBoundingClientRect();
+      // Prefer an upward popup when the control is near the viewport bottom.
+      if(popup&&anchor&&popup.bottom>window.innerHeight-12&&anchor.top>popup.height+8){
+        opensUp.value=true;
+      }
+      if(props.options.length>8)searchInput.value?.focus();
+    });
   }
 }
 function close(focus=false){
   if(!opened.value)return;
   opened.value=false;
+  opensUp.value=false;
   search.value="";
   if(focus)void nextTick(()=>trigger.value?.focus());
 }
@@ -87,7 +99,7 @@ watch(()=>props.disabled,disabled=>{if(disabled)close()});
       <span v-if="modelValue.length" class="multi-count">{{modelValue.length}}</span>
       <ChevronDown :size="16" class="chevron" aria-hidden="true"/>
     </button>
-    <div v-if="opened" :id="panelId" class="multi-panel" role="dialog"
+    <div v-if="opened" :id="panelId" ref="panelRef" class="multi-panel" :class="{'opens-up':opensUp}" role="dialog"
       :aria-label="label" @keydown.esc="escape">
       <div v-if="options.length>8" class="multi-search">
         <Search :size="15" aria-hidden="true"/>
@@ -140,6 +152,7 @@ watch(()=>props.disabled,disabled=>{if(disabled)close()});
   width:min(360px,calc(100vw - 24px));max-width:calc(100vw - 24px);
   padding:8px;border:1px solid var(--color-stroke-strong);border-radius:var(--radius-lg);
   background:var(--color-surface);box-shadow:0 14px 35px #14273730}
+.multi-panel.opens-up{top:auto;bottom:calc(100% + 5px)}
 .multi-search{display:flex;align-items:center;gap:8px;padding:0 9px;
   border:1px solid var(--color-stroke-strong);border-radius:var(--radius-sm);color:var(--color-muted)}
 .multi-search:focus-within{outline:2px solid var(--color-primary);outline-offset:1px}
