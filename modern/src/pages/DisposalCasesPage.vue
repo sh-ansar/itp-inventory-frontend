@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import BaseSelect from "../components/ui/BaseSelect.vue";
 import { computed, onUnmounted, ref, watch } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import { Archive, ClipboardCheck, FileText, RefreshCw, Search, ShieldCheck } from "lucide-vue-next";
@@ -123,13 +124,13 @@ onUnmounted(()=>{ctrl?.abort();if(timer)clearTimeout(timer);});
           :placeholder="ui.t('disposal.search')"/>
         <label class="filter-field">
           <span>{{ ui.t("disposal.stage") }}</span>
-          <select v-model="status" :aria-label="ui.t('disposal.stage')" @change="page=1">
+          <BaseSelect v-model="status" :aria-label="ui.t('disposal.stage')" @change="page=1">
             <option value="">{{ ui.t("disposal.all") }}</option>
             <option value="draft">{{ ui.t("disposal.stage.draft") }}</option>
             <option value="submitted">{{ ui.t("disposal.stage.submitted") }}</option>
             <option value="approved">{{ ui.t("disposal.stage.approved") }}</option>
             <option value="disposed">{{ ui.t("disposal.stage.disposed") }}</option>
-          </select>
+          </BaseSelect>
         </label>
       </div>
       <BaseDataTable :rows="rows" row-key="id" :columns="columns" :loading="loading"
