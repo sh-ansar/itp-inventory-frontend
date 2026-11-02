@@ -184,7 +184,7 @@ onUnmounted(()=>{ctrl?.abort();if(timer)clearTimeout(timer)});
   <div class="warehouse-page">
     <div class="warehouse-header">
       <div><h2>{{ ui.t("stock.warehouseTitle") }}</h2>
-        <p class="muted">{{ companyName }} · {{ ui.t("stock.warehouseSubtitle") }}</p></div>
+        <p class="muted">{{ ui.t("stock.warehouseSubtitle") }}</p></div>
       <div class="header-actions">
         <BaseButton variant="secondary" :disabled="loading" @click="bootstrap">
           <RefreshCw :size="17" aria-hidden="true"/>{{ ui.t("actions.refresh") }}</BaseButton>
