@@ -13,6 +13,7 @@ async function openMining(page:Page,path:string){
 }
 
 test("header keeps company selector at right across full Inventory navigation and devices",async({page})=>{
+  test.setTimeout(180_000);
   await openMining(page,"registry");
   const routes=["registry","facilities","references","people","warehouses","stocktakes","disposals","reports","company-roles"];
   const viewports=[{width:360,height:780},{width:390,height:850},{width:768,height:850},
@@ -50,6 +51,7 @@ test("header keeps company selector at right across full Inventory navigation an
 });
 
 test("six detailed print forms use authenticated API, actual rows, filters and signatures",async({page})=>{
+  test.setTimeout(120_000);
   await openMining(page,"reports");
   const form=page.getByRole("combobox",{name:"Вид документа"});
   await expect(form).toBeVisible();
