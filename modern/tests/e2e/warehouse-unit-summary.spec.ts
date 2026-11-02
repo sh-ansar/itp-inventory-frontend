@@ -24,7 +24,9 @@ test("mixed warehouse quantities are unit-aware in dashboard, A4 print and all l
   await page.getByRole("combobox",{name:"Компания"})
     .selectOption({label:"Inventory QA - Mining"});
   await expect(page.getByRole("heading",{name:"Отчёты",exact:true})).toBeVisible();
-  const warehouse=page.locator(".report-panel").filter({has:page.getByRole("heading",{name:"Склады",exact:true})});
+  // The same fifth panel is translated on locale changes; do not anchor its identity to RU heading text.
+  const warehouse=page.locator(".report-panel").nth(4);
+  await expect(warehouse).toContainText("Склады");
   await expect(warehouse.locator("tbody")).toContainText("7,5 кг · 4 шт.");
   await expect(warehouse.locator("tbody")).not.toContainText("11,5");
   const popupEvent=page.waitForEvent("popup");
