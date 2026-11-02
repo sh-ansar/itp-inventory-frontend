@@ -23,6 +23,30 @@ setup("sign in synthetic admin and viewer once per test run", async ({ browser }
       await page.locator("#inventory-password").fill(password);
       await page.getByRole("button", { name: "Войти" }).click();
       await expect(page.getByRole("heading", { name: "Реестр активов" })).toBeVisible();
+      // Synthetic QA only: saved filters must not leak between independent
+      // regression runs. Ordinary production user preferences are never reset.
+      await page.evaluate(async () => {
+        const response=await fetch("/inventory-api/api/v1/companies",{credentials:"same-origin"});
+        if(!response.ok)throw new Error("Could not list QA companies for preference cleanup");
+        const companies=await response.json() as Array<{id:string}>;
+        const cookie=document.cookie.split("; ").find(value=>value.startsWith("INVENTORY-XSRF-TOKEN="));
+        if(!cookie)throw new Error("QA CSRF cookie unavailable");
+        const token=decodeURIComponent(cookie.split("=").slice(1).join("="));
+        const views=["assets","stocktakes","disposals","warehouse_balances",
+          "warehouse_items","warehouse_history","people"];
+        for(const company of companies){
+          for(const view of views){
+            const result=await fetch("/inventory-api/api/v1/companies/"+encodeURIComponent(company.id)+
+              "/preferences/"+view,{
+              method:"DELETE",credentials:"same-origin",
+              headers:{"Accept":"application/json","X-XSRF-TOKEN":token},
+            });
+            // A baseline Inventory release may not yet have the preference API.
+            if(result.status!==204&&result.status!==404)
+              throw new Error("QA preference reset failed: "+result.status);
+          }
+        }
+      });
       await context.storageState({ path: output + "/" + username + ".json" });
     } finally {
       await context.close();
