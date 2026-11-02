@@ -153,7 +153,7 @@ onMounted(boot);
     </aside>
     <div class="app-main">
       <header class="topbar">
-        <div class="topbar-leading">
+        <div v-if="!user" class="topbar-leading">
           <div class="workspace-title"><h1>{{ currentTitle }}</h1>
             
           </div>
