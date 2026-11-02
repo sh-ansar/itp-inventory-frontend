@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import BaseConfirmDialog from "../components/ui/BaseConfirmDialog.vue";
+import { useConfirmDialog } from "../composables/useConfirmDialog";
 import { computed, onUnmounted, ref, watch } from "vue";
 import { RouterLink, useRoute, useRouter } from "vue-router";
 import {
@@ -20,6 +22,9 @@ import {
 import type { FacilityPlan, PlanElement, PlanEvent, PlanRect } from "../api/facilityPlans";
 import { useUiSettings } from "../stores/uiSettings";
 
+const { open: confirmOpen, message: confirmMessage, title: confirmTitle,
+  confirmLabel: confirmLabel, danger: confirmDanger, ask: askConfirmation,
+  settle: settleConfirmation } = useConfirmDialog();
 const props=defineProps<{companyId:string;companyName:string;role:string}>();
 const ui=useUiSettings(),route=useRoute(),router=useRouter();
 const nodeId=computed(()=>typeof route.params.nodeId==="string"?route.params.nodeId:"");
@@ -201,7 +206,7 @@ async function add(el:PlanElement){
 async function removeSelected(){
   const el=selected.value;
   if(!canEdit.value||saving.value||!plan.value||!el?.placement_id)return;
-  if(!window.confirm(ui.t("plan.confirmRemove")))return;
+  if(!(await askConfirmation(ui.t("plan.confirmRemove"), {danger:true})))return;
   saving.value=true;error.value="";notice.value="";
   try{
     const result=await removePlanElement(props.companyId,nodeId.value,
@@ -456,6 +461,10 @@ onUnmounted(()=>{abort?.abort();drag=null});
       </ol>
     </BaseDialog>
   </div>
+
+  <BaseConfirmDialog :open="confirmOpen" :message="confirmMessage" :title="confirmTitle"
+    :confirm-label="confirmLabel" :danger="confirmDanger"
+    @confirm="settleConfirmation(true)" @cancel="settleConfirmation(false)" />
 </template>
 
 <style scoped>
