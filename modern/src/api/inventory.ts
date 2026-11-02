@@ -65,7 +65,7 @@ export interface AssetEvent {
 }
 export interface AssetFilters {
   page: number; per_page: number;
-  search: string; status: string;
+  search: string; status?: string;
   sort: string; direction: "asc" | "desc";
   facility_node_id?:string; include_descendants?:boolean; responsible_person_id?:string;
   statuses?:string[]; facility_node_ids?:string[]; responsible_person_ids?:string[];
