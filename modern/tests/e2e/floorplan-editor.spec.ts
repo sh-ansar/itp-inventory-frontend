@@ -99,8 +99,8 @@ test("floor plan: place rooms and assets, drag, resize, save and reload",async({
     .toBeGreaterThan(movedX);
 
   await page.locator(".plan-object").filter({hasText:computer}).locator(".plan-object-body").click();
-  page.once("dialog",async dialog=>{await dialog.accept();});
   await page.getByRole("button",{name:"Убрать с плана"}).click();
+  await page.getByRole("dialog",{name:"Подтвердить действие"}).getByRole("button",{name:"Подтвердить"}).click();
   await expect(page.getByRole("button",{name:"Разместить: "+computer})).toBeVisible();
   await page.reload();
   await expect(page.getByRole("button",{name:"Разместить: "+computer})).toBeVisible();
