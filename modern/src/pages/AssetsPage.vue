@@ -218,7 +218,6 @@ onUnmounted(() => {
     <div class="page-heading">
       <div>
         <h2>{{ ui.t("table.assets") }}</h2>
-        <p class="muted">{{ companyName }}</p>
       </div>
       <div class="page-actions">
         <BaseButton variant="secondary" :disabled="loading" :aria-label="ui.t('actions.refresh')"
@@ -237,10 +236,6 @@ onUnmounted(() => {
         <PackageOpen :size="23" aria-hidden="true"/>
         <div class="summary-value">{{ total.toLocaleString(ui.locale) }}</div>
         <span class="muted">{{ ui.t("table.total") }}</span>
-      </BaseCard>
-      <BaseCard>
-        <div class="summary-value">{{ page }} / {{ lastPage }}</div>
-        <span class="muted">{{ ui.t("table.page") }}</span>
       </BaseCard>
     </div>
     <div v-if="message" class="notice" role="status">{{ message }} <button type="button" :aria-label="ui.t('actions.close')" @click="message=''">×</button></div>
@@ -353,7 +348,7 @@ onUnmounted(() => {
 .page-heading{display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap}
 .page-heading h2{margin:0}.page-heading p{margin:6px 0 0}
 .page-actions{display:flex;gap:9px;flex-wrap:wrap}
-.summary-grid{display:grid;grid-template-columns:repeat(2,minmax(170px,1fr));gap:14px}
+.summary-grid{display:grid;grid-template-columns:minmax(0,280px);gap:14px}
 .summary-value{font-size:24px;font-weight:600;line-height:32px;margin-top:10px;color:var(--color-text)}
 .registry-card{min-width:0}
 .toolbar{display:flex;gap:12px;align-items:flex-end;justify-content:space-between;flex-wrap:wrap;margin-bottom:17px}
@@ -364,5 +359,5 @@ onUnmounted(() => {
 .notice{display:flex;align-items:center;justify-content:space-between;gap:12px;border:1px solid var(--color-success);border-radius:var(--radius-sm);color:var(--color-success);background:var(--color-success-surface);padding:9px 13px;font-size:13px}
 .notice button{border:0;background:transparent;color:inherit;cursor:pointer;font-size:20px}
 .error{display:flex;justify-content:space-between;gap:12px;align-items:center}
-@media(max-width:650px){.page-actions{width:100%}.page-actions :deep(.base-button){flex:1}.summary-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.toolbar{display:grid;grid-template-columns:1fr}.filter-field select{width:100%}.truncate{max-width:210px}}
+@media(max-width:650px){.page-actions{width:100%}.page-actions :deep(.base-button){flex:1}.summary-grid{grid-template-columns:minmax(0,1fr)}.toolbar{display:grid;grid-template-columns:1fr}.filter-field select{width:100%}.truncate{max-width:210px}}
 </style>
