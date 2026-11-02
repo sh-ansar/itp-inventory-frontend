@@ -123,11 +123,12 @@ async function load(){
     if(current===serial)loading.value=false;
   }
 }
-watch(()=>props.companyId,async id=>{
+watch(()=>props.companyId,async (id,previousId)=>{
   const requestId=++dictionarySerial;
   filters.status="";filters.facility_node_id="";filters.responsible_person_id="";
   report.value=null;facilities.value=[];people.value=[];sessions.value=[];
-  printSessionId.value="";printWarehouseId.value="";printDisposalStatus.value="";printSearch.value="";printError.value="";
+  if(previousId)printSessionId.value="";
+  printWarehouseId.value="";printDisposalStatus.value="";printSearch.value="";printError.value="";
   if(!id)return;
   const results=await Promise.allSettled([
     getFacilityNodes(id),
