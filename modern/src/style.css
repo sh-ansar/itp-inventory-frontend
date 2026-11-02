@@ -23,6 +23,12 @@ input:disabled,select:disabled,textarea:disabled{opacity:.55}
 .error{padding:12px 14px;background:var(--color-danger-surface);color:var(--color-danger);border:1px solid var(--color-danger-border);border-radius:var(--radius-sm);font-size:13px;line-height:20px}
 .notice{padding:10px 13px;border:1px solid var(--color-success);border-radius:var(--radius-sm);background:var(--color-success-surface);color:var(--color-success);font-size:13px}
 .shell{display:grid;grid-template-columns:258px minmax(0,1fr);min-height:100dvh}
+.shell--guest{grid-template-columns:minmax(0,1fr)}
+.shell--guest .sidebar{display:none}
+.shell--guest .topbar{min-height:68px}
+.guest-brand{display:flex;align-items:center;gap:10px;min-width:0;font-size:15px;font-weight:650}
+.guest-brand .brand-mark{width:37px;height:37px;flex-basis:37px;border-radius:10px}
+.shell--guest .login-card{width:min(100%,460px);margin:clamp(28px,8vh,100px) auto 0}
 .sidebar{
   position:sticky;top:0;display:flex;flex-direction:column;min-height:100dvh;height:100dvh;max-height:100dvh;min-width:0;
   overflow-y:auto;overscroll-behavior:contain;
