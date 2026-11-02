@@ -1,8 +1,14 @@
 import { inventoryRequest } from "./client";
 
 const company = (id:string)=>"/api/v1/companies/"+encodeURIComponent(id);
-export const registryExportHref=(id:string,query:Record<string,string>)=>
-  "/inventory-api"+company(id)+"/assets/export.xlsx?"+new URLSearchParams(query).toString();
+export const registryExportHref=(id:string,query:Record<string,string|string[]>)=>{
+  const params=new URLSearchParams();
+  for(const [key,value] of Object.entries(query)){
+    if(Array.isArray(value)){for(const item of value)params.append(key+"[]",item)}
+    else if(value)params.set(key,value);
+  }
+  return "/inventory-api"+company(id)+"/assets/export.xlsx?"+params.toString();
+};
 export function bulkAssignCustodian(id:string,assets:{id:string;version:number}[],person:string|null,reason:string){
   return inventoryRequest<{updated:number}>(company(id)+"/assets/bulk-responsible",{
     method:"POST",body:JSON.stringify({assets,responsible_person_id:person,reason})
