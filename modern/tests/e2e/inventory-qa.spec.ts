@@ -12,14 +12,16 @@ test("session, server-side search, company switch, create/edit/history/archive",
   await openInventory(page);
   // Company order is not guaranteed by DB; select the target tenant explicitly.
   await page.locator('select[aria-label="Компания"]').selectOption({label:"Inventory QA - Mining"});
-  await expect(page.getByText("MIN-0001")).toBeVisible();
   await expect(page.locator("tbody tr")).toHaveCount(25);
-
-  await page.getByRole("searchbox", { name: "Поиск по всему реестру" }).fill("MIN-0051");
+  // The synthetic dataset grows after each E2E run. Never assume that an
+  // inventory number remains on the first page of a server-sorted table.
+  const registrySearch=page.getByRole("searchbox",{name:"Поиск по всему реестру"});
+  await registrySearch.fill("MIN-0001");
+  await expect(page.getByText("MIN-0001")).toBeVisible();
+  await registrySearch.fill("MIN-0051");
   await expect(page.getByText("MIN-0051")).toBeVisible();
   await expect(page.getByText("MIN-0001")).not.toBeVisible();
-  await page.getByRole("searchbox", { name: "Поиск по всему реестру" }).fill("");
-  await expect(page.getByText("MIN-0001")).toBeVisible();
+  await registrySearch.fill("");
 
   const number = "QA-E2E-" + Date.now();
   await page.getByRole("button", { name: "Добавить актив" }).click();
@@ -51,8 +53,10 @@ test("session, server-side search, company switch, create/edit/history/archive",
   await expect(row).not.toBeVisible();
 
   await page.locator('select[aria-label="Компания"]').selectOption({label:"Inventory QA - Solutions"});
+  await registrySearch.fill("SOL-0001");
   await expect(page.getByText("SOL-0001")).toBeVisible();
   await expect(page.getByText("MIN-0001")).not.toBeVisible();
+  await registrySearch.fill("");
   await page.getByRole("link", {name:"Справочники"}).click();
   await expect(page.getByRole("heading", {name:"Справочники"}).first()).toBeVisible();
   await expect(page.getByText("IT equipment")).toBeVisible();
