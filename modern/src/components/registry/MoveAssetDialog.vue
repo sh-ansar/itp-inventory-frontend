@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import BaseConfirmDialog from "../ui/BaseConfirmDialog.vue";
+import { useConfirmDialog } from "../../composables/useConfirmDialog";
 import { computed, ref, watch } from "vue";
 import { ArrowRightLeft } from "lucide-vue-next";
 import BaseDialog from "../ui/BaseDialog.vue";
@@ -9,6 +11,9 @@ import { moveAsset, referenceData } from "../../api/inventory";
 import type { Asset, ReferenceData } from "../../api/inventory";
 import { useUiSettings } from "../../stores/uiSettings";
 
+const { open: confirmOpen, message: confirmMessage, title: confirmTitle,
+  confirmLabel: confirmLabel, danger: confirmDanger, ask: askConfirmation,
+  settle: settleConfirmation } = useConfirmDialog();
 const props = defineProps<{ asset: Asset | null; companyId: string }>();
 const emit = defineEmits<{ close: []; moved: [asset: Asset] }>();
 const ui = useUiSettings();
@@ -47,9 +52,9 @@ const targets = computed(() =>
 const canSave = computed(() => !!props.asset && !loading.value && !saving.value &&
   destination.value.length > 0 && reason.value.trim().length >= 5);
 
-function close() {
+async function close() {
   if (saving.value) return;
-  if ((destination.value || reason.value.trim()) && !window.confirm(ui.t("form.unsaved"))) return;
+  if ((destination.value || reason.value.trim()) && !(await askConfirmation(ui.t("form.unsaved"), {danger:true}))) return;
   emit("close");
 }
 
@@ -103,6 +108,9 @@ async function save() {
       </BaseButton>
     </template>
   </BaseDialog>
+  <BaseConfirmDialog :open="confirmOpen" :message="confirmMessage" :title="confirmTitle"
+    :confirm-label="confirmLabel" :danger="confirmDanger"
+    @confirm="settleConfirmation(true)" @cancel="settleConfirmation(false)" />
 </template>
 
 <style scoped>
