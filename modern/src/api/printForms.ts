@@ -148,7 +148,8 @@ function groupBy(
   const groups=new Map<string,Array<Record<string,unknown>>>();
   for(const row of rows){
     const name=String(row[key]??"").trim()||unassigned;
-    groups.set(name,[...(groups.get(name)??[]),row]);
+    const list=groups.get(name);
+    if(list)list.push(row);else groups.set(name,[row]);
   }
   return [...groups.entries()].sort(([a],[b])=>a.localeCompare(b)).map(([name,items])=>({name,rows:items}));
 }
@@ -188,7 +189,7 @@ export function renderDetailedPrintDocument(
           ?row.responsible_person_name:row.facility_name),
         escapeHtml(summaryStatusLabel(getString(row,"status"),locale)),
       ]),t.noData)+'</section>').join("");
-    if(!tables)tables='<p class="empty">'+escapeHtml(t.noData)+'</p>';
+    if(!tables)tables=dataTable(columns,[],t.noData);
   }else if(report.kind==="warehouse-balances"){
     const columns=[t.number,t.name,t.unit,t.quantity,t.minimum,t.shortage];
     tables=groupBy(rows,"warehouse_name",t.all).map(group=>
@@ -202,7 +203,7 @@ export function renderDetailedPrintDocument(
           escapeHtml(quantity(row.minimum_quantity_milli,locale)),
           '<span class="'+(low?"warning":"")+'">'+escapeHtml(low?t.low:t.normal)+'</span>'];
       }),t.noData)+'</section>').join("");
-    if(!tables)tables='<p class="empty">'+escapeHtml(t.noData)+'</p>';
+    if(!tables)tables=dataTable(columns,[],t.noData);
   }else if(report.kind==="stocktake-act"){
     const context=report.context;
     summary='<div class="document-context"><strong>'+esc(context.session_name)+'</strong>'+
