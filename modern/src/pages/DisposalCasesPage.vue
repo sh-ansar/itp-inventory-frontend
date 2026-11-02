@@ -96,7 +96,7 @@ onUnmounted(()=>{ctrl?.abort();if(timer)clearTimeout(timer);});
   <div class="disposals-page">
     <header class="page-heading">
       <div><h2>{{ ui.t("disposal.title") }}</h2>
-        <p class="muted">{{ companyName }} · {{ ui.t("disposal.subtitle") }}</p></div>
+        <p class="muted">{{ ui.t("disposal.subtitle") }}</p></div>
       <div class="page-actions">
         <BaseButton variant="secondary" :disabled="loading" @click="load">
           <RefreshCw :size="17" aria-hidden="true"/>{{ ui.t("actions.refresh") }}
@@ -110,10 +110,6 @@ onUnmounted(()=>{ctrl?.abort();if(timer)clearTimeout(timer);});
       <BaseCard class="metric"><ClipboardCheck :size="22" aria-hidden="true"/>
         <div><strong>{{ total.toLocaleString(ui.locale) }}</strong>
           <span class="muted">{{ ui.t("disposal.received") }}</span></div>
-      </BaseCard>
-      <BaseCard class="metric"><ShieldCheck :size="22" aria-hidden="true"/>
-        <div><strong>{{ ui.t("disposal.stage") }}</strong>
-          <span class="muted">{{ ui.t("disposal.controlNote") }}</span></div>
       </BaseCard>
     </div>
     <p v-if="issue" role="alert" class="error">{{ issue }}</p>
@@ -174,7 +170,7 @@ onUnmounted(()=>{ctrl?.abort();if(timer)clearTimeout(timer);});
   padding:0 12px;border:1px solid var(--color-stroke-strong);background:var(--color-surface);border-radius:var(--radius-sm);
   color:var(--color-text);text-decoration:none;font-size:var(--font-label-size)}
 .registry-link:hover{color:var(--color-primary);background:var(--color-hover)}
-.summary-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:13px}
+.summary-grid{display:grid;grid-template-columns:minmax(0,300px);gap:13px}
 .metric{display:flex;align-items:center;gap:14px;min-width:0}
 .metric>svg{flex:none;color:var(--color-primary)}
 .metric>div{display:grid;gap:5px;min-width:0}
@@ -192,7 +188,7 @@ onUnmounted(()=>{ctrl?.abort();if(timer)clearTimeout(timer);});
 .open-case:hover{background:var(--color-hover);color:var(--color-primary)}
 .error{color:var(--color-danger)}.notice{color:var(--color-success)}
 @media(max-width:760px){.toolbar{display:grid;grid-template-columns:1fr}.filter-field{min-width:0}
- .filter-field select{width:100%;min-width:0}.summary-grid{grid-template-columns:1fr 1fr}}
+ .filter-field select{width:100%;min-width:0}.summary-grid{grid-template-columns:1fr}}
 @media(max-width:520px){.page-actions{width:100%}.page-actions :deep(.base-button),.registry-link{flex:1}
  .summary-grid{grid-template-columns:1fr}.metric strong{font-size:17px}}
 </style>
