@@ -2,7 +2,7 @@
 import BaseSelect from "../components/ui/BaseSelect.vue";
 import { computed, onUnmounted, ref, watch } from "vue";
 import { useRouter } from "vue-router";
-import { Archive, History, Pencil, Plus, RefreshCw, PackageOpen, QrCode, ArrowRightLeft, Route, FileCheck2, Download, UserRoundCheck } from "lucide-vue-next";
+import { Archive, History, Pencil, Plus, RefreshCw, PackageOpen, ClipboardList, QrCode, ArrowRightLeft, Route, FileCheck2, Download, UserRoundCheck } from "lucide-vue-next";
 import BaseButton from "../components/ui/BaseButton.vue";
 import BaseIconButton from "../components/ui/BaseIconButton.vue";
 import BaseCard from "../components/ui/BaseCard.vue";
@@ -220,15 +220,15 @@ onUnmounted(() => {
         <h2>{{ ui.t("table.assets") }}</h2>
       </div>
       <div class="page-actions">
-        <BaseButton variant="secondary" :disabled="loading" :aria-label="ui.t('actions.refresh')"
-          @click="loadAssets"><RefreshCw :size="17" aria-hidden="true" /> {{ ui.t("actions.refresh") }}</BaseButton>
-        <a class="export-link" :href="exportHref" :download="'inventory-assets.xlsx'"><Download :size="16" aria-hidden="true"/>{{bulkText.export}}</a>
-        <BaseButton v-if="canWrite && selectedAssets.length" variant="secondary" @click="bulkMode='custodian';bulkOpen=true"><UserRoundCheck :size="16"/>{{bulkText.assign}} ({{selectedAssets.length}})</BaseButton>
-        <BaseButton v-if="canWrite && selectedAssets.length" variant="secondary" @click="bulkMode='move';bulkOpen=true"><ArrowRightLeft :size="16"/>{{bulkText.move}} ({{selectedAssets.length}})</BaseButton>
-        <BaseButton v-if="canWrite && selectedKeys.length" variant="secondary" @click="createStocktakeForSelected">
-          {{ ui.t("stock.createFromSelected") }} ({{ selectedKeys.length }})
+        <BaseButton variant="secondary" :disabled="loading" :aria-label="ui.t('actions.refresh')" :title="ui.t('actions.refresh')"
+          @click="loadAssets"><RefreshCw :size="17" aria-hidden="true" /><span class="page-action-label">{{ ui.t("actions.refresh") }}</span></BaseButton>
+        <a class="export-link" :href="exportHref" :download="'inventory-assets.xlsx'" :title="bulkText.export" :aria-label="bulkText.export"><Download :size="16" aria-hidden="true"/><span class="page-action-label">{{bulkText.export}}</span></a>
+        <BaseButton v-if="canWrite && selectedAssets.length" variant="secondary" :title="bulkText.assign" :aria-label="bulkText.assign+' ('+selectedAssets.length+')'" @click="bulkMode='custodian';bulkOpen=true"><UserRoundCheck :size="16"/><span class="page-action-label">{{bulkText.assign}} ({{selectedAssets.length}})</span></BaseButton>
+        <BaseButton v-if="canWrite && selectedAssets.length" variant="secondary" :title="bulkText.move" :aria-label="bulkText.move+' ('+selectedAssets.length+')'" @click="bulkMode='move';bulkOpen=true"><ArrowRightLeft :size="16"/><span class="page-action-label">{{bulkText.move}} ({{selectedAssets.length}})</span></BaseButton>
+        <BaseButton v-if="canWrite && selectedKeys.length" variant="secondary" :title="ui.t('stock.createFromSelected')" :aria-label="ui.t('stock.createFromSelected')+' ('+selectedKeys.length+')'" @click="createStocktakeForSelected">
+          <ClipboardList :size="16" aria-hidden="true"/><span class="page-action-label">{{ ui.t("stock.createFromSelected") }} ({{ selectedKeys.length }})</span>
         </BaseButton>
-        <BaseButton v-if="canWrite" @click="create"><Plus :size="17" aria-hidden="true" /> {{ ui.t("actions.create") }}</BaseButton>
+        <BaseButton v-if="canWrite" :title="ui.t('actions.create')" :aria-label="ui.t('actions.create')" @click="create"><Plus :size="17" aria-hidden="true"/><span class="page-action-label">{{ ui.t("actions.create") }}</span></BaseButton>
       </div>
     </div>
     <div class="summary-grid">
@@ -359,5 +359,5 @@ onUnmounted(() => {
 .notice{display:flex;align-items:center;justify-content:space-between;gap:12px;border:1px solid var(--color-success);border-radius:var(--radius-sm);color:var(--color-success);background:var(--color-success-surface);padding:9px 13px;font-size:13px}
 .notice button{border:0;background:transparent;color:inherit;cursor:pointer;font-size:20px}
 .error{display:flex;justify-content:space-between;gap:12px;align-items:center}
-@media(max-width:650px){.page-actions{width:100%}.page-actions :deep(.base-button){flex:1}.summary-grid{grid-template-columns:minmax(0,1fr)}.toolbar{display:grid;grid-template-columns:1fr}.filter-field select{width:100%}.truncate{max-width:210px}}
+@media(max-width:650px){.page-actions{width:100%}.page-actions :deep(.base-button){flex:1;min-width:44px;justify-content:center}.page-actions .export-link{flex:1;min-width:44px;justify-content:center}.page-actions .page-action-label{display:none}.summary-grid{grid-template-columns:minmax(0,1fr)}.toolbar{display:grid;grid-template-columns:1fr}.filter-field select{width:100%}.truncate{max-width:210px}}
 </style>
