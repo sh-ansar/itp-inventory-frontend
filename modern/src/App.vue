@@ -176,32 +176,32 @@ onMounted(boot);
         </button>
       </div>
       <nav v-if="user" class="main-navigation" aria-label="Inventory">
-        <RouterLink to="/registry" class="nav-item" active-class="nav-item--active">
-          <Package :size="19" aria-hidden="true"/>{{ ui.t("nav.assets") }}
+        <RouterLink to="/registry" class="nav-item" active-class="nav-item--active" :aria-label="ui.t('nav.assets')" :title="ui.sidebarCollapsed&&!mobileNavOpen?ui.t('nav.assets'):undefined" @click="closeMobileNav">
+          <Package :size="19" aria-hidden="true"/><span class="nav-label">{{ ui.t("nav.assets") }}</span>
         </RouterLink>
-        <RouterLink to="/disposals" class="nav-item" active-class="nav-item--active">
-          <FileCheck2 :size="19" aria-hidden="true"/>{{ ui.t("nav.disposals") }}
+        <RouterLink to="/disposals" class="nav-item" active-class="nav-item--active" :aria-label="ui.t('nav.disposals')" :title="ui.sidebarCollapsed&&!mobileNavOpen?ui.t('nav.disposals'):undefined" @click="closeMobileNav">
+          <FileCheck2 :size="19" aria-hidden="true"/><span class="nav-label">{{ ui.t("nav.disposals") }}</span>
         </RouterLink>
-        <RouterLink to="/facilities" class="nav-item" active-class="nav-item--active">
-          <Building2 :size="19" aria-hidden="true"/>{{ ui.t("nav.facilities") }}
+        <RouterLink to="/facilities" class="nav-item" active-class="nav-item--active" :aria-label="ui.t('nav.facilities')" :title="ui.sidebarCollapsed&&!mobileNavOpen?ui.t('nav.facilities'):undefined" @click="closeMobileNav">
+          <Building2 :size="19" aria-hidden="true"/><span class="nav-label">{{ ui.t("nav.facilities") }}</span>
         </RouterLink>
-        <RouterLink to="/references" class="nav-item" active-class="nav-item--active">
-          <BookOpen :size="19" aria-hidden="true"/>{{ ui.t("nav.references") }}
+        <RouterLink to="/references" class="nav-item" active-class="nav-item--active" :aria-label="ui.t('nav.references')" :title="ui.sidebarCollapsed&&!mobileNavOpen?ui.t('nav.references'):undefined" @click="closeMobileNav">
+          <BookOpen :size="19" aria-hidden="true"/><span class="nav-label">{{ ui.t("nav.references") }}</span>
         </RouterLink>
-        <RouterLink to="/people" class="nav-item" active-class="nav-item--active">
-          <Users :size="19" aria-hidden="true"/>{{ ui.t("nav.people") }}
+        <RouterLink to="/people" class="nav-item" active-class="nav-item--active" :aria-label="ui.t('nav.people')" :title="ui.sidebarCollapsed&&!mobileNavOpen?ui.t('nav.people'):undefined" @click="closeMobileNav">
+          <Users :size="19" aria-hidden="true"/><span class="nav-label">{{ ui.t("nav.people") }}</span>
         </RouterLink>
-        <RouterLink to="/warehouses" class="nav-item" active-class="nav-item--active">
-          <Warehouse :size="19" aria-hidden="true"/>{{ ui.t("nav.warehouses") }}
+        <RouterLink to="/warehouses" class="nav-item" active-class="nav-item--active" :aria-label="ui.t('nav.warehouses')" :title="ui.sidebarCollapsed&&!mobileNavOpen?ui.t('nav.warehouses'):undefined" @click="closeMobileNav">
+          <Warehouse :size="19" aria-hidden="true"/><span class="nav-label">{{ ui.t("nav.warehouses") }}</span>
         </RouterLink>
-        <RouterLink to="/stocktakes" class="nav-item" active-class="nav-item--active">
-          <ClipboardList :size="19" aria-hidden="true"/>{{ ui.t("nav.stocktakes") }}
+        <RouterLink to="/stocktakes" class="nav-item" active-class="nav-item--active" :aria-label="ui.t('nav.stocktakes')" :title="ui.sidebarCollapsed&&!mobileNavOpen?ui.t('nav.stocktakes'):undefined" @click="closeMobileNav">
+          <ClipboardList :size="19" aria-hidden="true"/><span class="nav-label">{{ ui.t("nav.stocktakes") }}</span>
         </RouterLink>
-        <RouterLink to="/reports" class="nav-item" active-class="nav-item--active">
-          <BarChart3 :size="19" aria-hidden="true"/>{{reportsTitle}}
+        <RouterLink to="/reports" class="nav-item" active-class="nav-item--active" :aria-label="reportsTitle" :title="ui.sidebarCollapsed&&!mobileNavOpen?reportsTitle:undefined" @click="closeMobileNav">
+          <BarChart3 :size="19" aria-hidden="true"/><span class="nav-label">{{reportsTitle}}</span>
         </RouterLink>
-        <RouterLink v-if="selectedCompany?.role_code==='company_admin'" to="/company-roles" class="nav-item" active-class="nav-item--active">
-          <ShieldCheck :size="19" aria-hidden="true"/>{{ ui.t("roles.title") }}
+        <RouterLink v-if="selectedCompany?.role_code==='company_admin'" to="/company-roles" class="nav-item" active-class="nav-item--active" :aria-label="ui.t('roles.title')" :title="ui.sidebarCollapsed&&!mobileNavOpen?ui.t('roles.title'):undefined" @click="closeMobileNav">
+          <ShieldCheck :size="19" aria-hidden="true"/><span class="nav-label">{{ ui.t("roles.title") }}</span>
         </RouterLink>
       </nav>
       <div class="sidebar-footer">
