@@ -68,6 +68,7 @@ export interface AssetFilters {
   search: string; status: string;
   sort: string; direction: "asc" | "desc";
   facility_node_id?:string; include_descendants?:boolean; responsible_person_id?:string;
+  statuses?:string[]; facility_node_ids?:string[]; responsible_person_ids?:string[];
 }
 
 const companyPath = (companyId: string) =>
@@ -87,6 +88,9 @@ export function companyAssets(
   if (filters.facility_node_id) query.set("facility_node_id",filters.facility_node_id);
   if (filters.include_descendants!==undefined) query.set("include_descendants",filters.include_descendants?"1":"0");
   if (filters.responsible_person_id) query.set("responsible_person_id",filters.responsible_person_id);
+  for(const key of ["statuses","facility_node_ids","responsible_person_ids"] as const){
+    for(const item of filters[key]??[])query.append(key+"[]",item);
+  }
   return inventoryRequest<Page<Asset>>(companyPath(companyId) + "/assets?" + query, { signal });
 }
 
