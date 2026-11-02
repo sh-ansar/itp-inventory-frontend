@@ -44,7 +44,14 @@ function updatePosition(){
   if(!opened.value)return;
   const box=panel.value?.getBoundingClientRect();
   const target=trigger.value?.getBoundingClientRect();
-  if(box&&target)opensUp.value=box.bottom>window.innerHeight-8&&target.top>box.height+10;
+  if(box&&target&&panel.value){
+    // A table cell near the left edge cannot right-align a 300px popup:
+    // constrain both edges to the visible viewport, including 320px phones.
+    const safeLeft=Math.max(8,Math.min(box.left,Math.max(8,window.innerWidth-box.width-8)));
+    panel.value.style.left=(safeLeft-target.left)+"px";
+    panel.value.style.right="auto";
+    opensUp.value=box.bottom>window.innerHeight-8&&target.top>box.height+10;
+  }
 }
 function open(){
   if(props.disabled||opened.value)return;
