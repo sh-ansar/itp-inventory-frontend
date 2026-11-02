@@ -40,7 +40,7 @@ export function orderAndFilterColumns<T extends {key:string}>(
     .sort((a,b)=>(order.get(a.key)??1000)-(order.get(b.key)??1000));
 }
 
-/** Single source of truth for a table across reloads, user accounts, and companies. */
+/** Company/user settings loaded before and persisted after edits. Never auto-save hydration. */
 export function useCompanyTablePreferences(
   companyId:Ref<string>,view:PreferenceView, defaults:Partial<TablePreferenceSettings>={},
 ) {
@@ -52,54 +52,96 @@ export function useCompanyTablePreferences(
   const saving=ref(false);
   const error=ref("");
   let generation=0;
+  let applying=false;
+  let editedWhileLoading=false;
   let delay:ReturnType<typeof setTimeout>|undefined;
   let abort:AbortController|null=null;
   let lastSave:Promise<unknown>=Promise.resolve();
+  let queued=0;
 
-  watch(companyId,async id=>{
+  const snapshot=():TablePreferenceSettings=>normalizeTablePreferences(base,{...state});
+
+  // One ordered write queue: resetting or switching companies cannot be undone
+  // by an older network response arriving after a newer update.
+  function queueWrite(company:string,settings:TablePreferenceSettings,gen:number){
+    queued++;
+    saving.value=true;
+    lastSave=lastSave.catch(()=>undefined)
+      .then(()=>writeTablePreferences(company,view,settings))
+      .then(()=>{if(gen===generation)error.value="";})
+      .catch(e=>{if(gen===generation)error.value=e instanceof Error?e.message:String(e);})
+      .finally(()=>{queued=Math.max(0,queued-1);if(gen===generation)saving.value=queued>0||!!delay;});
+  }
+
+  function schedule(){
+    if(!ready.value||!companyId.value)return;
+    if(delay)clearTimeout(delay);
+    const company=companyId.value,gen=generation;
+    delay=setTimeout(()=>{
+      delay=undefined;
+      if(gen!==generation||companyId.value!==company)return;
+      queueWrite(company,snapshot(),gen);
+    },300);
+    saving.value=true;
+  }
+
+  watch(companyId,async (id,previous)=>{
+    // If the user changes companies before the debounce expires, preserve the
+    // previous company's last edited state instead of silently discarding it.
+    if(delay){
+      clearTimeout(delay);
+      delay=undefined;
+      if(previous)queueWrite(previous,snapshot(),generation);
+    }
     generation++;
     const current=generation;
-    if(delay)clearTimeout(delay);
     abort?.abort();
     abort=new AbortController();
     ready.value=false;
     error.value="";
+    editedWhileLoading=false;
+    applying=true;
     Object.assign(state,normalizeTablePreferences(base,null));
-    if(!id)return;
+    applying=false;
+    if(!id){saving.value=false;return;}
     try{
       const result=await readTablePreferences(id,view,abort.signal);
       if(generation!==current||abort.signal.aborted)return;
-      Object.assign(state,normalizeTablePreferences(base,result.data.settings));
+      const saved=normalizeTablePreferences(base,result.data.settings);
+      const currentDraft=snapshot();
+      const touchedKeys=(Object.keys(base) as (keyof TablePreferenceSettings)[])
+        .filter(key=>JSON.stringify(currentDraft[key])!==JSON.stringify(base[key]));
+      applying=true;
+      for(const key of Object.keys(base) as (keyof TablePreferenceSettings)[]){
+        if(editedWhileLoading&&touchedKeys.includes(key))continue;
+        // Assigning through the strongly typed reactive object preserves all
+        // fields, including the column arrays and numeric page size.
+        (state as Record<string,unknown>)[key]=saved[key];
+      }
+      applying=false;
     }catch(e){
       if(generation!==current||abort.signal.aborted)return;
       error.value=e instanceof Error?e.message:String(e);
     }finally{
-      if(generation===current)ready.value=true;
+      applying=false;
+      if(generation===current){
+        ready.value=true;
+        saving.value=queued>0;
+        if(editedWhileLoading)schedule();
+      }
     }
   },{immediate:true});
 
   watch(state,()=>{
-    if(!ready.value||!companyId.value)return;
-    if(delay)clearTimeout(delay);
-    const company=companyId.value;
-    const copy=normalizeTablePreferences(base,{...state});
-    const expectedGeneration=generation;
-    delay=setTimeout(()=>{
-      if(generation!==expectedGeneration)return;
-      saving.value=true;
-      // Serialize updates so a slow earlier response cannot overwrite newer settings.
-      lastSave=lastSave.catch(()=>undefined)
-        .then(()=>writeTablePreferences(company,view,copy))
-        .then(()=>{if(generation===expectedGeneration)error.value="";})
-        .catch(e=>{if(generation===expectedGeneration)error.value=e instanceof Error?e.message:String(e);})
-        .finally(()=>{if(generation===expectedGeneration)saving.value=false;});
-    },450);
-  },{deep:true});
+    if(applying||!companyId.value)return;
+    if(!ready.value){editedWhileLoading=true;return;}
+    schedule();
+  },{deep:true,flush:"sync"});
 
   async function reset(){
     const company=companyId.value;
     if(!company||!ready.value)return;
-    if(delay)clearTimeout(delay);
+    if(delay){clearTimeout(delay);delay=undefined;}
     const current=++generation;
     ready.value=false;
     saving.value=true;
@@ -107,14 +149,26 @@ export function useCompanyTablePreferences(
     try{
       await lastSave.catch(()=>undefined);
       await clearTablePreferences(company,view);
-      if(current===generation)Object.assign(state,normalizeTablePreferences(base,null));
+      if(current!==generation)return;
+      applying=true;
+      Object.assign(state,normalizeTablePreferences(base,null));
+      applying=false;
     }catch(e){
       if(current===generation)error.value=e instanceof Error?e.message:String(e);
     }finally{
+      applying=false;
       if(current===generation){ready.value=true;saving.value=false;}
     }
   }
 
-  onUnmounted(()=>{generation++;abort?.abort();if(delay)clearTimeout(delay);});
+  onUnmounted(()=>{
+    if(delay){
+      clearTimeout(delay);
+      delay=undefined;
+      if(companyId.value)queueWrite(companyId.value,snapshot(),generation);
+    }
+    generation++;
+    abort?.abort();
+  });
   return {state,ready,saving,error,reset,visibleColumns:computed(()=>state.hidden_columns)};
 }
