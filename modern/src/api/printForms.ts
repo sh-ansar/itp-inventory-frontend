@@ -143,15 +143,20 @@ function dataTable(columns:string[],rows:string[][],empty:string):string{
     )+'</tbody></table>';
 }
 function groupBy(
-  rows:Array<Record<string,unknown>>,key:string,unassigned:string,
+  rows:Array<Record<string,unknown>>,idKey:string,nameKey:string,unassigned:string,
 ):Array<{name:string;rows:Array<Record<string,unknown>>}>{
-  const groups=new Map<string,Array<Record<string,unknown>>>();
+  // Room names such as "1st Floor" are frequently reused across different buildings.
+  // Group by tenant-scoped UUID, never by display label, to preserve separate locations.
+  const groups=new Map<string,{name:string;rows:Array<Record<string,unknown>>}>();
   for(const row of rows){
-    const name=String(row[key]??"").trim()||unassigned;
-    const list=groups.get(name);
-    if(list)list.push(row);else groups.set(name,[row]);
+    const id=String(row[idKey]??"");
+    const name=String(row[nameKey]??"").trim()||unassigned;
+    const bucket=id||"__unassigned__";
+    const existing=groups.get(bucket);
+    if(existing)existing.rows.push(row);
+    else groups.set(bucket,{name,rows:[row]});
   }
-  return [...groups.entries()].sort(([a],[b])=>a.localeCompare(b)).map(([name,items])=>({name,rows:items}));
+  return [...groups.values()].sort((a,b)=>a.name.localeCompare(b.name));
 }
 
 /** Signed forms are NOT created here. This is a print preview populated with factual data. */
@@ -180,7 +185,7 @@ export function renderDetailedPrintDocument(
     const columns=report.kind==="by-facility"
       ?[t.number,t.name,t.serial,t.category,t.custodian,t.status]
       :[t.number,t.name,t.serial,t.category,t.facility,t.status];
-    tables=groupBy(rows,groupKey,t.all).map(group=>
+    tables=groupBy(rows,report.kind==="by-facility"?"facility_node_id":"responsible_person_id",groupKey,"—").map(group=>
       '<section class="group"><h2>'+escapeHtml(group.name)+
       ' <small>('+group.rows.length+')</small></h2>'+
       dataTable(columns,group.rows.map(row=>[
@@ -192,7 +197,7 @@ export function renderDetailedPrintDocument(
     if(!tables)tables=dataTable(columns,[],t.noData);
   }else if(report.kind==="warehouse-balances"){
     const columns=[t.number,t.name,t.unit,t.quantity,t.minimum,t.shortage];
-    tables=groupBy(rows,"warehouse_name",t.all).map(group=>
+    tables=groupBy(rows,"warehouse_node_id","warehouse_name","—").map(group=>
       '<section class="group"><h2>'+escapeHtml(group.name)+
       ' <small>('+group.rows.length+')</small></h2>'+
       dataTable(columns,group.rows.map(row=>{
