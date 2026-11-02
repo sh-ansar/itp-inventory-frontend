@@ -6,6 +6,7 @@ import { ArrowLeftRight, Boxes, Plus, RefreshCw, Warehouse, PackageCheck , Slide
 import BaseButton from "../components/ui/BaseButton.vue";
 import BaseIconButton from "../components/ui/BaseIconButton.vue";
 import BaseCard from "../components/ui/BaseCard.vue";
+import BaseLoadingState from "../components/ui/BaseLoadingState.vue";
 import BaseDataTable from "../components/ui/BaseDataTable.vue";
 import BaseDialog from "../components/ui/BaseDialog.vue";
 import BasePagination from "../components/ui/BasePagination.vue";
@@ -36,7 +37,7 @@ const warehouses=ref<FacilityNode[]>([]);
 const warehouseId=computed({get:()=>balancePreferences.state.warehouse_node_id,set:v=>balancePreferences.state.warehouse_node_id=v});
 const items=ref<StockItem[]>([]),balances=ref<StockBalance[]>([]),history=ref<StockTransaction[]>([]);
 const refs=ref<ReferenceData>({categories:[],accounting_locations:[],physical_locations:[]});
-const loading=ref(false),issue=ref(""),notice=ref("");
+const loading=ref(false),bootstrapping=ref(false),issue=ref(""),notice=ref("");
 const page=ref(1),total=ref(0),lastPage=ref(1);
 const perPage=computed({get:()=>activePreferences.value.state.per_page,set:v=>activePreferences.value.state.per_page=v});
 const search=computed({get:()=>activePreferences.value.state.search,set:v=>activePreferences.value.state.search=v});
@@ -96,19 +97,30 @@ watch(()=>props.companyId,()=>{
   void bootstrap();
 },{immediate:true});
 watch([tab,page,perPage,warehouseId,debouncedSearch],()=>{void load();});
+let bootstrapGeneration=0;
 async function bootstrap(){
-  if(!props.companyId)return;
+  const companyId=props.companyId;
+  if(!companyId)return;
+  const current=++bootstrapGeneration;
+  bootstrapping.value=true;
   try{
     const [facility,reference,skus]=await Promise.all([
-      getFacilityNodes(props.companyId),referenceData(props.companyId),
-      getStockItems(props.companyId,{page:1,per_page:100}),
+      getFacilityNodes(companyId),referenceData(companyId),
+      getStockItems(companyId,{page:1,per_page:100}),
     ]);
+    // A slower response for the previous company must never replace this tenant's data.
+    if(current!==bootstrapGeneration||props.companyId!==companyId)return;
     warehouses.value=facility.data.filter(n=>n.node_type==="warehouse");
     refs.value=reference;allItems.value=skus.data;
     if(!warehouses.value.some(w=>w.id===warehouseId.value))
       warehouseId.value=warehouses.value[0]?.id??"";
     await load();
-  }catch(e){issue.value=e instanceof Error?e.message:ui.t("generic.unknownError");}
+  }catch(e){
+    if(current===bootstrapGeneration)
+      issue.value=e instanceof Error?e.message:ui.t("generic.unknownError");
+  }finally{
+    if(current===bootstrapGeneration)bootstrapping.value=false;
+  }
 }
 async function load(){
   ctrl?.abort();const controller=new AbortController();ctrl=controller;
@@ -215,7 +227,10 @@ onUnmounted(()=>{ctrl?.abort();if(timer)clearTimeout(timer)});
     </div>
     <p v-if="issue" class="error" role="alert">{{ issue }}</p>
     <p v-if="notice" class="notice" role="status">{{ notice }}</p>
-    <BaseCard v-if="!warehouses.length" class="warehouse-empty">
+    <BaseCard v-if="bootstrapping" class="warehouse-empty">
+      <BaseLoadingState :label="ui.t('generic.loading')"/>
+    </BaseCard>
+    <BaseCard v-else-if="!warehouses.length" class="warehouse-empty">
       <Warehouse :size="30" aria-hidden="true"/><h3>{{ ui.t("stock.warehouseMissing") }}</h3>
       <RouterLink to="/facilities">{{ ui.t("stock.warehouseGo") }}</RouterLink>
     </BaseCard>
