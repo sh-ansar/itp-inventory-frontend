@@ -130,14 +130,14 @@ onUnmounted(()=>{
     <!-- Native semantic select retains keyboard, screen-reader and form behavior;
          pointer users get the unified Inventory popup, never the OS options popup. -->
     <select ref="nativeSelect" class="dropdown-native" :class="$attrs.class"
-      :aria-label="label" :aria-expanded="opened" aria-haspopup="listbox"
+      :aria-label="label||undefined" :aria-expanded="opened" aria-haspopup="listbox"
       :aria-controls="listId" :aria-activedescendant="activeId"
       :value="modelValue" :disabled="disabled" @change="onNativeChange" @keydown="onKey">
       <option v-for="item in options" :key="item.value" :value="item.value"
         :disabled="item.disabled">{{item.label}}</option>
     </select>
     <button ref="trigger" type="button" class="dropdown-trigger" tabindex="-1" aria-hidden="true"
-      :title="selection?.label||placeholder||label"
+      :title="selection?.label||placeholder||label||undefined"
       :disabled="disabled" @click="opened?close():open()" @keydown="onKey">
       <span class="dropdown-value" :class="{'is-placeholder':!selection}">
         {{selection?.label||placeholder||message.select}}
@@ -151,7 +151,7 @@ onUnmounted(()=>{
           :aria-label="message.search" :placeholder="message.search" autocomplete="off"
           @keydown="onKey"/>
       </div>
-      <div :id="listId" role="listbox" :aria-label="label" class="dropdown-options">
+      <div :id="listId" role="listbox" :aria-label="label||undefined" class="dropdown-options">
         <div v-for="(item,index) in visibleOptions" :id="listId+'-option-'+index"
           :key="item.value" role="option" class="dropdown-option"
           :data-active="index===highlighted"
