@@ -6,6 +6,7 @@ import BaseButton from "../components/ui/BaseButton.vue";
 import BaseCard from "../components/ui/BaseCard.vue";
 import BaseDataTable from "../components/ui/BaseDataTable.vue";
 import BaseSelect from "../components/ui/BaseSelect.vue";
+import BaseMultiSelect from "../components/ui/BaseMultiSelect.vue";
 import BaseStatusPill from "../components/ui/BaseStatusPill.vue";
 import BaseSearchField from "../components/ui/BaseSearchField.vue";
 import { InventoryApiError } from "../api/client";
@@ -28,12 +29,12 @@ const sessions=ref<InventorySession[]>([]);
 const warehouses=computed(()=>facilities.value.filter(node=>node.node_type==="warehouse"));
 const printKind=ref<PrintFormKind>("asset-register");
 const printSessionId=ref(typeof route.query.print_session==="string"?route.query.print_session:"");
-const printWarehouseId=ref("");
-const printDisposalStatus=ref("");
+const printWarehouseIds=ref<string[]>([]);
+const printDisposalStatuses=ref<string[]>([]);
 const printSearch=ref("");
 const printing=ref(false),printError=ref("");
 let dictionarySerial=0;
-const filters=reactive({status:"",facility_node_id:"",responsible_person_id:""});
+const filters=reactive({statuses:[] as string[],facility_node_ids:[] as string[],responsible_person_ids:[] as string[]});
 let request:AbortController|null=null,serial=0;
 
 const t=computed(()=>ui.locale==="ka"
@@ -70,6 +71,20 @@ const t=computed(()=>ui.locale==="ka"
         popup:"Браузер заблокировал окно печати"});
 
 const printOptions=computed(()=>PRINT_FORM_KINDS.map(kind=>({kind,label:printFormTitle(kind,ui.locale)})));
+const statusOptions=computed(()=>[
+  {value:"active",label:ui.t("status.active")},
+  {value:"written_off",label:ui.t("status.written_off")},
+  {value:"disposed",label:ui.t("status.disposed")},
+]);
+const facilityOptions=computed(()=>facilities.value.map(node=>({value:node.id,label:node.name})));
+const personOptions=computed(()=>people.value.map(person=>({value:person.id,label:person.name})));
+const warehouseOptions=computed(()=>warehouses.value.map(node=>({value:node.id,label:node.name})));
+const disposalOptions=computed(()=>[
+  {value:"draft",label:ui.locale==="en"?"Draft":ui.locale==="ka"?"პროექტი":"Черновик"},
+  {value:"submitted",label:ui.locale==="en"?"Submitted":ui.locale==="ka"?"გაგზავნილია":"На согласовании"},
+  {value:"approved",label:ui.locale==="en"?"Approved":ui.locale==="ka"?"დამტკიცებულია":"Согласовано"},
+  {value:"disposed",label:ui.locale==="en"?"Disposed":ui.locale==="ka"?"ჩამოწერილია":"Завершено"},
+]);
 const printText=computed(()=>ui.locale==="ka"
   ?{title:"დასაბეჭდი ფორმები",hint:"ოფიციალური ჩანაწერების საფუძველზე შექმნილი შიდა ფორმები",
     kind:"დოკუმენტის ტიპი",session:"ინვენტარიზაცია",warehouse:"საწყობი",stage:"ჩამოწერის ეტაპი",
@@ -125,10 +140,10 @@ async function load(){
 }
 watch(()=>props.companyId,async (id,previousId)=>{
   const requestId=++dictionarySerial;
-  filters.status="";filters.facility_node_id="";filters.responsible_person_id="";
+  filters.statuses=[];filters.facility_node_ids=[];filters.responsible_person_ids=[];
   report.value=null;facilities.value=[];people.value=[];sessions.value=[];
   if(previousId)printSessionId.value="";
-  printWarehouseId.value="";printDisposalStatus.value="";printSearch.value="";printError.value="";
+  printWarehouseIds.value=[];printDisposalStatuses.value=[];printSearch.value="";printError.value="";
   if(!id)return;
   const results=await Promise.allSettled([
     getFacilityNodes(id),
@@ -151,13 +166,13 @@ onUnmounted(()=>{dictionarySerial++;request?.abort();});
 function detailedFilters():PrintFormFilters{
   if(printKind.value==="stocktake-act")return {session_id:printSessionId.value};
   if(printKind.value==="warehouse-balances")return {
-    warehouse_node_id:printWarehouseId.value,search:printSearch.value.trim(),
+    warehouse_node_ids:printWarehouseIds.value,search:printSearch.value.trim(),
   };
   return {
-    status:filters.status,
-    facility_node_id:filters.facility_node_id,
-    responsible_person_id:filters.responsible_person_id,
-    disposal_status:printKind.value==="disposal-register"?printDisposalStatus.value:"",
+    statuses:filters.statuses,
+    facility_node_ids:filters.facility_node_ids,
+    responsible_person_ids:filters.responsible_person_ids,
+    disposal_statuses:printKind.value==="disposal-register"?printDisposalStatuses.value:[],
     search:printSearch.value.trim(),
   };
 }
@@ -179,9 +194,9 @@ async function printDetailed(){
     const report=await getDetailedPrintReport(company,kind,detailedFilters(),controller.signal);
     if(company!==props.companyId){popup.close();return;}
     const selected={
-      facility:facilities.value.find(x=>x.id===filters.facility_node_id)?.name,
-      custodian:people.value.find(x=>x.id===filters.responsible_person_id)?.name,
-      warehouse:warehouses.value.find(x=>x.id===printWarehouseId.value)?.name,
+      facility:facilities.value.filter(x=>filters.facility_node_ids.includes(x.id)).map(x=>x.name).join(", "),
+      custodian:people.value.filter(x=>filters.responsible_person_ids.includes(x.id)).map(x=>x.name).join(", "),
+      warehouse:warehouses.value.filter(x=>printWarehouseIds.value.includes(x.id)).map(x=>x.name).join(", "),
     };
     popup.document.open();
     popup.document.write(renderDetailedPrintDocument(report,ui.locale,selected));
@@ -233,26 +248,18 @@ function dateLabel(value:string){
     </header>
     <div v-if="error" class="report-error" role="alert">{{error}}</div>
     <BaseCard class="report-filters">
-      <label><span>{{t.status}}</span>
-        <BaseSelect v-model="filters.status" :aria-label="t.status">
-          <option value="">{{t.all}}</option>
-          <option value="active">{{ui.t("status.active")}}</option>
-          <option value="written_off">{{ui.t("status.written_off")}}</option>
-          <option value="disposed">{{ui.t("status.disposed")}}</option>
-        </BaseSelect>
-      </label>
-      <label><span>{{t.facility}}</span>
-        <BaseSelect v-model="filters.facility_node_id" :aria-label="t.facility">
-          <option value="">{{t.all}}</option>
-          <option v-for="node in facilities" :key="node.id" :value="node.id">{{node.name}}</option>
-        </BaseSelect>
-      </label>
-      <label><span>{{t.person}}</span>
-        <BaseSelect v-model="filters.responsible_person_id" :aria-label="t.person">
-          <option value="">{{t.all}}</option>
-          <option v-for="person in people" :key="person.id" :value="person.id">{{person.name}}</option>
-        </BaseSelect>
-      </label>
+      <div class="report-filter-field"><span>{{t.status}}</span>
+        <BaseMultiSelect v-model="filters.statuses" :label="t.status" :options="statusOptions"
+          :all-label="t.all" :locale="ui.locale"/>
+      </div>
+      <div class="report-filter-field"><span>{{t.facility}}</span>
+        <BaseMultiSelect v-model="filters.facility_node_ids" :label="t.facility" :options="facilityOptions"
+          :all-label="t.all" :locale="ui.locale"/>
+      </div>
+      <div class="report-filter-field"><span>{{t.person}}</span>
+        <BaseMultiSelect v-model="filters.responsible_person_ids" :label="t.person" :options="personOptions"
+          :all-label="t.all" :locale="ui.locale"/>
+      </div>
     </BaseCard>
     <BaseCard class="print-forms-panel">
       <div class="print-forms-heading">
@@ -277,21 +284,14 @@ function dateLabel(value:string){
             <option v-if="printSessionId&&!sessions.some(x=>x.id===printSessionId)" :value="printSessionId">{{printSessionId}}</option>
           </BaseSelect>
         </label>
-        <label v-if="printKind==='warehouse-balances'" class="print-field"><span>{{printText.warehouse}}</span>
-          <BaseSelect v-model="printWarehouseId" :aria-label="printText.warehouse">
-            <option value="">{{printText.all}}</option>
-            <option v-for="node in warehouses" :key="node.id" :value="node.id">{{node.name}}</option>
-          </BaseSelect>
-        </label>
-        <label v-if="printKind==='disposal-register'" class="print-field"><span>{{printText.stage}}</span>
-          <BaseSelect v-model="printDisposalStatus" :aria-label="printText.stage">
-            <option value="">{{printText.all}}</option>
-            <option value="draft">{{ui.locale==="en"?"Draft":ui.locale==="ka"?"პროექტი":"Черновик"}}</option>
-            <option value="submitted">{{ui.locale==="en"?"Submitted":ui.locale==="ka"?"გაგზავნილია":"На согласовании"}}</option>
-            <option value="approved">{{ui.locale==="en"?"Approved":ui.locale==="ka"?"დამტკიცებულია":"Согласовано"}}</option>
-            <option value="disposed">{{ui.locale==="en"?"Disposed":ui.locale==="ka"?"ჩამოწერილია":"Завершено"}}</option>
-          </BaseSelect>
-        </label>
+        <div v-if="printKind==='warehouse-balances'" class="print-field"><span>{{printText.warehouse}}</span>
+          <BaseMultiSelect v-model="printWarehouseIds" :label="printText.warehouse"
+            :options="warehouseOptions" :all-label="printText.all" :locale="ui.locale"/>
+        </div>
+        <div v-if="printKind==='disposal-register'" class="print-field"><span>{{printText.stage}}</span>
+          <BaseMultiSelect v-model="printDisposalStatuses" :label="printText.stage"
+            :options="disposalOptions" :all-label="printText.all" :locale="ui.locale"/>
+        </div>
         <div v-if="printKind!=='stocktake-act'" class="print-search">
           <span>{{printText.search}}</span>
           <BaseSearchField v-model="printSearch" :label="printText.search"/>
@@ -360,7 +360,7 @@ function dateLabel(value:string){
   text-decoration:none;color:var(--color-text)}
 .report-export:hover{background:var(--color-hover)}
 .report-filters{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:13px}
-.report-filters label{display:grid;gap:6px;color:var(--color-muted);font-size:12px;min-width:0}
+.report-filter-field{display:grid;gap:6px;color:var(--color-muted);font-size:12px;min-width:0}
 .report-metrics{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px}
 .report-metrics :deep(.base-card){display:grid;gap:7px}
 .report-metrics svg,.panel-header svg{color:var(--color-primary)}
