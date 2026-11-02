@@ -1,8 +1,8 @@
 <script setup lang="ts">
 import BaseSelect from "../components/ui/BaseSelect.vue";
-import { computed, onUnmounted, ref, watch } from "vue";
+import { computed, onUnmounted, ref, toRef, watch } from "vue";
 import { useRouter } from "vue-router";
-import { Archive, History, Pencil, Plus, RefreshCw, PackageOpen, ClipboardList, QrCode, ArrowRightLeft, Route, FileCheck2, Download, Printer, UserRoundCheck } from "lucide-vue-next";
+import { Archive, History, Pencil, Plus, RefreshCw, PackageOpen, ClipboardList, QrCode, ArrowRightLeft, Route, FileCheck2, Download, Printer, SlidersHorizontal, UserRoundCheck } from "lucide-vue-next";
 import BaseButton from "../components/ui/BaseButton.vue";
 import BaseIconButton from "../components/ui/BaseIconButton.vue";
 import BaseCard from "../components/ui/BaseCard.vue";
@@ -11,6 +11,8 @@ import BaseDataTable from "../components/ui/BaseDataTable.vue";
 import BasePagination from "../components/ui/BasePagination.vue";
 import BaseSearchField from "../components/ui/BaseSearchField.vue";
 import BaseStatusPill from "../components/ui/BaseStatusPill.vue";
+import TableSettingsDialog from "../components/ui/TableSettingsDialog.vue";
+import { orderAndFilterColumns, useCompanyTablePreferences } from "../composables/useCompanyTablePreferences";
 import AssetEditorDialog from "../components/registry/AssetEditorDialog.vue";
 import ArchiveAssetDialog from "../components/registry/ArchiveAssetDialog.vue";
 import AssetDisposalDialog from "../components/registry/AssetDisposalDialog.vue";
@@ -29,6 +31,11 @@ import { useUiSettings } from "../stores/uiSettings";
 const props = defineProps<{companyId: string; companyName: string; role: string}>();
 const ui = useUiSettings();
 const router = useRouter();
+const preferences=useCompanyTablePreferences(toRef(props,"companyId"),"assets",{
+  sort_key:"inventory_number",sort_direction:"asc",per_page:25,
+});
+const settingsOpen=ref(false);
+const settingsTitle=computed(()=>ui.locale==="ka"?"ცხრილის პარამეტრები":ui.locale==="en"?"Table settings":"Настройки таблицы");
 const selectedKeys = ref<string[]>([]);
 const bulkOpen=ref(false),bulkPerson=ref(""),bulkLocation=ref(""),bulkMode=ref<"custodian"|"move">("custodian"),bulkReason=ref(""),bulkBusy=ref(false),bulkError=ref("");
 const rows = ref<Asset[]>([]);
@@ -36,18 +43,18 @@ const loading = ref(false);
 const issue = ref("");
 const message = ref("");
 const page = ref(1);
-const perPage = ref(25);
+const perPage = computed({get:()=>preferences.state.per_page,set:value=>preferences.state.per_page=value});
 const total = ref(0);
 const lastPage = ref(1);
-const search = ref("");
+const search = computed({get:()=>preferences.state.search,set:value=>preferences.state.search=value});
 const debouncedSearch = ref("");
-const status = ref("");
-const facilityFilter=ref("");
-const personFilter=ref("");
+const status = computed({get:()=>preferences.state.status,set:value=>preferences.state.status=value});
+const facilityFilter=computed({get:()=>preferences.state.facility_node_id,set:value=>preferences.state.facility_node_id=value});
+const personFilter=computed({get:()=>preferences.state.responsible_person_id,set:value=>preferences.state.responsible_person_id=value});
 const facilities=ref<FacilityNode[]>([]);
 const people=ref<ResponsiblePerson[]>([]);
-const sortKey = ref("inventory_number");
-const sortDirection = ref<"asc" | "desc">("asc");
+const sortKey = computed({get:()=>preferences.state.sort_key,set:value=>preferences.state.sort_key=value});
+const sortDirection = computed({get:()=>preferences.state.sort_direction,set:value=>preferences.state.sort_direction=value});
 const references = ref<ReferenceData>({
   categories: [], accounting_locations: [], physical_locations: [],
 });
@@ -94,6 +101,7 @@ const columns = computed(() => [
   { key:"actions", label:ui.t("table.actions"), minWidth:320, align:"right" as const },
 ]);
 
+const visibleColumns=computed(()=>orderAndFilterColumns(columns.value,preferences.state));
 let requestSerial = 0;
 let referenceSerial = 0;
 let requestController: AbortController | null = null;
@@ -114,8 +122,9 @@ watch(() => props.companyId, id => {
   bulkOpen.value=false;bulkError.value="";
   total.value = 0;
   issue.value = ""; message.value = "";
-  search.value = ""; debouncedSearch.value = "";
-  status.value = "";facilityFilter.value="";personFilter.value="";page.value = 1;
+  debouncedSearch.value = "";
+  page.value = 1;
+  settingsOpen.value = false;
   showForm.value = false; editing.value = null;
   history.value = null; archiving.value = null; disposing.value = null;
   qrAsset.value = null; bulkQrOpen.value = false; moving.value = null; movementHistory.value = null;
@@ -226,6 +235,10 @@ onUnmounted(() => {
         <h2>{{ ui.t("table.assets") }}</h2>
       </div>
       <div class="page-actions">
+        <BaseButton variant="secondary" :title="settingsTitle" :aria-label="settingsTitle"
+          :disabled="!preferences.ready.value" @click="settingsOpen=true">
+          <SlidersHorizontal :size="17" aria-hidden="true"/><span class="page-action-label">{{settingsTitle}}</span>
+        </BaseButton>
         <BaseButton variant="secondary" :disabled="loading" :aria-label="ui.t('actions.refresh')" :title="ui.t('actions.refresh')"
           @click="loadAssets"><RefreshCw :size="17" aria-hidden="true" /><span class="page-action-label">{{ ui.t("actions.refresh") }}</span></BaseButton>
         <a class="export-link" :href="exportHref" :download="'inventory-assets.xlsx'" :title="bulkText.export" :aria-label="bulkText.export"><Download :size="16" aria-hidden="true"/><span class="page-action-label">{{bulkText.export}}</span></a>
@@ -278,11 +291,11 @@ onUnmounted(() => {
         </label>
       </div>
       <BaseDataTable
-        :rows="rows" row-key="id" :columns="columns" :loading="loading"
+        :rows="rows" row-key="id" :columns="visibleColumns" :loading="loading"
         :selectable="canWrite" :selected-keys="selectedKeys"
         @update:selectedKeys="selectedKeys=$event.slice(0,30)"
         :sort-key="sortKey" :sort-direction="sortDirection"
-        :caption="ui.t('table.assets')" :empty-title="ui.t('table.empty')" :min-table-width="1500"
+        :caption="ui.t('table.assets')" :empty-title="ui.t('table.empty')" :min-table-width="Math.max(680,visibleColumns.length*155)"
         @sort="sortBy">
         <template #cell-name="{row}">
           <span class="truncate" :title="row.name">{{ row.name }}</span>
@@ -346,6 +359,12 @@ onUnmounted(() => {
     <ArchiveAssetDialog :asset="archiving" :company-id="companyId"
       @close="archiving=null" @archived="afterArchive"/>
     <AssetHistoryDialog :asset="history" :company-id="companyId" @close="history=null" />
+    <TableSettingsDialog :open="settingsOpen" :columns="columns"
+      :hidden-columns="preferences.state.hidden_columns" :column-order="preferences.state.column_order"
+      :busy="!preferences.ready.value||preferences.saving.value"
+      @close="settingsOpen=false" @reset="preferences.reset()"
+      @update:hidden-columns="preferences.state.hidden_columns=$event"
+      @update:column-order="preferences.state.column_order=$event"/>
     <QrLabelDialog :asset="qrAsset" @close="qrAsset=null"/>
     <BulkQrDialog :open="bulkQrOpen" :assets="selectedAssets" @close="bulkQrOpen=false"/>
     <MoveAssetDialog :asset="moving" :company-id="companyId" @close="moving=null" @moved="afterMove"/>
