@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import BaseConfirmDialog from "../ui/BaseConfirmDialog.vue";
+import { useConfirmDialog } from "../../composables/useConfirmDialog";
 import { computed, reactive, ref, watch } from "vue";
 import {
   ArrowDownToLine, Check, Clock3, FileCheck2, FileText,
@@ -20,6 +22,9 @@ import type {
 } from "../../api/disposals";
 import { useUiSettings } from "../../stores/uiSettings";
 
+const { open: confirmOpen, message: confirmMessage, title: confirmTitle,
+  confirmLabel: confirmLabel, danger: confirmDanger, ask: askConfirmation,
+  settle: settleConfirmation } = useConfirmDialog();
 const props=defineProps<{
   assetId:string|null;
   companyId:string;
@@ -100,9 +105,9 @@ function describe(e:unknown){
   }
   return e instanceof Error?e.message:ui.t("generic.unknownError");
 }
-function close(){
+async function close(){
   if(busy.value)return;
-  if(canEditDraft.value&&changed.value&&!window.confirm(ui.t("disposal.unsaved")))return;
+  if(canEditDraft.value&&changed.value&&!(await askConfirmation(ui.t("disposal.unsaved"), {danger:true})))return;
   emit("close");
 }
 async function perform(action:()=>Promise<{data:DisposalCase}>,success:string){
@@ -143,7 +148,7 @@ async function submit(){
 }
 async function approve(){
   if(!admin.value||record.value?.status!=="submitted"||busy.value)return;
-  if(!window.confirm(ui.t("disposal.approveConfirm")))return;
+  if(!(await askConfirmation(ui.t("disposal.approveConfirm"), {danger:true,confirmLabel:ui.t("disposal.approve")})))return;
   await perform(()=>approveDisposalCase(props.companyId,record.value!.asset_id,
     record.value!.version,record.value!.asset.version),"disposal.stageAdvanced");
 }
@@ -156,7 +161,7 @@ async function sendBack(){
 async function dispose(){
   if(!admin.value||record.value?.status!=="approved"||busy.value||
     disposalAct.value.trim().length<2||!disposalDate.value)return;
-  if(!window.confirm(ui.t("disposal.disposeConfirm")))return;
+  if(!(await askConfirmation(ui.t("disposal.disposeConfirm"), {danger:true,confirmLabel:ui.t("disposal.dispose")})))return;
   await perform(()=>completeDisposalCase(props.companyId,record.value!.asset_id,
     record.value!.version,record.value!.asset.version,{
       disposal_act_number:disposalAct.value.trim(),
@@ -379,6 +384,9 @@ function tone(status:string):"success"|"warning"|"neutral"{
         {{ ui.t("actions.close") }}</BaseButton>
     </template>
   </BaseDialog>
+  <BaseConfirmDialog :open="confirmOpen" :message="confirmMessage" :title="confirmTitle"
+    :confirm-label="confirmLabel" :danger="confirmDanger"
+    @confirm="settleConfirmation(true)" @cancel="settleConfirmation(false)" />
 </template>
 
 <style scoped>
