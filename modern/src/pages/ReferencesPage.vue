@@ -188,7 +188,6 @@ async function upload(event:Event){
     <div v-if="issue && !open" class="error" role="alert">{{ issue }}</div>
     <BaseCard class="reference-card">
       <div class="reference-heading"><BookOpen :size="21" aria-hidden="true"/><h3>{{ title }}</h3></div>
-      <p v-if="current==='categories'" class="muted">{{ ui.t("types.templateNote") }}</p>
       <BaseDataTable :rows="rows" row-key="id" :columns="columns" :loading="busy"
         :caption="title" :empty-title="ui.t('references.empty')" :min-table-width="current==='categories'?890:460">
         <template #cell-icon_key="{row}">
@@ -260,7 +259,7 @@ async function upload(event:Event){
 .reference-tabs button.selected{color:var(--color-primary);background:var(--color-accent-soft);border-color:var(--color-primary-stroke)}
 .count{display:grid;place-items:center;min-width:23px;height:23px;padding:0 5px;border-radius:50%;background:var(--color-soft);color:var(--color-text);font-size:11px}
 .reference-heading{display:flex;align-items:center;gap:9px;margin-bottom:15px}
-.reference-card{min-width:0}.reference-card .muted{font-size:12px;margin:-8px 0 14px}
+.reference-card{min-width:0}
 .reference-form{display:grid;gap:20px}
 .reference-form label{display:grid;gap:7px;font-size:13px;font-weight:500}
 .reference-form input,.reference-form select{width:100%}
