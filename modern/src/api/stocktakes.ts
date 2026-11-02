@@ -95,6 +95,16 @@ export function inventorySessions(
   if (filters.status) query.set("status", filters.status);
   return inventoryRequest<Page<InventorySession>>(sessionsPath(companyId) + "?" + query, {signal});
 }
+/** Populate the act selector across all bounded history pages, not just the first 100. */
+export async function getAllInventorySessions(companyId:string,signal?:AbortSignal):Promise<InventorySession[]>{
+  const sessions:InventorySession[]=[];
+  for(let page=1;page<=20;page++){
+    const batch=await inventorySessions(companyId,{search:"",status:"",page,per_page:100},signal);
+    sessions.push(...batch.data);
+    if(batch.meta.current_page>=batch.meta.last_page)return sessions;
+  }
+  throw new Error("Too many stocktakes for one selector; narrow the history on the stocktake page.");
+}
 export const createInventorySession = (
   companyId: string, values: {name: string; scope_location_id?: string | null; facility_node_id?:string|null; asset_ids?: string[]},
 ) => inventoryRequest<{data: InventorySession}>(sessionsPath(companyId), {

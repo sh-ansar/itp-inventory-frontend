@@ -18,6 +18,23 @@ describe("Inventory personal table settings",()=>{
     expect(normalizeTablePreferences(defaults,{per_page:27}).per_page).toBe(25);
     expect(normalizeTablePreferences(defaults,null).sort_key).toBe("inventory_number");
   });
+  it("upgrades legacy single filters and keeps independent multi-select arrays",()=>{
+    const base={...defaultTablePreferences,sort_key:"inventory_number"};
+    const legacy=normalizeTablePreferences(base,{
+      status:"active",facility_node_id:"11111111-1111-4111-8111-111111111111",
+      responsible_person_id:"22222222-2222-4222-8222-222222222222",
+    });
+    expect(legacy.statuses).toEqual(["active"]);
+    expect(legacy.facility_node_ids).toHaveLength(1);
+    expect(legacy.responsible_person_ids).toHaveLength(1);
+    const modern=normalizeTablePreferences(base,{
+      status:"active",statuses:["active","disposed","active"],
+      facility_node_ids:["room-a","room-b","room-a"],
+    });
+    expect(modern.statuses).toEqual(["active","disposed"]);
+    expect(modern.facility_node_ids).toEqual(["room-a","room-b"]);
+    expect(normalizeTablePreferences(base,null).statuses).toEqual([]);
+  });
   it("shows allowed columns in saved order without mutating original list",()=>{
     const columns=[{key:"inventory_number"},{key:"name"},{key:"status"},{key:"actions"}];
     const filtered=orderAndFilterColumns(columns,{
@@ -47,6 +64,14 @@ describe("Inventory printable summary",()=>{
     expect(dom.title).toContain("ITP");
     expect(dom.querySelectorAll("table")).toHaveLength(6);
     expect(dom.querySelector("body")?.textContent).toContain("Сводный");
+  });
+  it("serializes multi-select status and location filters into a CSV query",()=>{
+    const url=summaryCsvHref("tenant-one",{
+      statuses:["active","disposed"],facility_node_ids:["room-a","room-b"],
+    });
+    const params=new URL(url,"https://inventory.example").searchParams;
+    expect(params.getAll("statuses[]")).toEqual(["active","disposed"]);
+    expect(params.getAll("facility_node_ids[]")).toEqual(["room-a","room-b"]);
   });
   it("generates a company-specific CSV link with encoded filters",()=>{
     const link=summaryCsvHref("abc def",{status:"active",facility_node_id:"facility-id"});

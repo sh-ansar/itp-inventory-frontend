@@ -112,6 +112,24 @@ describe("Detailed printable Inventory forms",()=>{
     expect(url).toContain("search=printer");
     expect(url).not.toContain("company-b");
   });
+  it("encodes selected warehouses and disposal stages safely as multi-valued filters",async()=>{
+    const spy=vi.fn().mockResolvedValue({
+      ok:true,status:200,
+      json:async()=>({data:{...example("warehouse-balances"),company:{id:"company-a",name:"Test"}}}),
+    });
+    vi.stubGlobal("fetch",spy);
+    await getDetailedPrintReport("company-a","warehouse-balances",{
+      warehouse_node_ids:["warehouse-1","warehouse-2"],search:"toner",
+    });
+    const params=new URL(String(spy.mock.calls[0][0]),"https://inventory.example").searchParams;
+    expect(params.getAll("warehouse_node_ids[]")).toEqual(["warehouse-1","warehouse-2"]);
+    expect(params.get("search")).toBe("toner");
+    const report=example("disposal-register");
+    report.filters={statuses:["active","disposed"],disposal_statuses:["draft","approved"]};
+    const html=renderDetailedPrintDocument(report,"en");
+    expect(html).toContain("Draft, Approved");
+    expect(html).toContain("Active, Disposed");
+  });
   it("rejects incomplete or cross-company print API responses",async()=>{
     const spy=vi.fn().mockResolvedValue({
       ok:true,status:200,json:async()=>({data:{...example("asset-register"),

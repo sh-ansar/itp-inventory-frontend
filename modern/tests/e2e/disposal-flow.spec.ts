@@ -84,7 +84,9 @@ test("disposal case: draft, protected order, submit, approve, disposal act, immu
 
   await drawer.locator(".drawer-footer").getByRole("button",{name:"Закрыть",exact:true}).click();
   await expect(drawer).toBeHidden();
-  await page.getByRole("combobox",{name:"Статус"}).selectOption("disposed");
+  await page.getByRole("button",{name:"Статус",exact:true}).click();
+  await page.getByRole("dialog",{name:"Статус"}).getByRole("checkbox",{name:"Утилизирован"}).check();
+  await page.keyboard.press("Escape");
   await expect(page.locator("tbody tr").filter({hasText:number})).toBeVisible();
 
   // A company-scoped queue and an independent viewer session must see exactly the same final case.

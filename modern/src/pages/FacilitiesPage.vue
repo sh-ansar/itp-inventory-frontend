@@ -18,7 +18,7 @@ import EquipmentTypeIcon from "../components/ui/EquipmentTypeIcon.vue";
 import FacilityEditorDialog from "../components/facilities/FacilityEditorDialog.vue";
 import { companyAssets, referenceData } from "../api/inventory";
 import type { Asset, ReferenceData } from "../api/inventory";
-import { getFacilityNodes, getResponsiblePeople, getFacilityHistory, updateFacilityNode } from "../api/topology";
+import { getFacilityNodes, getAllActiveResponsiblePeople, getFacilityHistory, updateFacilityNode } from "../api/topology";
 import type { FacilityNode, FacilityType, ResponsiblePerson } from "../api/topology";
 import { useUiSettings } from "../stores/uiSettings";
 import type { Component } from "vue";
@@ -115,11 +115,11 @@ async function refresh(){
   try{
     const [map,persons,references]=await Promise.all([
       getFacilityNodes(props.companyId,controller.signal),
-      getResponsiblePeople(props.companyId,{per_page:100,active:"1"},controller.signal),
+      getAllActiveResponsiblePeople(props.companyId,controller.signal),
       referenceData(props.companyId,controller.signal),
     ]);
     if(controller.signal.aborted||serial!==reqSerial)return;
-    nodes.value=map.data;people.value=persons.data;refs.value=references;
+    nodes.value=map.data;people.value=persons;refs.value=references;
     void loadAssets();
   }catch(e){if(!controller.signal.aborted&&serial===reqSerial)
     error.value=e instanceof Error?e.message:ui.t("generic.unknownError");

@@ -88,6 +88,17 @@ export const getResponsiblePeople=(companyId:string,filters:{
   page?:number;per_page?:number;search?:string;active?:string
 }={},signal?:AbortSignal)=>
   inventoryRequest<LaravelPage<ResponsiblePerson>>(company(companyId)+"/responsible-people?"+params(filters),{signal});
+
+/** Never silently omit a company's custodians after the first 100 entries. */
+export async function getAllActiveResponsiblePeople(companyId:string,signal?:AbortSignal):Promise<ResponsiblePerson[]>{
+  const people:ResponsiblePerson[]=[];
+  for(let page=1;page<=20;page++){
+    const batch=await getResponsiblePeople(companyId,{page,per_page:100,active:"1"},signal);
+    people.push(...batch.data);
+    if(batch.current_page>=batch.last_page)return people;
+  }
+  throw new Error("Too many responsible people for the selector; narrow the directory or use server search.");
+}
 export const createResponsiblePerson=(companyId:string,input:ResponsibleInput)=>
   inventoryRequest<{data:ResponsiblePerson}>(company(companyId)+"/responsible-people",{
     method:"POST",body:JSON.stringify(input),

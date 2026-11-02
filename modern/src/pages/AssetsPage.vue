@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import BaseSelect from "../components/ui/BaseSelect.vue";
+import BaseMultiSelect from "../components/ui/BaseMultiSelect.vue";
 import { computed, onUnmounted, ref, toRef, watch } from "vue";
 import { useRouter } from "vue-router";
 import { Archive, History, Pencil, Plus, RefreshCw, PackageOpen, ClipboardList, QrCode, ArrowRightLeft, Route, FileCheck2, Download, Printer, SlidersHorizontal, UserRoundCheck } from "lucide-vue-next";
@@ -24,7 +25,7 @@ import AssetMovementHistoryDialog from "../components/registry/AssetMovementHist
 import { companyAssets, referenceData } from "../api/inventory";
 import { bulkAssignCustodian, bulkMoveAssets, registryExportHref } from "../api/parity";
 import type { Asset, ReferenceData } from "../api/inventory";
-import { getFacilityNodes, getResponsiblePeople } from "../api/topology";
+import { getFacilityNodes, getAllActiveResponsiblePeople } from "../api/topology";
 import type { FacilityNode, ResponsiblePerson } from "../api/topology";
 import { useUiSettings } from "../stores/uiSettings";
 
@@ -48,11 +49,19 @@ const total = ref(0);
 const lastPage = ref(1);
 const search = computed({get:()=>preferences.state.search,set:value=>preferences.state.search=value});
 const debouncedSearch = ref("");
-const status = computed({get:()=>preferences.state.status,set:value=>preferences.state.status=value});
-const facilityFilter=computed({get:()=>preferences.state.facility_node_id,set:value=>preferences.state.facility_node_id=value});
-const personFilter=computed({get:()=>preferences.state.responsible_person_id,set:value=>preferences.state.responsible_person_id=value});
+const statuses = computed({get:()=>preferences.state.statuses,set:value=>preferences.state.statuses=value});
+const facilityFilters=computed({get:()=>preferences.state.facility_node_ids,set:value=>preferences.state.facility_node_ids=value});
+const personFilters=computed({get:()=>preferences.state.responsible_person_ids,set:value=>preferences.state.responsible_person_ids=value});
 const facilities=ref<FacilityNode[]>([]);
 const people=ref<ResponsiblePerson[]>([]);
+const allOptions=computed(()=>ui.locale==="ka"?"ყველა":ui.locale==="en"?"All":"Все");
+const statusOptions=computed(()=>[
+  {value:"active",label:ui.t("status.active")},
+  {value:"written_off",label:ui.t("status.written_off")},
+  {value:"disposed",label:ui.t("status.disposed")},
+]);
+const facilityOptions=computed(()=>facilities.value.map(node=>({value:node.id,label:node.name})));
+const personOptions=computed(()=>people.value.map(person=>({value:person.id,label:person.name})));
 const sortKey = computed({get:()=>preferences.state.sort_key,set:value=>preferences.state.sort_key=value});
 const sortDirection = computed({get:()=>preferences.state.sort_direction,set:value=>preferences.state.sort_direction=value});
 const references = ref<ReferenceData>({
@@ -73,7 +82,10 @@ const canArchive = computed(() => props.role === "company_admin");
 const selectedAssets = computed(() => rows.value.filter(row => selectedKeys.value.includes(row.id)));
 const qrBulkTitle = computed(() => ui.locale === "ka" ? "QR ეტიკეტების ბეჭდვა" : ui.locale === "en" ? "Print QR labels" : "Печать QR-этикеток");
 const bulkText = computed(() => ui.locale==="ru" ? {export:"Экспорт Excel",assign:"Назначить МОЛ",title:"Массовое назначение ответственного",reason:"Причина изменения",save:"Назначить выбранным",selected:"Выбрано",note:"Изменения применяются ко всем выбранным активам или не применяются вовсе.",saved:"Ответственные назначены",moved:"Активы перемещены",move:"Переместить выбранные",location:"Новое местонахождение",action:"Операция"} : ui.locale==="ka" ? {export:"Excel ექსპორტი",assign:"პასუხისმგებლის დანიშვნა",title:"პასუხისმგებლის ჯგუფური დანიშვნა",reason:"ცვლილების მიზეზი",save:"დანიშვნა",selected:"არჩეულია",note:"ცვლილება სრულდება ერთიანად ან საერთოდ არ სრულდება.",saved:"პასუხისმგებელი დანიშნულია",moved:"ქონება გადატანილია",move:"არჩეულის გადატანა",location:"ახალი მდებარეობა",action:"ოპერაცია"} : {export:"Export Excel",assign:"Assign custodian",title:"Bulk custodian assignment",reason:"Reason for change",save:"Assign to selected",selected:"Selected",note:"The whole batch succeeds or nothing is changed.",saved:"Custodians assigned",moved:"Assets moved",move:"Move selected assets",location:"New location",action:"Operation"});
-const exportHref = computed(() => registryExportHref(props.companyId, Object.fromEntries(Object.entries({search:debouncedSearch.value,status:status.value,facility_node_id:facilityFilter.value,include_descendants:"1",responsible_person_id:personFilter.value}).filter(([,v])=>v))));
+const exportHref = computed(() => registryExportHref(props.companyId,{
+  search:debouncedSearch.value,statuses:statuses.value,facility_node_ids:facilityFilters.value,
+  responsible_person_ids:personFilters.value,include_descendants:"1",
+}));
 async function submitBulk() {
   if (!canWrite.value || bulkBusy.value || selectedAssets.value.length===0 || bulkReason.value.trim().length<5) return;
   if(bulkMode.value==="move"&&!bulkLocation.value)return;
@@ -136,10 +148,10 @@ watch(() => props.companyId, id => {
   const current = ++referenceSerial;
   if (id) void Promise.all([
     referenceData(id,controller.signal),getFacilityNodes(id,controller.signal),
-    getResponsiblePeople(id,{per_page:100,active:"1"},controller.signal),
+    getAllActiveResponsiblePeople(id,controller.signal),
   ]).then(([data,map,persons])=>{
     if (current === referenceSerial && !controller.signal.aborted){
-      references.value=data;facilities.value=map.data;people.value=persons.data;
+      references.value=data;facilities.value=map.data;people.value=persons;
     }
   }).catch(error => {
     if (current === referenceSerial && !controller.signal.aborted) {
@@ -149,7 +161,7 @@ watch(() => props.companyId, id => {
 }, { immediate:true });
 
 watch(
-  [() => props.companyId, page, perPage, debouncedSearch, status, sortKey, sortDirection, facilityFilter, personFilter],
+  [() => props.companyId, page, perPage, debouncedSearch, statuses, sortKey, sortDirection, facilityFilters, personFilters],
   () => { void loadAssets(); }, { immediate:true },
 );
 
@@ -169,10 +181,10 @@ async function loadAssets() {
   try {
     const data = await companyAssets(companyId, {
       page: page.value, per_page: perPage.value,
-      search: debouncedSearch.value, status: status.value,
+      search: debouncedSearch.value, statuses: statuses.value,
       sort: sortKey.value, direction: sortDirection.value,
-      facility_node_id:facilityFilter.value||undefined,
-      responsible_person_id:personFilter.value||undefined,
+      facility_node_ids:facilityFilters.value,
+      responsible_person_ids:personFilters.value,
       include_descendants:true,
     }, controller.signal);
     if (controller.signal.aborted || current !== requestSerial) return;
@@ -190,10 +202,6 @@ async function loadAssets() {
 function sortBy(key: string) {
   if (key === sortKey.value) sortDirection.value = sortDirection.value === "asc" ? "desc" : "asc";
   else { sortKey.value = key; sortDirection.value = "asc"; }
-  page.value = 1;
-}
-function changeStatus(event: Event) {
-  status.value = (event.target as HTMLSelectElement).value;
   page.value = 1;
 }
 function createStocktakeForSelected() {
@@ -266,29 +274,24 @@ onUnmounted(() => {
     <BaseCard class="registry-card">
       <div class="toolbar">
         <BaseSearchField v-model="search" :label="ui.t('table.search')" :placeholder="ui.t('table.search')" />
-        <label class="filter-field">
+        <div class="filter-field">
           <span>{{ ui.t("asset.facilityNode") }}</span>
-          <BaseSelect v-model="facilityFilter" :aria-label="ui.t('asset.facilityNode')" @change="page=1">
-            <option value="">{{ ui.t("form.none") }}</option>
-            <option v-for="node in facilities" :key="node.id" :value="node.id">{{ node.name }}</option>
-          </BaseSelect>
-        </label>
-        <label class="filter-field">
+          <BaseMultiSelect v-model="facilityFilters" :label="ui.t('asset.facilityNode')"
+            :options="facilityOptions" :locale="ui.locale" :all-label="allOptions"
+            @update:modelValue="page=1"/>
+        </div>
+        <div class="filter-field">
           <span>{{ ui.t("asset.responsiblePerson") }}</span>
-          <BaseSelect v-model="personFilter" :aria-label="ui.t('asset.responsiblePerson')" @change="page=1">
-            <option value="">{{ ui.t("form.none") }}</option>
-            <option v-for="person in people" :key="person.id" :value="person.id">{{ person.name }}</option>
-          </BaseSelect>
-        </label>
-        <label class="filter-field">
+          <BaseMultiSelect v-model="personFilters" :label="ui.t('asset.responsiblePerson')"
+            :options="personOptions" :locale="ui.locale" :all-label="allOptions"
+            @update:modelValue="page=1"/>
+        </div>
+        <div class="filter-field">
           <span>{{ ui.t("filter.status") }}</span>
-          <BaseSelect :value="status" :aria-label="ui.t('filter.status')" @change="changeStatus">
-            <option value="">{{ ui.t("filter.all") }}</option>
-            <option value="active">{{ ui.t("status.active") }}</option>
-            <option value="written_off">{{ ui.t("status.written_off") }}</option>
-            <option value="disposed">{{ ui.t("status.disposed") }}</option>
-          </BaseSelect>
-        </label>
+          <BaseMultiSelect v-model="statuses" :label="ui.t('filter.status')"
+            :options="statusOptions" :locale="ui.locale" :all-label="ui.t('filter.all')"
+            @update:modelValue="page=1"/>
+        </div>
       </div>
       <BaseDataTable
         :rows="rows" row-key="id" :columns="visibleColumns" :loading="loading"

@@ -11,6 +11,9 @@ export type PrintFormFilters = {
   status?:string; search?:string; facility_node_id?:string;
   responsible_person_id?:string; warehouse_node_id?:string;
   session_id?:string; disposal_status?:string;
+  statuses?:string[]; facility_node_ids?:string[];
+  responsible_person_ids?:string[]; warehouse_node_ids?:string[];
+  disposal_statuses?:string[];
 };
 export interface DetailedPrintReport {
   kind:PrintFormKind;
@@ -28,7 +31,10 @@ export async function getDetailedPrintReport(
   companyId:string,kind:PrintFormKind,filters:PrintFormFilters,signal?:AbortSignal,
 ):Promise<DetailedPrintReport>{
   const query=new URLSearchParams();
-  for(const [key,val] of Object.entries(filters))if(val)query.set(key,val);
+  for(const [key,val] of Object.entries(filters)){
+    if(Array.isArray(val)){for(const value of val)query.append(key+"[]",value)}
+    else if(val)query.set(key,val);
+  }
   const url="/api/v1/companies/"+encodeURIComponent(companyId)+"/reports/forms/"+
     encodeURIComponent(kind)+(query.size?"?"+query:"");
   const response=await inventoryRequest<{data:DetailedPrintReport}>(url,{signal});
@@ -240,12 +246,18 @@ export function renderDetailedPrintDocument(
     ]),t.noData);
   }
   const applied:string[]=[];
-  if(report.filters.status)applied.push(t.status+": "+summaryStatusLabel(report.filters.status,locale));
-  if(report.filters.disposal_status)applied.push(t.reportStatus+": "+
+  if(report.filters.statuses?.length)applied.push(t.status+": "+report.filters.statuses.map(code=>summaryStatusLabel(code,locale)).join(", "));
+  else if(report.filters.status)applied.push(t.status+": "+summaryStatusLabel(report.filters.status,locale));
+  if(report.filters.disposal_statuses?.length)applied.push(t.reportStatus+": "+
+    report.filters.disposal_statuses.map(status=>disposalStatus(status,locale)).join(", "));
+  else if(report.filters.disposal_status)applied.push(t.reportStatus+": "+
     disposalStatus(report.filters.disposal_status,locale));
-  if(report.filters.facility_node_id)applied.push(t.facility+": "+(selected.facility||"—"));
-  if(report.filters.responsible_person_id)applied.push(t.custodian+": "+(selected.custodian||"—"));
-  if(report.filters.warehouse_node_id)applied.push(t.facility+": "+(selected.warehouse||"—"));
+  if(report.filters.facility_node_ids?.length)applied.push(t.facility+": "+(selected.facility||"—"));
+  else if(report.filters.facility_node_id)applied.push(t.facility+": "+(selected.facility||"—"));
+  if(report.filters.responsible_person_ids?.length)applied.push(t.custodian+": "+(selected.custodian||"—"));
+  else if(report.filters.responsible_person_id)applied.push(t.custodian+": "+(selected.custodian||"—"));
+  if(report.filters.warehouse_node_ids?.length)applied.push(t.facility+": "+(selected.warehouse||"—"));
+  else if(report.filters.warehouse_node_id)applied.push(t.facility+": "+(selected.warehouse||"—"));
   if(report.filters.search)applied.push(t.filter+": "+report.filters.search);
   const date=dateLabel(report.generated_at,locale);
   const signatures=[t.author,t.receiver,t.commission,t.approved].map(label=>

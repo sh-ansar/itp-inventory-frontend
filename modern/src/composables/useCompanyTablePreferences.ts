@@ -5,7 +5,7 @@ import { clearTablePreferences, readTablePreferences, writeTablePreferences } fr
 
 export const defaultTablePreferences: TablePreferenceSettings = {
   search:"", status:"", facility_node_id:"", responsible_person_id:"",
-  warehouse_node_id:"", sort_key:"", sort_direction:"asc",
+  warehouse_node_id:"", statuses:[], facility_node_ids:[], responsible_person_ids:[], sort_key:"", sort_direction:"asc",
   per_page:25, hidden_columns:[], column_order:[],
 };
 
@@ -17,7 +17,9 @@ export function normalizeTablePreferences(
   defaults:TablePreferenceSettings, raw:Partial<TablePreferenceSettings>|null,
 ):TablePreferenceSettings {
   if (!raw || typeof raw !== "object") return {...defaults,
-    hidden_columns:[...defaults.hidden_columns],column_order:[...defaults.column_order]};
+    hidden_columns:[...defaults.hidden_columns],column_order:[...defaults.column_order],
+    statuses:[...defaults.statuses], facility_node_ids:[...defaults.facility_node_ids],
+    responsible_person_ids:[...defaults.responsible_person_ids]};
   const clean = {...defaults};
   for(const key of ["search","status","facility_node_id","responsible_person_id","warehouse_node_id","sort_key"] as const){
     if(typeof raw[key]==="string")clean[key]=raw[key].slice(0,120);
@@ -25,6 +27,17 @@ export function normalizeTablePreferences(
   if(raw.sort_direction==="asc"||raw.sort_direction==="desc")clean.sort_direction=raw.sort_direction;
   if(typeof raw.per_page==="number"&&allowedPageSizes.has(raw.per_page))
     clean.per_page=raw.per_page as TablePreferenceSettings["per_page"];
+  for(const key of ["statuses","facility_node_ids","responsible_person_ids"] as const){
+    const value=raw[key];
+    if(Array.isArray(value)){
+      clean[key]=[...new Set(value.filter((item):item is string=>
+        typeof item==="string" && item.length>0))].slice(0,30);
+    }else{
+      const legacyKey=key==="statuses"?"status":key==="facility_node_ids"?"facility_node_id":"responsible_person_id";
+      const old=raw[legacyKey];
+      clean[key]=typeof old==="string"&&old.length>0?[old]:[...defaults[key]];
+    }
+  }
   for(const key of ["hidden_columns","column_order"] as const){
     const value=raw[key];
     clean[key]=Array.isArray(value) ? [...new Set(value.filter((v):v is string=>typeof v==="string"))].slice(0,20) : [...defaults[key]];
@@ -46,7 +59,10 @@ export function useCompanyTablePreferences(
 ) {
   const base:TablePreferenceSettings={...defaultTablePreferences,...defaults,
     hidden_columns:[...(defaults.hidden_columns??[])],
-    column_order:[...(defaults.column_order??[])]};
+    column_order:[...(defaults.column_order??[])],
+    statuses:[...(defaults.statuses??[])],
+    facility_node_ids:[...(defaults.facility_node_ids??[])],
+    responsible_person_ids:[...(defaults.responsible_person_ids??[])]};
   const state=reactive<TablePreferenceSettings>(normalizeTablePreferences(base,null));
   const ready=ref(false);
   const saving=ref(false);
