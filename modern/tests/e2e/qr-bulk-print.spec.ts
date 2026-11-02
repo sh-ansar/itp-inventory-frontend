@@ -33,7 +33,7 @@ test("selected asset produces a printable QR sheet, then clears selection after 
   expect(await popup.locator("script").count()).toBe(0);
   await popup.close();
 
-  await dialog.getByRole("button",{name:"Закрыть"}).click();
+  await dialog.getByRole("button",{name:"Закрыть",exact:true}).click();
   await expect(dialog).toBeHidden();
 
   await page.setViewportSize({width:390,height:900});
