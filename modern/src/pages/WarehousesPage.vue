@@ -201,6 +201,10 @@ onUnmounted(()=>{ctrl?.abort();if(timer)clearTimeout(timer)});
       <div><h2>{{ ui.t("stock.warehouseTitle") }}</h2>
         <p class="muted">{{ ui.t("stock.warehouseSubtitle") }}</p></div>
       <div class="header-actions">
+        <BaseButton variant="secondary" :title="settingsTitle" :aria-label="settingsTitle"
+          :disabled="!activePreferences.ready.value" @click="settingsOpen=true">
+          <SlidersHorizontal :size="17" aria-hidden="true"/><span class="header-action-label">{{settingsTitle}}</span>
+        </BaseButton>
         <BaseButton variant="secondary" :disabled="loading" :aria-label="ui.t('actions.refresh')" :title="ui.t('actions.refresh')" @click="bootstrap">
           <RefreshCw :size="17" aria-hidden="true"/><span class="header-action-label">{{ ui.t("actions.refresh") }}</span></BaseButton>
         <BaseButton v-if="canWrite" variant="secondary" :aria-label="ui.t('stock.newItem')" :title="ui.t('stock.newItem')" @click="createItem">
@@ -235,10 +239,6 @@ onUnmounted(()=>{ctrl?.abort();if(timer)clearTimeout(timer)});
                 {{ warehouse.name }}</option>
             </BaseSelect>
           </label>
-          <BaseButton variant="secondary" :title="settingsTitle" :aria-label="settingsTitle"
-            :disabled="!activePreferences.ready.value" @click="settingsOpen=true">
-            <SlidersHorizontal :size="17" aria-hidden="true"/>{{settingsTitle}}
-          </BaseButton>
         </div>
         <div v-if="tab==='catalog'" class="warehouse-search">
           <BaseSearchField v-model="search" :label="ui.t('table.search')"
