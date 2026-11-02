@@ -18,7 +18,8 @@ test("saved asset table filters, columns and tenant boundaries survive refresh",
   await expect(button).toBeEnabled();
   const search=page.getByRole("searchbox",{name:"Поиск по всему реестру"});
   await search.fill("MIN-0001");
-  await page.getByRole("combobox",{name:"Статус"}).selectOption("active");
+  await page.getByRole("button",{name:"Статус",exact:true}).click();
+  await page.getByRole("dialog",{name:"Статус"}).getByRole("checkbox",{name:"На учёте"}).check();
   await button.click();
   await drawer.getByRole("checkbox",{name:"Категория"}).uncheck();
   await drawer.getByRole("button",{name:"Закрыть",exact:true}).click();
@@ -29,7 +30,9 @@ test("saved asset table filters, columns and tenant boundaries survive refresh",
   await page.reload();
   await expect(button).toBeEnabled();
   await expect(search).toHaveValue("MIN-0001");
-  await expect(page.getByRole("combobox",{name:"Статус"})).toHaveValue("active");
+  await page.getByRole("button",{name:"Статус",exact:true}).click();
+  await expect(page.getByRole("dialog",{name:"Статус"}).getByRole("checkbox",{name:"На учёте"})).toBeChecked();
+  await page.keyboard.press("Escape");
   await expect(page.locator("thead").first()).not.toContainText("Категория");
 
   await company.selectOption({label:"Inventory QA - Solutions"});
