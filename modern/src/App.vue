@@ -109,14 +109,14 @@ function switchLocale(event: Event) {
   const next = (event.target as HTMLSelectElement).value;
   if (["ru","en","ka"].includes(next)) ui.locale = next as InventoryLocale;
 }
-watch(() => [route.name,ui.locale], () => {
-  document.title = currentTitle.value + " · ITP Inventory";
-});
+watch(() => [route.name,ui.locale,!!user.value], () => {
+  document.title = (user.value ? currentTitle.value : ui.t("heading.login")) + " · ITP Inventory";
+},{immediate:true});
 onMounted(boot);
 </script>
 
 <template>
-  <div class="shell">
+  <div class="shell" :class="{'shell--guest':!user&&!booting}">
     <aside class="sidebar">
       <div class="brand">
         <div class="brand-mark"><Boxes :size="24" aria-hidden="true"/></div>
@@ -158,8 +158,8 @@ onMounted(boot);
     <div class="app-main">
       <header class="topbar">
         <div v-if="!user" class="topbar-leading">
-          <div class="workspace-title"><h1>{{ currentTitle }}</h1>
-            
+          <div class="guest-brand"><div class="brand-mark"><Boxes :size="22" aria-hidden="true"/></div>
+            <strong>ITP Inventory</strong>
           </div>
         </div>
         <div class="topbar-trailing">
