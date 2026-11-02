@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import BaseSelect from "../components/ui/BaseSelect.vue";
 import { computed, onUnmounted, ref, watch } from "vue";
 import { useRouter } from "vue-router";
 import { Archive, History, Pencil, Plus, RefreshCw, PackageOpen, QrCode, ArrowRightLeft, Route, FileCheck2, Download, UserRoundCheck } from "lucide-vue-next";
@@ -249,26 +250,26 @@ onUnmounted(() => {
         <BaseSearchField v-model="search" :label="ui.t('table.search')" :placeholder="ui.t('table.search')" />
         <label class="filter-field">
           <span>{{ ui.t("asset.facilityNode") }}</span>
-          <select v-model="facilityFilter" :aria-label="ui.t('asset.facilityNode')" @change="page=1">
+          <BaseSelect v-model="facilityFilter" :aria-label="ui.t('asset.facilityNode')" @change="page=1">
             <option value="">{{ ui.t("form.none") }}</option>
             <option v-for="node in facilities" :key="node.id" :value="node.id">{{ node.name }}</option>
-          </select>
+          </BaseSelect>
         </label>
         <label class="filter-field">
           <span>{{ ui.t("asset.responsiblePerson") }}</span>
-          <select v-model="personFilter" :aria-label="ui.t('asset.responsiblePerson')" @change="page=1">
+          <BaseSelect v-model="personFilter" :aria-label="ui.t('asset.responsiblePerson')" @change="page=1">
             <option value="">{{ ui.t("form.none") }}</option>
             <option v-for="person in people" :key="person.id" :value="person.id">{{ person.name }}</option>
-          </select>
+          </BaseSelect>
         </label>
         <label class="filter-field">
           <span>{{ ui.t("filter.status") }}</span>
-          <select :value="status" :aria-label="ui.t('filter.status')" @change="changeStatus">
+          <BaseSelect :value="status" :aria-label="ui.t('filter.status')" @change="changeStatus">
             <option value="">{{ ui.t("filter.all") }}</option>
             <option value="active">{{ ui.t("status.active") }}</option>
             <option value="written_off">{{ ui.t("status.written_off") }}</option>
             <option value="disposed">{{ ui.t("status.disposed") }}</option>
-          </select>
+          </BaseSelect>
         </label>
       </div>
       <BaseDataTable
@@ -324,9 +325,9 @@ onUnmounted(() => {
       <p class="muted">{{bulkText.selected}}: {{selectedAssets.length}}. {{bulkText.note}}</p>
       <p v-if="bulkError" class="error" role="alert">{{bulkError}}</p>
       <form id="bulk-person-form" class="bulk-form" @submit.prevent="submitBulk">
-        <label v-if="bulkMode==='move'">{{bulkText.location}}<select v-model="bulkLocation" required><option value="" disabled>{{ui.t("form.none")}}</option>
-          <option v-for="loc in references.physical_locations" :key="loc.id" :value="loc.id">{{loc.name}}</option></select></label>
-        <label v-else>{{ui.t("asset.responsiblePerson")}}<select v-model="bulkPerson"><option value="">{{ui.t("form.none")}}</option><option v-for="person in people" :key="person.id" :value="person.id">{{person.name}}</option></select></label>
+        <label v-if="bulkMode==='move'">{{bulkText.location}}<BaseSelect v-model="bulkLocation" required><option value="" disabled>{{ui.t("form.none")}}</option>
+          <option v-for="loc in references.physical_locations" :key="loc.id" :value="loc.id">{{loc.name}}</option></BaseSelect></label>
+        <label v-else>{{ui.t("asset.responsiblePerson")}}<BaseSelect v-model="bulkPerson"><option value="">{{ui.t("form.none")}}</option><option v-for="person in people" :key="person.id" :value="person.id">{{person.name}}</option></BaseSelect></label>
         <label>{{bulkText.reason}}<textarea v-model="bulkReason" minlength="5" maxlength="1000" required rows="3"/></label>
       </form>
       <template #footer><BaseButton variant="secondary" :disabled="bulkBusy" @click="bulkOpen=false">{{ui.t("actions.cancel")}}</BaseButton><BaseButton type="submit" form="bulk-person-form" :disabled="bulkBusy||bulkReason.trim().length<5||(bulkMode==='move'&&!bulkLocation)">{{bulkMode==='move'?bulkText.move:bulkText.save}}</BaseButton></template>
