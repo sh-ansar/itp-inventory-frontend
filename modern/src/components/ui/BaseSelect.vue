@@ -1,69 +1,63 @@
 <script setup lang="ts">
-import { computed, useAttrs } from "vue";
+import { computed, isVNode, useAttrs, useSlots } from "vue";
+import BaseDropdownSelect from "./BaseDropdownSelect.vue";
+import type { SelectOption } from "./BaseDropdownSelect.vue";
 
 defineOptions({ inheritAttrs: false });
-const props = defineProps<{
-  modelValue?: string | number | null;
-  value?: string | number | null;
-  disabled?: boolean;
+const props=defineProps<{
+  modelValue?: string|number|null;
+  value?: string|number|null;
+  disabled?:boolean;
 }>();
-const emit = defineEmits<{
-  "update:modelValue": [value: string];
-  change: [event: Event];
+const emit=defineEmits<{
+  "update:modelValue":[value:string];
+  change:[event:Event];
 }>();
-const attrs = useAttrs();
-const selectedValue = computed(() => props.modelValue !== undefined ? props.modelValue : props.value);
-function onChange(event: Event) {
-  emit("update:modelValue", (event.target as HTMLSelectElement).value);
-  emit("change", event);
+const attrs=useAttrs();
+const slots=useSlots();
+const current=computed(()=>String(props.modelValue!==undefined?props.modelValue??"":props.value??""));
+const label=computed(()=>String(attrs["aria-label"]??attrs.title??""));
+// The original BaseSelect accepted <option> and <optgroup> children everywhere.
+// Interpret those nodes during render, so existing 38 call-sites continue sharing
+// the same component without requiring a second dropdown implementation.
+function optionText(child:unknown):string{
+  if(child===null||child===undefined||typeof child==="boolean")return "";
+  if(typeof child==="string"||typeof child==="number")return String(child);
+  if(Array.isArray(child))return child.map(optionText).join("");
+  if(isVNode(child))return optionText(child.children);
+  if(typeof child==="object"&&child&&"default" in child){
+    const render=(child as {default?:()=>unknown}).default;
+    return typeof render==="function"?optionText(render()):"";
+  }
+  return "";
+}
+function collectOptions(child:unknown):SelectOption[]{
+  if(Array.isArray(child))return child.flatMap(collectOptions);
+  if(!isVNode(child))return [];
+  if(child.type==="option"){
+    const nodeProps=child.props??{};
+    const name=optionText(child.children);
+    return [{value:String(nodeProps.value??name),label:name,disabled:nodeProps.disabled!==undefined&&nodeProps.disabled!==false}];
+  }
+  return collectOptions(child.children);
+}
+function onSelection(value:string){
+  emit("update:modelValue",value);
+  // Preserve the old BaseSelect change contract (event.target.value) for
+  // existing filters, pagination and form inputs.
+  const event=new Event("change",{bubbles:true});
+  Object.defineProperty(event,"target",{configurable:true,value:{value}});
+  emit("change",event);
 }
 </script>
 
 <template>
-  <select
-    v-bind="attrs"
-    class="base-select"
-    :value="selectedValue ?? ''"
+  <BaseDropdownSelect
+    v-bind="attrs" class="base-select"
+    :model-value="current"
+    :label="label"
     :disabled="disabled"
-    @change="onChange"
-  >
-    <slot />
-  </select>
+    :options="collectOptions(slots.default?.())"
+    @change="onSelection"
+  />
 </template>
-
-<style scoped>
-.base-select {
-  display: block;
-  width: 100%;
-  min-height: var(--control-height, 40px);
-  min-width: 0;
-  padding: 8px 36px 8px 11px;
-  color: var(--color-text);
-  background-color: var(--color-surface-raised, var(--color-surface));
-  border: 1px solid var(--color-stroke-strong);
-  border-radius: var(--radius-sm);
-  font: inherit;
-  font-size: 13px;
-  line-height: 20px;
-  text-overflow: ellipsis;
-  cursor: pointer;
-  box-shadow: var(--shadow-control);
-  color-scheme: light;
-  appearance: none;
-  -webkit-appearance: none;
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%23738699' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
-  background-position: right 11px center;
-  background-repeat: no-repeat;
-  transition: border-color .15s ease, box-shadow .15s ease, background-color .15s ease;
-}
-.base-select:hover:not(:disabled) { border-color: var(--color-primary); }
-.base-select:focus-visible {
-  outline: 2px solid var(--color-primary);
-  outline-offset: 1px;
-}
-.base-select:disabled { cursor: not-allowed; opacity: .55; }
-.base-select:invalid { border-color: var(--color-stroke-strong); }
-:global([data-theme="dark"]) .base-select, :global(.theme-dark) .base-select { color-scheme: dark; }
-.base-select option { background: var(--color-surface); color: var(--color-text); }
-@media(max-width:600px) { .base-select { min-height: 44px; font-size: 16px; } }
-</style>

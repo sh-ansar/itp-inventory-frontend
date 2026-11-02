@@ -20,6 +20,28 @@ describe("shared inventory selects", () => {
     expect((wrapper.find("select").element as HTMLSelectElement).value).toBe("disposed");
   });
 
+  it("keeps implicit parent form labels when options are rendered as styled dropdowns",async()=>{
+    const { defineComponent, h }=await import("vue");
+    const Parent=defineComponent({
+      setup:()=>()=>h("label",{},[
+        h("span",{},"Способ утилизации"),
+        h(BaseSelect,{modelValue:"recycling"},{
+          default:()=>[
+            h("option",{value:"recycling"},"Переработка"),
+            h("option",{value:"other"},"Другое"),
+          ],
+        }),
+      ]),
+    });
+    const wrapper=mount(Parent,{attachTo:document.body});
+    const native=wrapper.get("select");
+    expect(native.attributes("aria-label")).toBeUndefined();
+    expect(native.element.labels?.[0]?.textContent).toContain("Способ утилизации");
+    expect(native.element.value).toBe("recycling");
+    expect(wrapper.find(".dropdown-trigger").text()).toContain("Переработка");
+    wrapper.unmount();
+  });
+
   it("supports external value and disabled state", () => {
     const wrapper = mount(BaseSelect, {
       props: { value: "active", disabled: true },

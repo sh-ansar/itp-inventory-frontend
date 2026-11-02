@@ -1,8 +1,8 @@
 <script setup lang="ts">
-import BaseSelect from "./components/ui/BaseSelect.vue";
-import { computed, onMounted, reactive, ref, watch } from "vue";
-import { RouterLink, RouterView, useRoute } from "vue-router";
-import { Boxes, ClipboardList, BookOpen, Package, Building2, Users, Warehouse, LogOut, Sun, Moon, Eye, EyeOff, RefreshCw, FileCheck2, ShieldCheck, BarChart3 } from "lucide-vue-next";
+import BaseDropdownSelect from "./components/ui/BaseDropdownSelect.vue";
+import { computed, nextTick, onMounted, onUnmounted, reactive, ref, watch } from "vue";
+import { RouterLink, RouterView, useRoute, useRouter } from "vue-router";
+import { Boxes, ClipboardList, BookOpen, Package, Building2, Users, Warehouse, LogOut, Sun, Moon, Eye, EyeOff, RefreshCw, FileCheck2, ShieldCheck, BarChart3, PanelLeftClose, PanelLeftOpen, Menu, X } from "lucide-vue-next";
 import BaseButton from "./components/ui/BaseButton.vue";
 import BaseCard from "./components/ui/BaseCard.vue";
 import BaseLoadingState from "./components/ui/BaseLoadingState.vue";
@@ -16,6 +16,31 @@ import type { InventoryLocale } from "./i18n";
 
 const ui = useUiSettings();
 const route = useRoute();
+const router=useRouter();
+const mobileNavOpen=ref(false);
+const menuLabels=computed(()=>ui.locale==="en"
+  ?{expand:"Expand menu",collapse:"Collapse menu",open:"Open menu",close:"Close menu"}
+  :ui.locale==="ka"
+    ?{expand:"მენიუს გაშლა",collapse:"მენიუს აკეცვა",open:"მენიუს გახსნა",close:"მენიუს დახურვა"}
+    :{expand:"Развернуть меню",collapse:"Свернуть меню",open:"Открыть меню",close:"Закрыть меню"});
+function closeMobileNav(){mobileNavOpen.value=false}
+function openMobileNav(){mobileNavOpen.value=true}
+function handleMenuKeydown(event:KeyboardEvent){
+  if(mobileNavOpen.value&&event.key==="Escape"){
+    closeMobileNav();
+    void nextTick(()=>document.querySelector<HTMLButtonElement>(".mobile-nav-trigger")?.focus());
+  }
+}
+watch(()=>route.fullPath,closeMobileNav);
+watch(mobileNavOpen,opened=>{
+  document.body.classList.toggle("inventory-mobile-nav-open",opened);
+  if(opened)void nextTick(()=>document.querySelector<HTMLButtonElement>(".mobile-nav-close")?.focus());
+});
+onMounted(()=>window.addEventListener("keydown",handleMenuKeydown));
+onUnmounted(()=>{
+  window.removeEventListener("keydown",handleMenuKeydown);
+  document.body.classList.remove("inventory-mobile-nav-open");
+});
 const user = ref<InventoryUser | null>(null);
 const availableCompanies = ref<CompanyAccess[]>([]);
 const companyId = ref("");
@@ -42,6 +67,19 @@ const currentTitle = computed(() => route.name === "reports" ? reportsTitle.valu
 const selectedCompany = computed(() =>
   availableCompanies.value.find(c => c.id === companyId.value) ?? null
 );
+const companyOptions=computed(()=>availableCompanies.value.map(company=>({
+  value:company.id,label:company.name,
+})));
+const localeOptions=[
+  {value:"ru",label:"RU"},
+  {value:"en",label:"EN"},
+  {value:"ka",label:"GE"},
+];
+watch(()=>[selectedCompany.value?.role_code,route.name],([role,name])=>{
+  if(user.value&&role&&name==="company-roles"&&role!=="company_admin"){
+    void router.replace("/registry");
+  }
+});
 watch(companyId, value => {
   if (value && user.value && availableCompanies.value.some(c => c.id === value) && typeof localStorage !== "undefined") {
     localStorage.setItem("inventory.companyId", value);
@@ -54,9 +92,9 @@ async function loadIdentity(): Promise<void> {
   user.value = identity;
   availableCompanies.value = memberships;
   const saved = typeof localStorage !== "undefined" ? localStorage.getItem("inventory.companyId") : null;
-  const demo = memberships.find(c => c.name.startsWith("[DEMO]"));
+  const regular=memberships.find(c=>!c.name.startsWith("[DEMO]"));
   companyId.value = memberships.some(c => c.id === companyId.value)
-    ? companyId.value : memberships.find(c => c.id === saved)?.id ?? demo?.id ?? memberships[0]?.id ?? "";
+    ? companyId.value : memberships.find(c => c.id === saved)?.id ?? regular?.id ?? memberships[0]?.id ?? "";
 }
 
 async function boot() {
@@ -101,12 +139,12 @@ async function signOut() {
     availableCompanies.value = [];
     companyId.value = "";
     credentials.password = "";
+    closeMobileNav();
   } catch(e) { error.value = e instanceof Error ? e.message : ui.t("generic.unknownError"); }
   finally { signoutBusy.value = false; }
 }
 
-function switchLocale(event: Event) {
-  const next = (event.target as HTMLSelectElement).value;
+function switchLocale(next:string) {
   if (["ru","en","ka"].includes(next)) ui.locale = next as InventoryLocale;
 }
 watch(() => [route.name,ui.locale,!!user.value], () => {
@@ -116,47 +154,66 @@ onMounted(boot);
 </script>
 
 <template>
-  <div class="shell" :class="{'shell--guest':!user&&!booting}">
-    <aside class="sidebar">
-      <div class="brand">
-        <div class="brand-mark"><Boxes :size="24" aria-hidden="true"/></div>
-        <div class="brand-text"><strong>ITP Inventory</strong><span>{{ ui.t("brand.subtitle") }}</span></div>
+  <div class="shell" :class="{'shell--guest':!user&&!booting,'shell--collapsed':ui.sidebarCollapsed}">
+    <button v-if="user&&mobileNavOpen" class="nav-backdrop" type="button"
+      :aria-label="menuLabels.close" @click="closeMobileNav"/>
+    <aside class="sidebar" :class="{'sidebar--open':mobileNavOpen}" aria-label="Inventory">
+      <div class="sidebar-head">
+        <div class="brand">
+          <div class="brand-mark"><Boxes :size="24" aria-hidden="true"/></div>
+          <div class="brand-text"><strong>ITP Inventory</strong><span>{{ ui.t("brand.subtitle") }}</span></div>
+        </div>
+        <button v-if="user" type="button" class="sidebar-collapse icon-control"
+          :title="ui.sidebarCollapsed?menuLabels.expand:menuLabels.collapse"
+          :aria-label="ui.sidebarCollapsed?menuLabels.expand:menuLabels.collapse"
+          :aria-expanded="!ui.sidebarCollapsed" @click="ui.toggleSidebar()">
+          <PanelLeftOpen v-if="ui.sidebarCollapsed" :size="20" aria-hidden="true"/>
+          <PanelLeftClose v-else :size="20" aria-hidden="true"/>
+        </button>
+        <button v-if="user" type="button" class="mobile-nav-close icon-control"
+          :title="menuLabels.close" :aria-label="menuLabels.close" @click="closeMobileNav">
+          <X :size="20" aria-hidden="true"/>
+        </button>
       </div>
       <nav v-if="user" class="main-navigation" aria-label="Inventory">
-        <RouterLink to="/registry" class="nav-item" active-class="nav-item--active">
-          <Package :size="19" aria-hidden="true"/>{{ ui.t("nav.assets") }}
+        <RouterLink to="/registry" class="nav-item" active-class="nav-item--active" :aria-label="ui.t('nav.assets')" :title="ui.sidebarCollapsed&&!mobileNavOpen?ui.t('nav.assets'):undefined" @click="closeMobileNav">
+          <Package :size="19" aria-hidden="true"/><span class="nav-label">{{ ui.t("nav.assets") }}</span>
         </RouterLink>
-        <RouterLink to="/disposals" class="nav-item" active-class="nav-item--active">
-          <FileCheck2 :size="19" aria-hidden="true"/>{{ ui.t("nav.disposals") }}
+        <RouterLink to="/disposals" class="nav-item" active-class="nav-item--active" :aria-label="ui.t('nav.disposals')" :title="ui.sidebarCollapsed&&!mobileNavOpen?ui.t('nav.disposals'):undefined" @click="closeMobileNav">
+          <FileCheck2 :size="19" aria-hidden="true"/><span class="nav-label">{{ ui.t("nav.disposals") }}</span>
         </RouterLink>
-        <RouterLink to="/facilities" class="nav-item" active-class="nav-item--active">
-          <Building2 :size="19" aria-hidden="true"/>{{ ui.t("nav.facilities") }}
+        <RouterLink to="/facilities" class="nav-item" active-class="nav-item--active" :aria-label="ui.t('nav.facilities')" :title="ui.sidebarCollapsed&&!mobileNavOpen?ui.t('nav.facilities'):undefined" @click="closeMobileNav">
+          <Building2 :size="19" aria-hidden="true"/><span class="nav-label">{{ ui.t("nav.facilities") }}</span>
         </RouterLink>
-        <RouterLink to="/references" class="nav-item" active-class="nav-item--active">
-          <BookOpen :size="19" aria-hidden="true"/>{{ ui.t("nav.references") }}
+        <RouterLink to="/references" class="nav-item" active-class="nav-item--active" :aria-label="ui.t('nav.references')" :title="ui.sidebarCollapsed&&!mobileNavOpen?ui.t('nav.references'):undefined" @click="closeMobileNav">
+          <BookOpen :size="19" aria-hidden="true"/><span class="nav-label">{{ ui.t("nav.references") }}</span>
         </RouterLink>
-        <RouterLink to="/people" class="nav-item" active-class="nav-item--active">
-          <Users :size="19" aria-hidden="true"/>{{ ui.t("nav.people") }}
+        <RouterLink to="/people" class="nav-item" active-class="nav-item--active" :aria-label="ui.t('nav.people')" :title="ui.sidebarCollapsed&&!mobileNavOpen?ui.t('nav.people'):undefined" @click="closeMobileNav">
+          <Users :size="19" aria-hidden="true"/><span class="nav-label">{{ ui.t("nav.people") }}</span>
         </RouterLink>
-        <RouterLink to="/warehouses" class="nav-item" active-class="nav-item--active">
-          <Warehouse :size="19" aria-hidden="true"/>{{ ui.t("nav.warehouses") }}
+        <RouterLink to="/warehouses" class="nav-item" active-class="nav-item--active" :aria-label="ui.t('nav.warehouses')" :title="ui.sidebarCollapsed&&!mobileNavOpen?ui.t('nav.warehouses'):undefined" @click="closeMobileNav">
+          <Warehouse :size="19" aria-hidden="true"/><span class="nav-label">{{ ui.t("nav.warehouses") }}</span>
         </RouterLink>
-        <RouterLink to="/stocktakes" class="nav-item" active-class="nav-item--active">
-          <ClipboardList :size="19" aria-hidden="true"/>{{ ui.t("nav.stocktakes") }}
+        <RouterLink to="/stocktakes" class="nav-item" active-class="nav-item--active" :aria-label="ui.t('nav.stocktakes')" :title="ui.sidebarCollapsed&&!mobileNavOpen?ui.t('nav.stocktakes'):undefined" @click="closeMobileNav">
+          <ClipboardList :size="19" aria-hidden="true"/><span class="nav-label">{{ ui.t("nav.stocktakes") }}</span>
         </RouterLink>
-        <RouterLink to="/reports" class="nav-item" active-class="nav-item--active">
-          <BarChart3 :size="19" aria-hidden="true"/>{{reportsTitle}}
+        <RouterLink to="/reports" class="nav-item" active-class="nav-item--active" :aria-label="reportsTitle" :title="ui.sidebarCollapsed&&!mobileNavOpen?reportsTitle:undefined" @click="closeMobileNav">
+          <BarChart3 :size="19" aria-hidden="true"/><span class="nav-label">{{reportsTitle}}</span>
         </RouterLink>
-        <RouterLink v-if="selectedCompany?.role_code==='company_admin'" to="/company-roles" class="nav-item" active-class="nav-item--active">
-          <ShieldCheck :size="19" aria-hidden="true"/>{{ ui.t("roles.title") }}
+        <RouterLink v-if="selectedCompany?.role_code==='company_admin'" to="/company-roles" class="nav-item" active-class="nav-item--active" :aria-label="ui.t('roles.title')" :title="ui.sidebarCollapsed&&!mobileNavOpen?ui.t('roles.title'):undefined" @click="closeMobileNav">
+          <ShieldCheck :size="19" aria-hidden="true"/><span class="nav-label">{{ ui.t("roles.title") }}</span>
         </RouterLink>
       </nav>
       <div class="sidebar-footer">
-        <PortalHomeLink />
+        <PortalHomeLink :compact="ui.sidebarCollapsed&&!mobileNavOpen" />
       </div>
     </aside>
     <div class="app-main">
       <header class="topbar">
+        <button v-if="user" type="button" class="mobile-nav-trigger icon-control"
+          :aria-label="menuLabels.open" :title="menuLabels.open" @click="openMobileNav">
+          <Menu :size="21" aria-hidden="true"/>
+        </button>
         <div v-if="!user" class="topbar-leading">
           <div class="guest-brand"><div class="brand-mark"><Boxes :size="22" aria-hidden="true"/></div>
             <strong>ITP Inventory</strong>
@@ -164,15 +221,15 @@ onMounted(boot);
         </div>
         <div class="topbar-trailing">
           <PortalHomeLink compact class="portal-link--mobile" />
-          <label v-if="user && availableCompanies.length > 0" class="company-switcher">
+          <div v-if="user && availableCompanies.length > 0" class="company-switcher">
             <span>{{ ui.t("auth.company") }}</span>
-            <BaseSelect v-model="companyId" :aria-label="ui.t('auth.company')">
-              <option v-for="company in availableCompanies" :key="company.id" :value="company.id">{{ company.name }}</option>
-            </BaseSelect>
-          </label>
-          <BaseSelect :value="ui.locale" @change="switchLocale" class="locale-select" aria-label="Язык / Language">
-            <option value="ru">RU</option><option value="en">EN</option><option value="ka">GE</option>
-          </BaseSelect>
+            <BaseDropdownSelect v-model="companyId" class="company-picker"
+              :label="ui.t('auth.company')" :options="companyOptions" :locale="ui.locale"
+              :searchable="availableCompanies.length>7"/>
+          </div>
+          <BaseDropdownSelect :model-value="ui.locale" @update:modelValue="switchLocale"
+            class="locale-select" label="Язык / Language"
+            :options="localeOptions" :locale="ui.locale"/>
           <button type="button" class="theme-toggle"
             :title="ui.t(ui.theme === 'dark' ? 'generic.light' : 'generic.dark')"
             :aria-label="ui.t(ui.theme === 'dark' ? 'generic.light' : 'generic.dark')"
