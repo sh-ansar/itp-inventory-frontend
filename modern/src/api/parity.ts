@@ -8,6 +8,13 @@ export function bulkAssignCustodian(id:string,assets:{id:string;version:number}[
     method:"POST",body:JSON.stringify({assets,responsible_person_id:person,reason})
   });
 }
+export function bulkMoveAssets(id:string,assets:{id:string;version:number}[],locationId:string,reason:string){
+  return inventoryRequest<{moved:number}>(company(id)+"/assets/bulk-move",{
+    method:"POST",body:JSON.stringify({assets,to_location_id:locationId,reason})
+  });
+}
+export const stocktakeXlsxHref=(id:string,session:string)=>
+  "/inventory-api"+company(id)+"/inventory-sessions/"+encodeURIComponent(session)+"/report.xlsx";
 export interface ReportDocument{
   id:string;original_name:string;mime_type:string;file_size:number;sha256:string;uploaded_by_name:string;created_at:string
 }
@@ -26,4 +33,13 @@ export const companyMembers=(id:string)=>inventoryRequest<{data:Member[]}>(compa
 export const updateMemberRole=(id:string,user:number,role_code:string,reason:string)=>
   inventoryRequest<{ok:boolean;changed:boolean}>(company(id)+"/members/"+user,{
     method:"PUT",body:JSON.stringify({role_code,reason})
+  });
+
+export const addCompanyMember=(id:string,email:string,role_code:string,reason:string)=>
+  inventoryRequest<{ok:boolean;user_id:number}>(company(id)+"/members",{
+    method:"POST",body:JSON.stringify({email,role_code,reason})
+  });
+export const removeCompanyMember=(id:string,user:number,reason:string)=>
+  inventoryRequest<{ok:boolean}>(company(id)+"/members/"+user,{
+    method:"DELETE",body:JSON.stringify({reason})
   });
