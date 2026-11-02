@@ -131,7 +131,7 @@ onUnmounted(()=>{
     </select>
     <button ref="trigger" type="button" class="dropdown-trigger" tabindex="-1" aria-hidden="true"
       :title="selection?.label||placeholder||label"
-      :disabled="disabled" @click="opened?close():open()">
+      :disabled="disabled" @click="opened?close():open()" @keydown="onKey">
       <span class="dropdown-value" :class="{'is-placeholder':!selection}">
         {{selection?.label||placeholder||message.select}}
       </span>
