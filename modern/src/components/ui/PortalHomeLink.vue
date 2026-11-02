@@ -41,7 +41,7 @@ const logos = {
   padding:5px;border:1px solid var(--color-stroke);border-radius:var(--radius-sm)}
 .portal-home--compact .portal-home__full,.portal-home--compact .portal-home__fallback{display:none}
 .portal-home--compact .portal-home__mark{display:block;width:29px;height:23px}
-@media(min-width:761px){.portal-home--compact{display:none}}
-@media(max-width:760px){.portal-home:not(.portal-home--compact){display:none}}
+@media(min-width:861px){.portal-home--compact{display:none}}
+@media(max-width:860px){.portal-home:not(.portal-home--compact){display:none}}
 @media(prefers-reduced-motion:reduce){.portal-home{transition:none}}
 </style>
