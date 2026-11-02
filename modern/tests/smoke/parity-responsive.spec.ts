@@ -70,6 +70,13 @@ for(const width of [360,390,768,1440]){
       await expect(portal.locator(".portal-home__mark")).toBeVisible();
     }
     await expect(page.getByText("QA-001").first()).toBeVisible();
+    const iconActions = page.locator("button.base-icon-button");
+    expect(await iconActions.count()).toBeGreaterThanOrEqual(6);
+    const missingAccessibleNames = await iconActions.evaluateAll(buttons =>
+      buttons.filter(button => !button.getAttribute("aria-label")?.trim()).length
+    );
+    expect(missingAccessibleNames, "Every icon-only action must have a readable label").toBe(0);
+
     await expect(page.getByRole("link",{name:/Excel/i})).toBeVisible();
     const overflow=await page.evaluate(()=>document.documentElement.scrollWidth-window.innerWidth);
     expect(overflow,"Page must not overflow; wide tables should scroll internally").toBeLessThanOrEqual(2);
