@@ -109,7 +109,7 @@ onUnmounted(()=>{ctrl?.abort();if(timer)clearTimeout(timer)});
   <div class="people-page">
     <div class="people-header">
       <div><h2>{{ ui.t("people.title") }}</h2>
-        <p class="muted">{{ companyName }} · {{ ui.t("people.subtitle") }}</p></div>
+        <p class="muted">{{ ui.t("people.subtitle") }}</p></div>
       <div class="actions">
         <BaseButton variant="secondary" :disabled="loading" @click="load">
           <RefreshCw :size="17" aria-hidden="true"/>{{ ui.t("actions.refresh") }}</BaseButton>
