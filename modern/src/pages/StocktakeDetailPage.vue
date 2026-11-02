@@ -2,7 +2,7 @@
 import BaseSelect from "../components/ui/BaseSelect.vue";
 import { computed, nextTick, onUnmounted, ref, watch } from "vue";
 import { RouterLink, useRoute, useRouter } from "vue-router";
-import { ArrowLeft, Check, ClipboardCheck, Download, History, QrCode, RefreshCw, RotateCcw, Paperclip, Upload } from "lucide-vue-next";
+import { ArrowLeft, Check, ClipboardCheck, Download, History, QrCode, RefreshCw, RotateCcw, Paperclip, Upload, Printer } from "lucide-vue-next";
 import BaseButton from "../components/ui/BaseButton.vue";
 import BaseCard from "../components/ui/BaseCard.vue";
 import BaseDataTable from "../components/ui/BaseDataTable.vue";
@@ -245,6 +245,11 @@ onUnmounted(()=>{listCtrl?.abort();if(searchTimer)clearTimeout(searchTimer);});
         <a v-if="stocktake" class="download-link" :href="inventoryReportHref(companyId,stocktake.id)" download>
           <Download :size="17" aria-hidden="true"/>{{ ui.t("stock.report") }}
         </a>
+        <RouterLink v-if="stocktake" :to="{name:'reports',query:{print_session:stocktake.id}}"
+          class="download-link">
+          <Printer :size="17" aria-hidden="true"/>
+          {{ui.locale==="en"?"Print stocktake act":ui.locale==="ka"?"ინვენტარიზაციის აქტის ბეჭდვა":"Печатать акт"}}
+        </RouterLink>
       </div>
     </div>
     <BaseLoadingState v-if="initialLoading" :label="ui.t('generic.loading')"/>
