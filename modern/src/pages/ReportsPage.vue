@@ -8,6 +8,7 @@ import BaseDataTable from "../components/ui/BaseDataTable.vue";
 import BaseSelect from "../components/ui/BaseSelect.vue";
 import BaseStatusPill from "../components/ui/BaseStatusPill.vue";
 import BaseSearchField from "../components/ui/BaseSearchField.vue";
+import { InventoryApiError } from "../api/client";
 import { getInventorySummary, summaryCsvHref, summaryPrintDocument, summaryStatusLabel } from "../api/reports";
 import type { InventorySummary } from "../api/reports";
 import { PRINT_FORM_KINDS,getDetailedPrintReport,printFormTitle,renderDetailedPrintDocument } from "../api/printForms";
@@ -126,7 +127,7 @@ watch(()=>props.companyId,async id=>{
   const requestId=++dictionarySerial;
   filters.status="";filters.facility_node_id="";filters.responsible_person_id="";
   report.value=null;facilities.value=[];people.value=[];sessions.value=[];
-  printWarehouseId.value="";printDisposalStatus.value="";printSearch.value="";printError.value="";
+  printSessionId.value="";printWarehouseId.value="";printDisposalStatus.value="";printSearch.value="";printError.value="";
   if(!id)return;
   const results=await Promise.allSettled([
     getFacilityNodes(id),
@@ -188,7 +189,8 @@ async function printDetailed(){
     popup.print();
   }catch(error){
     popup.close();
-    printError.value=error instanceof Error?error.message:printText.value.errorLimit;
+    printError.value=error instanceof InventoryApiError && error.status===413
+      ?printText.value.errorLimit:error instanceof Error?error.message:printText.value.errorLimit;
   }finally{
     printing.value=false;
     controller.abort();
