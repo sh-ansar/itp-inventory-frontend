@@ -1,4 +1,4 @@
-import {test,expect} from "@playwright/test";
+import {test,expect} from "./fixtures";
 
 test("dirty responsible-person editor uses a reversible in-app confirmation",async({page})=>{
   await page.goto("/inventory/people");
