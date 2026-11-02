@@ -2,7 +2,7 @@
 import BaseSelect from "../components/ui/BaseSelect.vue";
 import { computed, onUnmounted, ref, watch } from "vue";
 import { useRouter } from "vue-router";
-import { Archive, History, Pencil, Plus, RefreshCw, PackageOpen, ClipboardList, QrCode, ArrowRightLeft, Route, FileCheck2, Download, UserRoundCheck } from "lucide-vue-next";
+import { Archive, History, Pencil, Plus, RefreshCw, PackageOpen, ClipboardList, QrCode, ArrowRightLeft, Route, FileCheck2, Download, Printer, UserRoundCheck } from "lucide-vue-next";
 import BaseButton from "../components/ui/BaseButton.vue";
 import BaseIconButton from "../components/ui/BaseIconButton.vue";
 import BaseCard from "../components/ui/BaseCard.vue";
@@ -16,6 +16,7 @@ import ArchiveAssetDialog from "../components/registry/ArchiveAssetDialog.vue";
 import AssetDisposalDialog from "../components/registry/AssetDisposalDialog.vue";
 import AssetHistoryDialog from "../components/registry/AssetHistoryDialog.vue";
 import QrLabelDialog from "../components/registry/QrLabelDialog.vue";
+import BulkQrDialog from "../components/registry/BulkQrDialog.vue";
 import MoveAssetDialog from "../components/registry/MoveAssetDialog.vue";
 import AssetMovementHistoryDialog from "../components/registry/AssetMovementHistoryDialog.vue";
 import { companyAssets, referenceData } from "../api/inventory";
@@ -56,12 +57,14 @@ const history = ref<Asset | null>(null);
 const archiving = ref<Asset | null>(null);
 const disposing = ref<Asset | null>(null);
 const qrAsset = ref<Asset | null>(null);
+const bulkQrOpen = ref(false);
 const moving = ref<Asset | null>(null);
 const movementHistory = ref<Asset | null>(null);
 
 const canWrite = computed(() => ["company_admin", "inventory_manager"].includes(props.role));
 const canArchive = computed(() => props.role === "company_admin");
 const selectedAssets = computed(() => rows.value.filter(row => selectedKeys.value.includes(row.id)));
+const qrBulkTitle = computed(() => ui.locale === "ka" ? "QR ეტიკეტების ბეჭდვა" : ui.locale === "en" ? "Print QR labels" : "Печать QR-этикеток");
 const bulkText = computed(() => ui.locale==="ru" ? {export:"Экспорт Excel",assign:"Назначить МОЛ",title:"Массовое назначение ответственного",reason:"Причина изменения",save:"Назначить выбранным",selected:"Выбрано",note:"Изменения применяются ко всем выбранным активам или не применяются вовсе.",saved:"Ответственные назначены",moved:"Активы перемещены",move:"Переместить выбранные",location:"Новое местонахождение",action:"Операция"} : ui.locale==="ka" ? {export:"Excel ექსპორტი",assign:"პასუხისმგებლის დანიშვნა",title:"პასუხისმგებლის ჯგუფური დანიშვნა",reason:"ცვლილების მიზეზი",save:"დანიშვნა",selected:"არჩეულია",note:"ცვლილება სრულდება ერთიანად ან საერთოდ არ სრულდება.",saved:"პასუხისმგებელი დანიშნულია",moved:"ქონება გადატანილია",move:"არჩეულის გადატანა",location:"ახალი მდებარეობა",action:"ოპერაცია"} : {export:"Export Excel",assign:"Assign custodian",title:"Bulk custodian assignment",reason:"Reason for change",save:"Assign to selected",selected:"Selected",note:"The whole batch succeeds or nothing is changed.",saved:"Custodians assigned",moved:"Assets moved",move:"Move selected assets",location:"New location",action:"Operation"});
 const exportHref = computed(() => registryExportHref(props.companyId, Object.fromEntries(Object.entries({search:debouncedSearch.value,status:status.value,facility_node_id:facilityFilter.value,include_descendants:"1",responsible_person_id:personFilter.value}).filter(([,v])=>v))));
 async function submitBulk() {
@@ -115,7 +118,7 @@ watch(() => props.companyId, id => {
   status.value = "";facilityFilter.value="";personFilter.value="";page.value = 1;
   showForm.value = false; editing.value = null;
   history.value = null; archiving.value = null; disposing.value = null;
-  qrAsset.value = null; moving.value = null; movementHistory.value = null;
+  qrAsset.value = null; bulkQrOpen.value = false; moving.value = null; movementHistory.value = null;
   references.value = { categories: [], accounting_locations: [], physical_locations: [] };
   facilities.value=[];people.value=[];
   referenceController?.abort();
@@ -147,6 +150,9 @@ async function loadAssets() {
   requestController = controller;
   const current = ++requestSerial;
   const companyId = props.companyId;
+  // A selection applies to exactly the loaded page, never to stale filters or tenants.
+  selectedKeys.value = [];
+  bulkQrOpen.value = false;
   rows.value = []; total.value = 0;
   issue.value = "";
   if (!companyId) { loading.value = false; return; }
@@ -223,6 +229,10 @@ onUnmounted(() => {
         <BaseButton variant="secondary" :disabled="loading" :aria-label="ui.t('actions.refresh')" :title="ui.t('actions.refresh')"
           @click="loadAssets"><RefreshCw :size="17" aria-hidden="true" /><span class="page-action-label">{{ ui.t("actions.refresh") }}</span></BaseButton>
         <a class="export-link" :href="exportHref" :download="'inventory-assets.xlsx'" :title="bulkText.export" :aria-label="bulkText.export"><Download :size="16" aria-hidden="true"/><span class="page-action-label">{{bulkText.export}}</span></a>
+        <BaseButton v-if="selectedAssets.length" variant="secondary" :title="qrBulkTitle"
+          :aria-label="qrBulkTitle + ' (' + selectedAssets.length + ')'" @click="bulkQrOpen=true">
+          <Printer :size="16" aria-hidden="true" /><span class="page-action-label">{{ qrBulkTitle }} ({{ selectedAssets.length }})</span>
+        </BaseButton>
         <BaseButton v-if="canWrite && selectedAssets.length" variant="secondary" :title="bulkText.assign" :aria-label="bulkText.assign+' ('+selectedAssets.length+')'" @click="bulkMode='custodian';bulkOpen=true"><UserRoundCheck :size="16"/><span class="page-action-label">{{bulkText.assign}} ({{selectedAssets.length}})</span></BaseButton>
         <BaseButton v-if="canWrite && selectedAssets.length" variant="secondary" :title="bulkText.move" :aria-label="bulkText.move+' ('+selectedAssets.length+')'" @click="bulkMode='move';bulkOpen=true"><ArrowRightLeft :size="16"/><span class="page-action-label">{{bulkText.move}} ({{selectedAssets.length}})</span></BaseButton>
         <BaseButton v-if="canWrite && selectedKeys.length" variant="secondary" :title="ui.t('stock.createFromSelected')" :aria-label="ui.t('stock.createFromSelected')+' ('+selectedKeys.length+')'" @click="createStocktakeForSelected">
@@ -337,6 +347,7 @@ onUnmounted(() => {
       @close="archiving=null" @archived="afterArchive"/>
     <AssetHistoryDialog :asset="history" :company-id="companyId" @close="history=null" />
     <QrLabelDialog :asset="qrAsset" @close="qrAsset=null"/>
+    <BulkQrDialog :open="bulkQrOpen" :assets="selectedAssets" @close="bulkQrOpen=false"/>
     <MoveAssetDialog :asset="moving" :company-id="companyId" @close="moving=null" @moved="afterMove"/>
     <AssetMovementHistoryDialog :asset="movementHistory" :company-id="companyId" @close="movementHistory=null"/>
   </div>

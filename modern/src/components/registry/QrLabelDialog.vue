@@ -5,6 +5,7 @@ import { Copy, Printer, ExternalLink, QrCode } from "lucide-vue-next";
 import BaseDialog from "../ui/BaseDialog.vue";
 import BaseButton from "../ui/BaseButton.vue";
 import type { Asset } from "../../api/inventory";
+import { inventoryQrUrl } from "../../utils/inventoryQr";
 import { useUiSettings } from "../../stores/uiSettings";
 
 const props = defineProps<{asset: Asset | null}>();
@@ -15,8 +16,7 @@ const error = ref("");
 const copied = ref(false);
 let serial = 0;
 const link = computed(() => props.asset?.public_id
-  ? new URL(import.meta.env.BASE_URL + "scan/" + encodeURIComponent(props.asset.public_id),
-      window.location.origin).href
+  ? inventoryQrUrl(props.asset.public_id, import.meta.env.BASE_URL, window.location.origin)
   : ""
 );
 
