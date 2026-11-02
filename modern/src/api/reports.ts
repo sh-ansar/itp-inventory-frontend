@@ -41,6 +41,17 @@ export const summaryCsvHref=(companyId:string,filters:SummaryFilters)=>
   "/inventory-api"+root(companyId)+".csv"+queryOf(filters);
 
 export type ReportLocale="ru"|"en"|"ka";
+const statusNames:Record<ReportLocale,Record<string,string>>={
+  ru:{active:"На учёте",written_off:"Списано",disposed:"Утилизировано",
+      in_progress:"В процессе",completed:"Завершена",draft:"Черновик",approved:"Согласовано",submitted:"На согласовании"},
+  en:{active:"Active",written_off:"Written off",disposed:"Disposed",
+      in_progress:"In progress",completed:"Completed",draft:"Draft",approved:"Approved",submitted:"Submitted"},
+  ka:{active:"აღრიცხვაზე",written_off:"ჩამოწერილია",disposed:"უტილიზებულია",
+      in_progress:"მიმდინარე",completed:"დასრულებულია",draft:"პროექტი",approved:"დამტკიცებულია",submitted:"გაგზავნილია"},
+};
+export const summaryStatusLabel=(code:string,locale:ReportLocale):string=>
+  statusNames[locale][code]??code;
+
 const escapeHtml=(value:unknown):string=>String(value??"").replace(/[&<>"']/g,character=>
   ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[character]??character));
 
@@ -61,16 +72,16 @@ export function summaryPrintDocument(report:InventorySummary,locale:ReportLocale
         stock:"Склады",items:"Позиций",quantity:"Количество",sessions:"Инвентаризации",
         expected:"По плану",counted:"Проверено",discrepancies:"Расхождения",date:"Сформирован"};
 
-  const group=(title:string,rows:SummaryGroup[]):string=>
+  const group=(title:string,rows:SummaryGroup[],isStatus=false):string=>
     "<section><h2>"+escapeHtml(title)+"</h2><table><thead><tr><th>"+escapeHtml(words.name)+"</th><th>"+escapeHtml(words.count)+
-    "</th></tr></thead><tbody>"+rows.map(row=>"<tr><td>"+escapeHtml(row.name||words.unassigned)+
+    "</th></tr></thead><tbody>"+rows.map(row=>"<tr><td>"+escapeHtml(isStatus&&row.name ? summaryStatusLabel(row.name,locale) : row.name||words.unassigned)+
       "</td><td class=\"num\">"+row.total+"</td></tr>").join("")+"</tbody></table></section>";
 
   const stockRows=report.warehouses.by_warehouse.map(row=>
     "<tr><td>"+escapeHtml(row.name||words.unassigned)+"</td><td class=\"num\">"+row.items+
     "</td><td class=\"num\">"+(row.quantity_milli/1000).toFixed(3)+"</td></tr>").join("");
   const sessionRows=report.stocktakes.map(row=>
-    "<tr><td>"+escapeHtml(row.status)+"</td><td class=\"num\">"+row.sessions+"</td><td class=\"num\">"+
+    "<tr><td>"+escapeHtml(summaryStatusLabel(row.status,locale))+"</td><td class=\"num\">"+row.sessions+"</td><td class=\"num\">"+
     row.items+"</td><td class=\"num\">"+row.counted+"</td><td class=\"num\">"+row.discrepancies+"</td></tr>").join("");
 
   return [
@@ -83,9 +94,9 @@ export function summaryPrintDocument(report:InventorySummary,locale:ReportLocale
     'th{background:#eef4f8}.num{text-align:right;white-space:nowrap}section{break-inside:auto}thead{display:table-header-group}tr{break-inside:avoid;page-break-inside:avoid}',
     '@media screen{body{max-width:880px;margin:24px auto;padding:12px}}</style></head><body>',
     '<header><h1>'+escapeHtml(words.title)+'</h1><strong>'+escapeHtml(report.company.name)+'</strong>',
-    '<div class="meta">'+escapeHtml(words.date)+': '+escapeHtml(report.generated_at)+'</div></header>',
+    '<div class="meta">'+escapeHtml(words.date)+': '+escapeHtml(new Date(report.generated_at).toLocaleString(locale==="ka"?"ka-GE":locale==="en"?"en-GB":"ru-RU"))+'</div></header>',
     '<div class="total">'+escapeHtml(words.total)+': '+report.assets.total+'</div>',
-    group(words.status,report.assets.by_status),
+    group(words.status,report.assets.by_status,true),
     group(words.category,report.assets.by_category),
     group(words.facility,report.assets.by_facility),
     group(words.person,report.assets.by_responsible),
