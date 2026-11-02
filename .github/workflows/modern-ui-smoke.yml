@@ -1,0 +1,29 @@
+name: Inventory browser smoke
+on:
+  push:
+    branches: ["main", "feat/**"]
+    paths: ["modern/**", ".github/workflows/modern-ui-smoke.yml"]
+  pull_request:
+    paths: ["modern/**", ".github/workflows/modern-ui-smoke.yml"]
+jobs:
+  smoke:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: modern
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+          cache: npm
+          cache-dependency-path: modern/package-lock.json
+      - run: npm ci --no-audit --no-fund
+      - run: npx playwright install --with-deps chromium
+      - run: npx playwright test --config=playwright.smoke.config.ts
+      - uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: inventory-browser-smoke-failure
+          path: modern/test-results/
+          retention-days: 7
