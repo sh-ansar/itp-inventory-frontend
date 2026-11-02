@@ -8,7 +8,7 @@ export interface TablePreferenceSettings {
   warehouse_node_id: string;
   sort_key: string;
   sort_direction: "asc" | "desc";
-  per_page: 10 | 25 | 50 | 100;
+  per_page: number;
   hidden_columns: string[];
   column_order: string[];
 }
