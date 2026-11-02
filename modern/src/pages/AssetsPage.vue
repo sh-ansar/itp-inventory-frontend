@@ -54,6 +54,7 @@ const facilityFilters=computed({get:()=>preferences.state.facility_node_ids,set:
 const personFilters=computed({get:()=>preferences.state.responsible_person_ids,set:value=>preferences.state.responsible_person_ids=value});
 const facilities=ref<FacilityNode[]>([]);
 const people=ref<ResponsiblePerson[]>([]);
+const allOptions=computed(()=>ui.locale==="ka"?"ყველა":ui.locale==="en"?"All":"Все");
 const statusOptions=computed(()=>[
   {value:"active",label:ui.t("status.active")},
   {value:"written_off",label:ui.t("status.written_off")},
@@ -276,13 +277,13 @@ onUnmounted(() => {
         <div class="filter-field">
           <span>{{ ui.t("asset.facilityNode") }}</span>
           <BaseMultiSelect v-model="facilityFilters" :label="ui.t('asset.facilityNode')"
-            :options="facilityOptions" :locale="ui.locale" :all-label="ui.t('filter.all')"
+            :options="facilityOptions" :locale="ui.locale" :all-label="allOptions"
             @update:modelValue="page=1"/>
         </div>
         <div class="filter-field">
           <span>{{ ui.t("asset.responsiblePerson") }}</span>
           <BaseMultiSelect v-model="personFilters" :label="ui.t('asset.responsiblePerson')"
-            :options="personOptions" :locale="ui.locale" :all-label="ui.t('filter.all')"
+            :options="personOptions" :locale="ui.locale" :all-label="allOptions"
             @update:modelValue="page=1"/>
         </div>
         <div class="filter-field">
