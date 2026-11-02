@@ -167,12 +167,12 @@ test("reports share status/facility/custodian filters and remain responsive",asy
   await expect(status).toHaveValue("disposed");
   await status.selectOption("");
   const facility=page.getByRole("combobox",{name:"Объект"});
-  expect(await facility.locator("option").count()).toBeGreaterThan(1);
+  await expect.poll(async()=>await facility.locator("option").count()).toBeGreaterThan(1);
   await facility.selectOption({index:1});
   await expect(page.locator(".report-metrics strong").first()).not.toHaveText("");
   await facility.selectOption("");
   const person=page.getByRole("combobox",{name:"Ответственное лицо"});
-  expect(await person.locator("option").count()).toBeGreaterThan(1);
+  await expect.poll(async()=>await person.locator("option").count()).toBeGreaterThan(1);
   await person.selectOption({index:1});
   await person.selectOption("");
   for(const width of [360,390,768,1024,1440]){
