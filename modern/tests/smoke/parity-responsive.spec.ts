@@ -57,6 +57,10 @@ for(const width of [360,390,768,1440]){
     await mockApi(page);
     await page.goto("/inventory/");
     await expect(page.getByRole("heading",{name:"Реестр активов"}).first()).toBeVisible();
+    const portal = page.locator('a.portal-home:visible');
+    await expect(portal).toHaveCount(1);
+    await expect(portal).toHaveAttribute("href", "https://platform.itpmining.kz/");
+    await expect(portal).toHaveAttribute("aria-label", "ITP Portal");
     await expect(page.getByText("QA-001").first()).toBeVisible();
     await expect(page.getByRole("link",{name:/Excel/i})).toBeVisible();
     const overflow=await page.evaluate(()=>document.documentElement.scrollWidth-window.innerWidth);
