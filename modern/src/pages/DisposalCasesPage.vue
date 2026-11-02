@@ -1,8 +1,8 @@
 <script setup lang="ts">
 import BaseSelect from "../components/ui/BaseSelect.vue";
-import { computed, onUnmounted, ref, watch } from "vue";
+import { computed, onUnmounted, ref, toRef, watch } from "vue";
 import { useRoute, useRouter } from "vue-router";
-import { Archive, ClipboardCheck, Eye, FileText, RefreshCw, Search, ShieldCheck } from "lucide-vue-next";
+import { Archive, ClipboardCheck, Eye, FileText, RefreshCw, Search, ShieldCheck, SlidersHorizontal } from "lucide-vue-next";
 import BaseButton from "../components/ui/BaseButton.vue";
 import BaseIconButton from "../components/ui/BaseIconButton.vue";
 import BaseCard from "../components/ui/BaseCard.vue";
@@ -10,6 +10,8 @@ import BaseDataTable from "../components/ui/BaseDataTable.vue";
 import BasePagination from "../components/ui/BasePagination.vue";
 import BaseSearchField from "../components/ui/BaseSearchField.vue";
 import BaseStatusPill from "../components/ui/BaseStatusPill.vue";
+import TableSettingsDialog from "../components/ui/TableSettingsDialog.vue";
+import { orderAndFilterColumns,useCompanyTablePreferences } from "../composables/useCompanyTablePreferences";
 import AssetDisposalDialog from "../components/registry/AssetDisposalDialog.vue";
 import { listDisposalCases } from "../api/disposals";
 import type { DisposalCase } from "../api/disposals";
@@ -17,9 +19,15 @@ import { useUiSettings } from "../stores/uiSettings";
 
 const props=defineProps<{companyId:string;companyName:string;role:string}>();
 const ui=useUiSettings(),route=useRoute(),router=useRouter();
+const preferences=useCompanyTablePreferences(toRef(props,"companyId"),"disposals");
+const settingsOpen=ref(false);
+const settingsTitle=computed(()=>ui.locale==="ka"?"ცხრილის პარამეტრები":ui.locale==="en"?"Table settings":"Настройки таблицы");
 const rows=ref<DisposalCase[]>([]),loading=ref(false),issue=ref(""),notice=ref("");
-const page=ref(1),perPage=ref(25),total=ref(0),lastPage=ref(1);
-const search=ref(""),query=ref(""),status=ref("");
+const page=ref(1),total=ref(0),lastPage=ref(1);
+const perPage=computed({get:()=>preferences.state.per_page,set:v=>preferences.state.per_page=v});
+const search=computed({get:()=>preferences.state.search,set:v=>preferences.state.search=v});
+const status=computed({get:()=>preferences.state.status,set:v=>preferences.state.status=v});
+const query=ref("");
 const opened=ref<DisposalCase|null>(null);
 const columns=computed(()=>[
   {key:"asset",label:ui.t("table.number"),minWidth:145},
@@ -31,14 +39,15 @@ const columns=computed(()=>[
   {key:"actions",label:ui.t("table.actions"),minWidth:80,align:"right" as const},
 ]);
 const activeFilter=computed(()=>status.value);
+const visibleColumns=computed(()=>orderAndFilterColumns(columns.value,preferences.state));
 let ctrl:AbortController|null=null,serial=0,timer:ReturnType<typeof setTimeout>|null=null;
 watch(search,value=>{
   if(timer)clearTimeout(timer);
   timer=setTimeout(()=>{page.value=1;query.value=value.trim();},280);
 });
 watch(()=>props.companyId,()=>{
-  rows.value=[];total.value=0;page.value=1;query.value="";search.value="";
-  status.value="";opened.value=null;issue.value="";notice.value="";
+  rows.value=[];total.value=0;page.value=1;query.value="";
+  settingsOpen.value=false;opened.value=null;issue.value="";notice.value="";
   void load();
 },{immediate:true});
 watch([page,perPage,query,status],()=>{void load()});
@@ -129,10 +138,14 @@ onUnmounted(()=>{ctrl?.abort();if(timer)clearTimeout(timer);});
             <option value="disposed">{{ ui.t("disposal.stage.disposed") }}</option>
           </BaseSelect>
         </label>
+        <BaseButton variant="secondary" :disabled="!preferences.ready.value"
+          :title="settingsTitle" :aria-label="settingsTitle" @click="settingsOpen=true">
+          <SlidersHorizontal :size="17" aria-hidden="true"/>{{settingsTitle}}
+        </BaseButton>
       </div>
-      <BaseDataTable :rows="rows" row-key="id" :columns="columns" :loading="loading"
+      <BaseDataTable :rows="rows" row-key="id" :columns="visibleColumns" :loading="loading"
         :caption="ui.t('disposal.title')" :empty-title="ui.t('disposal.empty')"
-        :min-table-width="930">
+        :min-table-width="Math.max(650,visibleColumns.length*132)">
         <template #cell-asset="{row}"><strong>{{ row.asset.inventory_number }}</strong></template>
         <template #cell-name="{row}"><span class="truncate" :title="row.asset.name">{{ row.asset.name }}</span></template>
         <template #cell-status="{row}">
@@ -156,6 +169,11 @@ onUnmounted(()=>{ctrl?.abort();if(timer)clearTimeout(timer);});
         :caption="ui.t('disposal.title')" @change:page="page=$event"
         @change:size="perPage=$event;page=1"/>
     </BaseCard>
+    <TableSettingsDialog :open="settingsOpen" :columns="columns"
+      :hidden-columns="preferences.state.hidden_columns" :column-order="preferences.state.column_order"
+      :busy="!preferences.ready.value||preferences.saving.value" @close="settingsOpen=false"
+      @reset="preferences.reset()" @update:hidden-columns="preferences.state.hidden_columns=$event"
+      @update:column-order="preferences.state.column_order=$event"/>
     <AssetDisposalDialog :asset-id="opened?.asset_id??null" :company-id="companyId"
       :asset-name="opened?.asset.name" :inventory-number="opened?.asset.inventory_number"
       :asset-version="opened?.asset.version" :asset-status="opened?.asset.status"
