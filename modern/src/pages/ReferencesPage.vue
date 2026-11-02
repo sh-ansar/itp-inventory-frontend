@@ -164,14 +164,16 @@ async function upload(event:Event){
     <div class="page-heading">
       <div><h2>{{ ui.t("heading.references") }}</h2></div>
       <div class="page-actions">
-        <BaseButton variant="secondary" :disabled="busy" @click="refresh">
-          <RefreshCw :size="17" aria-hidden="true"/>{{ ui.t("actions.refresh") }}
+        <BaseButton variant="secondary" :disabled="busy"
+          :title="ui.t('actions.refresh')" :aria-label="ui.t('actions.refresh')" @click="refresh">
+          <RefreshCw :size="17" aria-hidden="true"/><span class="action-label">{{ ui.t("actions.refresh") }}</span>
         </BaseButton>
         <BaseButton v-if="canWrite&&current==='categories'" variant="secondary"
-          :disabled="presetsBusy" @click="installPresets">
-          <Sparkles :size="17" aria-hidden="true"/>{{ ui.t("types.presets") }}
+          :disabled="presetsBusy" :title="ui.t('types.presets')" :aria-label="ui.t('types.presets')" @click="installPresets">
+          <Sparkles :size="17" aria-hidden="true"/><span class="action-label">{{ ui.t("types.presets") }}</span>
         </BaseButton>
-        <BaseButton v-if="canWrite" @click="showCreate()"><Plus :size="17" aria-hidden="true"/>{{ ui.t("actions.add") }}</BaseButton>
+        <BaseButton v-if="canWrite" :title="ui.t('actions.add')" :aria-label="ui.t('actions.add')" @click="showCreate()">
+          <Plus :size="17" aria-hidden="true"/><span class="action-label">{{ ui.t("actions.add") }}</span></BaseButton>
       </div>
     </div>
     <div class="reference-tabs" role="group" :aria-label="ui.t('references.kind')">
@@ -267,5 +269,5 @@ async function upload(event:Event){
 .icon-picker{display:flex;align-items:center;gap:13px}
 .icon-picker svg{flex:none;color:var(--color-primary)}
 .sr-file{position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(100%)}
-@media(max-width:650px){.page-actions{width:100%}.page-actions :deep(.base-button){flex:1}.reference-tabs button{flex:1;min-width:120px}}
+@media(max-width:650px){.page-actions{width:100%}.page-actions :deep(.base-button){flex:1;min-width:0;justify-content:center}.page-actions .action-label{display:none}.reference-tabs button{flex:1;min-width:120px}}
 </style>
