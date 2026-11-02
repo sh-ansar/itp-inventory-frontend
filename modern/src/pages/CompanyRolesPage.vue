@@ -1,4 +1,7 @@
 <script setup lang="ts">
+import BaseConfirmDialog from "../components/ui/BaseConfirmDialog.vue";
+import { useConfirmDialog } from "../composables/useConfirmDialog";
+
 import {ref,watch,computed} from "vue";
 import {ShieldCheck,RefreshCw,Save,UserPlus,UserMinus} from "lucide-vue-next";
 import BaseCard from "../components/ui/BaseCard.vue";
@@ -7,6 +10,9 @@ import {companyMembers,updateMemberRole,addCompanyMember,removeCompanyMember} fr
 import type {Member} from "../api/parity";
 import {useUiSettings} from "../stores/uiSettings";
 
+const { open: confirmOpen, message: confirmMessage, title: confirmTitle,
+  confirmLabel: confirmLabel, danger: confirmDanger, ask: askConfirmation,
+  settle: settleConfirmation } = useConfirmDialog();
 const props=defineProps<{companyId:string;companyName:string;role:string}>();
 const ui=useUiSettings();
 const members=ref<Member[]>([]),loading=ref(false),saving=ref<number|null>(null),error=ref(""),notice=ref("");
@@ -64,7 +70,7 @@ async function addMember() {
 async function removeMember(m:Member) {
   const reason=removeReason.value[m.user_id]?.trim();
   if(!isAdmin.value||saving.value!==null||!reason||reason.length<5)return;
-  if(!window.confirm(words.value.removeNote+" — "+m.name+"?"))return;
+  if(!(await askConfirmation(words.value.removeNote+" — "+m.name+"?", {danger:true,confirmLabel:words.value.remove})))return;
   saving.value=m.user_id;error.value="";notice.value="";
   try{await removeCompanyMember(props.companyId,m.user_id,reason);
     await load();notice.value=words.value.removed;
@@ -116,6 +122,10 @@ watch(()=>[props.companyId,props.role],()=>void load(),{immediate:true});
     </div>
   </BaseCard>
 </section>
+
+  <BaseConfirmDialog :open="confirmOpen" :message="confirmMessage" :title="confirmTitle"
+    :confirm-label="confirmLabel" :danger="confirmDanger"
+    @confirm="settleConfirmation(true)" @cancel="settleConfirmation(false)" />
 </template>
 
 <style scoped>
