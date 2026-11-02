@@ -83,7 +83,7 @@ watch(()=>[props.companyId,props.role],()=>void load(),{immediate:true});
 
 <template>
 <section class="roles-page">
-  <header class="page-heading"><div><h2>{{words.title}}</h2><p class="muted">{{words.intro}} · {{companyName}}</p></div>
+  <header class="page-heading"><div><h2>{{words.title}}</h2><p class="muted">{{words.intro}}</p></div>
     <BaseButton variant="secondary" :disabled="loading" @click="load"><RefreshCw :size="16"/>{{words.refresh}}</BaseButton>
   </header>
   <p v-if="error" role="alert" class="error">{{error}}</p>
