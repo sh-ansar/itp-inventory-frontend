@@ -1,4 +1,4 @@
-import { test, expect, type Page } from "@playwright/test";
+import { test, expect, type Page } from "./fixtures";
 import { readFileSync } from "node:fs";
 
 test.skip(!process.env.INVENTORY_QA_SECRET_FILE, "Synthetic-only local QA fixture required");
