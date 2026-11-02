@@ -148,8 +148,9 @@ test("company administrator can see role management and inspect membership list"
 test("Portal shortcut stays visible in the mobile drawer and collapsed desktop sidebar",async({page})=>{
   await page.setViewportSize({width:390,height:850});
   await page.goto("/inventory/registry");
-  await page.getByRole("button",{name:"Открыть меню"}).click();
   const shortcut=page.locator(".sidebar-footer .portal-home");
+  await expect(shortcut).toBeHidden();
+  await page.getByRole("button",{name:"Открыть меню"}).click();
   await expect(shortcut).toBeVisible();
   await expect(shortcut).toHaveAttribute("href","https://platform.itpmining.kz/");
   await page.getByRole("button",{name:"Закрыть меню"}).last().click();
