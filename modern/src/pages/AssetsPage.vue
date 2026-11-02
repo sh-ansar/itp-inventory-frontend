@@ -319,7 +319,7 @@ onUnmounted(() => {
         @change:page="page=$event"
         @change:size="perPage=$event; page=1" />
     </BaseCard>
-    <BaseDialog :open="bulkOpen" :title="bulkText.title" @close="!bulkBusy&&(bulkOpen=false)">
+    <BaseDialog :open="bulkOpen" :title="bulkMode==='move'?bulkText.move:bulkText.title" @close="!bulkBusy&&(bulkOpen=false)">
       <p class="muted">{{bulkText.selected}}: {{selectedAssets.length}}. {{bulkText.note}}</p>
       <p v-if="bulkError" class="error" role="alert">{{bulkError}}</p>
       <form id="bulk-person-form" class="bulk-form" @submit.prevent="submitBulk">
@@ -328,7 +328,7 @@ onUnmounted(() => {
         <label v-else>{{ui.t("asset.responsiblePerson")}}<select v-model="bulkPerson"><option value="">{{ui.t("form.none")}}</option><option v-for="person in people" :key="person.id" :value="person.id">{{person.name}}</option></select></label>
         <label>{{bulkText.reason}}<textarea v-model="bulkReason" minlength="5" maxlength="1000" required rows="3"/></label>
       </form>
-      <template #footer><BaseButton variant="secondary" :disabled="bulkBusy" @click="bulkOpen=false">{{ui.t("actions.cancel")}}</BaseButton><BaseButton type="submit" form="bulk-person-form" :disabled="bulkBusy||bulkReason.trim().length<5||(bulkMode==='move'&&!bulkLocation)">{{bulkText.save}}</BaseButton></template>
+      <template #footer><BaseButton variant="secondary" :disabled="bulkBusy" @click="bulkOpen=false">{{ui.t("actions.cancel")}}</BaseButton><BaseButton type="submit" form="bulk-person-form" :disabled="bulkBusy||bulkReason.trim().length<5||(bulkMode==='move'&&!bulkLocation)">{{bulkMode==='move'?bulkText.move:bulkText.save}}</BaseButton></template>
     </BaseDialog>
     <AssetEditorDialog :open="showForm" :asset="editing" :company-id="companyId"
       :references="references" :facilities="facilities" :people="people" @close="showForm=false" @saved="afterSave" />
