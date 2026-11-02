@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import BaseSelect from "../components/ui/BaseSelect.vue";
 import { computed, onUnmounted, reactive, ref, watch } from "vue";
 import { RouterLink } from "vue-router";
 import { ArrowLeftRight, Boxes, Plus, RefreshCw, Warehouse, PackageCheck } from "lucide-vue-next";
@@ -214,10 +215,10 @@ onUnmounted(()=>{ctrl?.abort();if(timer)clearTimeout(timer)});
               @click="selectTab(option.id)">{{ option.label }}</button>
           </div>
           <label class="warehouse-picker"><span>{{ ui.t("stock.warehouse") }}</span>
-            <select v-model="warehouseId" :aria-label="ui.t('stock.warehouse')" @change="page=1">
+            <BaseSelect v-model="warehouseId" :aria-label="ui.t('stock.warehouse')" @change="page=1">
               <option v-for="warehouse in warehouses" :key="warehouse.id" :value="warehouse.id">
                 {{ warehouse.name }}</option>
-            </select>
+            </BaseSelect>
           </label>
         </div>
         <div v-if="tab==='catalog'" class="warehouse-search">
@@ -279,14 +280,14 @@ onUnmounted(()=>{ctrl?.abort();if(timer)clearTimeout(timer)});
         <label><span>{{ ui.t("table.name") }} *</span>
           <input v-model="itemFields.name" required minlength="2" maxlength="255" :disabled="saving"/></label>
         <label><span>{{ ui.t("stock.unit") }} *</span>
-          <select v-model="itemFields.unit" :disabled="saving">
+          <BaseSelect v-model="itemFields.unit" :disabled="saving">
             <option v-for="unit in ['pcs','pack','kg','m','l']" :key="unit" :value="unit">{{ unit }}</option>
-          </select></label>
+          </BaseSelect></label>
         <label><span>{{ ui.t("types.title") }}</span>
-          <select v-model="itemFields.category_id" :disabled="saving">
+          <BaseSelect v-model="itemFields.category_id" :disabled="saving">
             <option value="">{{ ui.t("form.none") }}</option>
             <option v-for="cat in refs.categories" :key="cat.id" :value="cat.id">{{ cat.name }}</option>
-          </select></label>
+          </BaseSelect></label>
         <label><span>{{ ui.t("stock.minimum") }}</span>
           <input v-model="itemFields.minimum_quantity" type="text" inputmode="decimal"
             pattern="[0-9]+(\.[0-9]{1,3})?" :disabled="saving"/>
@@ -303,26 +304,26 @@ onUnmounted(()=>{ctrl?.abort();if(timer)clearTimeout(timer)});
       <form id="stock-movement-form" class="warehouse-form" @submit.prevent="saveMovement">
         <p v-if="formError" class="error" role="alert">{{ formError }}</p>
         <label><span>{{ ui.t("stock.sku") }} *</span>
-          <select v-model="moveFields.stock_item_id" required :disabled="saving">
+          <BaseSelect v-model="moveFields.stock_item_id" required :disabled="saving">
             <option value="">{{ ui.t("form.none") }}</option>
             <option v-for="item in allItems" :key="item.id" :value="item.id">{{ item.code }} · {{ item.name }}</option>
-          </select></label>
+          </BaseSelect></label>
         <label><span>{{ ui.t("stock.operation") }} *</span>
-          <select v-model="moveFields.operation" :disabled="saving">
+          <BaseSelect v-model="moveFields.operation" :disabled="saving">
             <option value="receipt">{{ ui.t("stock.operation.receipt") }}</option>
             <option value="issue">{{ ui.t("stock.operation.issue") }}</option>
             <option value="transfer">{{ ui.t("stock.operation.transfer") }}</option>
-          </select></label>
+          </BaseSelect></label>
         <label><span>{{ ui.t(moveFields.operation==='receipt'?'stock.warehouse':'stock.sourceWarehouse') }} *</span>
-          <select v-model="moveFields.warehouse_node_id" required :disabled="saving">
+          <BaseSelect v-model="moveFields.warehouse_node_id" required :disabled="saving">
             <option v-for="warehouse in warehouses" :key="warehouse.id" :value="warehouse.id">{{ warehouse.name }}</option>
-          </select></label>
+          </BaseSelect></label>
         <label v-if="moveFields.operation==='transfer'"><span>{{ ui.t("stock.targetWarehouse") }} *</span>
-          <select v-model="moveFields.target_warehouse_node_id" required :disabled="saving">
+          <BaseSelect v-model="moveFields.target_warehouse_node_id" required :disabled="saving">
             <option value="">{{ ui.t("form.none") }}</option>
             <option v-for="warehouse in warehouses.filter(w=>w.id!==moveFields.warehouse_node_id)"
               :key="warehouse.id" :value="warehouse.id">{{ warehouse.name }}</option>
-          </select></label>
+          </BaseSelect></label>
         <label><span>{{ ui.t("stock.quantity") }} *</span>
           <input v-model="moveFields.quantity" inputmode="decimal" type="text"
             pattern="[0-9]+(\.[0-9]{1,3})?" required :disabled="saving"/>
