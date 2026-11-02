@@ -67,13 +67,16 @@ test("six detailed print forms use authenticated API, actual rows, filters and s
       await selector.selectOption({index:1});
     }
     if(kind==="warehouse-balances"){
-      const selector=page.getByRole("combobox",{name:"Склад"});
-      await expect.poll(async()=>selector.locator("option").count()).toBeGreaterThan(1);
-      await selector.selectOption({index:1});
+      await page.getByRole("button",{name:"Склад",exact:true}).click();
+      const options=page.getByRole("dialog",{name:"Склад"}).getByRole("checkbox");
+      await expect.poll(async()=>options.count()).toBeGreaterThan(0);
+      await options.first().check();
+      await page.keyboard.press("Escape");
     }
     if(kind==="disposal-register"){
-      const selector=page.getByRole("combobox",{name:"Этап списания"});
-      await selector.selectOption("draft");
+      await page.getByRole("button",{name:"Этап списания",exact:true}).click();
+      await page.getByRole("dialog",{name:"Этап списания"}).getByRole("checkbox",{name:"Черновик"}).check();
+      await page.keyboard.press("Escape");
     }
     const api=page.waitForResponse(r=>r.url().includes("/reports/forms/"+kind)&&r.status()===200,{timeout:15000});
     const popupEvent=page.waitForEvent("popup");
