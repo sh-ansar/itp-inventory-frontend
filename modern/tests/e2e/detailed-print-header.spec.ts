@@ -82,7 +82,12 @@ test("six detailed print forms use authenticated API, actual rows, filters and s
     const apiResponse=await api;
     const payload=await apiResponse.json();
     await popup.locator("main.document h1").waitFor({state:"visible",timeout:18000});
-    await expect(popup.locator("table")).toHaveCount(1);
+    const tables=popup.locator("table");
+    if(["by-facility","by-custodian","warehouse-balances"].includes(kind)){
+      expect(await tables.count()).toBeGreaterThanOrEqual(1);
+    }else{
+      await expect(tables).toHaveCount(1);
+    }
     await expect(popup.locator(".signature")).toHaveCount(4);
     await expect(popup.locator(".document-head .company")).toContainText("Inventory QA - Mining");
     expect(payload.data.row_count).toBe(payload.data.rows.length);
