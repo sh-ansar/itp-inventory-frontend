@@ -111,7 +111,7 @@ onUnmounted(()=>{
 <template>
   <div class="stock-page">
     <div class="stock-heading">
-      <div><h2>{{ ui.t("stock.title") }}</h2><p class="muted">{{ companyName }}</p></div>
+      <div><h2>{{ ui.t("stock.title") }}</h2></div>
       <div class="stock-actions">
         <BaseButton variant="secondary" :disabled="loading" @click="load">
           <RefreshCw :size="17" aria-hidden="true"/>{{ ui.t("actions.refresh") }}
@@ -137,10 +137,6 @@ onUnmounted(()=>{
         <ClipboardCheck :size="23" aria-hidden="true"/>
         <strong>{{ total.toLocaleString(ui.locale) }}</strong>
         <span class="muted">{{ ui.t("stock.totalSessions") }}</span>
-      </BaseCard>
-      <BaseCard>
-        <span class="muted">{{ ui.t("table.page") }}</span>
-        <strong>{{ page }} / {{ lastPage }}</strong>
       </BaseCard>
     </div>
     <BaseCard class="stock-table-card">
