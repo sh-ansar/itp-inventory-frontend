@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import BaseSelect from "../ui/BaseSelect.vue";
 import BaseConfirmDialog from "../ui/BaseConfirmDialog.vue";
 import { useConfirmDialog } from "../../composables/useConfirmDialog";
 import { computed, ref, watch } from "vue";
@@ -81,20 +82,20 @@ async function save() {
       </div>
       <label v-if="!selectedCount" class="stocktake-field">
         <span>{{ ui.t("stock.facilityNode") }}</span>
-        <select v-model="facilityId" :disabled="saving" @change="locationId=''">
+        <BaseSelect v-model="facilityId" :disabled="saving" @change="locationId=''">
           <option value="">{{ ui.t("stock.allLocations") }}</option>
           <option v-for="node in (facilities??[])" :key="node.id" :value="node.id">
             {{ ui.t("topology.type."+node.node_type) }} · {{ node.name }}
           </option>
-        </select>
+        </BaseSelect>
       </label>
       <label v-if="!selectedCount&&!facilityId" class="stocktake-field">
         <span>{{ ui.t("stock.scope") }}</span>
-        <select v-model="locationId" :disabled="saving">
+        <BaseSelect v-model="locationId" :disabled="saving">
           <option value="">{{ ui.t("stock.allLocations") }}</option>
           <option v-for="location in references.physical_locations"
             :key="location.id" :value="location.id">{{ location.name }}</option>
-        </select>
+        </BaseSelect>
       </label>
       <p class="muted stocktake-warning">{{ ui.t("stock.snapshotNote") }}</p>
     </form>
