@@ -11,7 +11,7 @@ import BasePagination from "../components/ui/BasePagination.vue";
 import BaseSearchField from "../components/ui/BaseSearchField.vue";
 import BaseStatusPill from "../components/ui/BaseStatusPill.vue";
 import { InventoryApiError } from "../api/client";
-import {reportDocuments,reportDocumentHref,uploadReportDocument} from "../api/parity";
+import {reportDocuments,reportDocumentHref,uploadReportDocument,stocktakeXlsxHref} from "../api/parity";
 import type {ReportDocument} from "../api/parity";
 import { referenceData } from "../api/inventory";
 import type { ReferenceData } from "../api/inventory";
@@ -238,6 +238,9 @@ onUnmounted(()=>{listCtrl?.abort();if(searchTimer)clearTimeout(searchTimer);});
       <div class="detail-actions">
         <BaseButton variant="secondary" @click="refresh"><RefreshCw :size="16" aria-hidden="true"/>{{ ui.t("actions.refresh") }}</BaseButton>
         <BaseButton variant="secondary" @click="openEvents"><History :size="16" aria-hidden="true"/>{{ ui.t("actions.history") }}</BaseButton>
+        <a v-if="stocktake" class="download-link" :href="stocktakeXlsxHref(companyId,stocktake.id)" download>
+          <Download :size="17" aria-hidden="true"/>Excel XLSX
+        </a>
         <a v-if="stocktake" class="download-link" :href="inventoryReportHref(companyId,stocktake.id)" download>
           <Download :size="17" aria-hidden="true"/>{{ ui.t("stock.report") }}
         </a>
