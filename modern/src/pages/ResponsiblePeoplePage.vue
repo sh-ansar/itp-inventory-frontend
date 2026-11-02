@@ -3,7 +3,7 @@ import BaseSelect from "../components/ui/BaseSelect.vue";
 import BaseConfirmDialog from "../components/ui/BaseConfirmDialog.vue";
 import { useConfirmDialog } from "../composables/useConfirmDialog";
 import { computed, onUnmounted, reactive, ref, toRef, watch } from "vue";
-import { Plus, Pencil, RefreshCw, Users, Info , SlidersHorizontal } from "lucide-vue-next";
+import { Plus, Pencil, RefreshCw, Users, SlidersHorizontal } from "lucide-vue-next";
 import BaseButton from "../components/ui/BaseButton.vue";
 import BaseIconButton from "../components/ui/BaseIconButton.vue";
 import BaseCard from "../components/ui/BaseCard.vue";
@@ -120,18 +120,15 @@ onUnmounted(()=>{ctrl?.abort();if(timer)clearTimeout(timer)});
       <div><h2>{{ ui.t("people.title") }}</h2>
         <p class="muted">{{ ui.t("people.subtitle") }}</p></div>
       <div class="actions">
-        <BaseButton variant="secondary" :disabled="loading" @click="load">
-          <RefreshCw :size="17" aria-hidden="true"/>{{ ui.t("actions.refresh") }}</BaseButton>
-        <BaseButton v-if="canWrite" @click="openForm()">
-          <Plus :size="17" aria-hidden="true"/>{{ ui.t("people.new") }}</BaseButton>
+        <BaseButton variant="secondary" :disabled="loading" :title="ui.t('actions.refresh')"
+          :aria-label="ui.t('actions.refresh')" @click="load">
+          <RefreshCw :size="17" aria-hidden="true"/><span class="action-label">{{ ui.t("actions.refresh") }}</span></BaseButton>
+        <BaseButton v-if="canWrite" :title="ui.t('people.new')" :aria-label="ui.t('people.new')" @click="openForm()">
+          <Plus :size="17" aria-hidden="true"/><span class="action-label">{{ ui.t("people.new") }}</span></BaseButton>
       </div>
     </div>
     <p v-if="issue" class="error" role="alert">{{ issue }}</p>
     <p v-if="notice" class="notice" role="status">{{ notice }}</p>
-    <BaseCard class="people-note">
-      <Info :size="19" aria-hidden="true"/>
-      <p>{{ ui.t("people.hrmFuture") }}</p>
-    </BaseCard>
     <BaseCard class="people-content">
       <div class="people-toolbar">
         <BaseSearchField v-model="search" :label="ui.t('people.search')"
@@ -219,9 +216,6 @@ onUnmounted(()=>{ctrl?.abort();if(timer)clearTimeout(timer)});
 .people-header{display:flex;align-items:center;justify-content:space-between;gap:14px;flex-wrap:wrap}
 .people-header h2{margin:0}.people-header p{margin:6px 0 0}
 .actions{display:flex;gap:9px;flex-wrap:wrap}
-.people-note{display:flex;align-items:center;gap:12px;color:var(--color-muted);font-size:12px}
-.people-note svg{flex:none;color:var(--color-primary)}
-.people-note p{margin:0}
 .people-content{min-width:0}
 .people-toolbar{display:flex;align-items:flex-end;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:17px}
 .status-filter{display:grid;gap:6px;min-width:150px;font-size:12px;color:var(--color-muted)}
@@ -231,5 +225,5 @@ onUnmounted(()=>{ctrl?.abort();if(timer)clearTimeout(timer)});
 .field input{width:100%}
 .field small{font-size:11px;color:var(--color-danger)}
 .active-check{display:flex;align-items:center;gap:9px;font-size:12px}
-@media(max-width:650px){.actions{width:100%}.actions :deep(.base-button){flex:1}.people-toolbar{flex-direction:column;align-items:stretch}.status-filter,.status-filter select{width:100%}}
+@media(max-width:650px){.actions{width:100%}.actions :deep(.base-button){flex:1;min-width:0;justify-content:center}.action-label{display:none}.people-toolbar{flex-direction:column;align-items:stretch}.status-filter,.status-filter select{width:100%}}
 </style>

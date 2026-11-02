@@ -13,7 +13,7 @@ setup("sign in synthetic admin and viewer once per test run", async ({ browser }
     ["viewer", "inventory.viewer@example.test"],
   ] as const) {
     const context = await browser.newContext({
-      baseURL: "http://127.0.0.1:5174/inventory/",
+      baseURL: process.env.INVENTORY_E2E_BASE_URL || "http://127.0.0.1:5174/inventory/",
     });
     try {
       const page = await context.newPage();

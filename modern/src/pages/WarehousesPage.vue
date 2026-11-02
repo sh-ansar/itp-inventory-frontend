@@ -86,6 +86,9 @@ const visibleBalanceColumns=computed(()=>orderAndFilterColumns(balanceColumns.va
 const visibleItemColumns=computed(()=>orderAndFilterColumns(itemColumns.value,catalogPreferences.state));
 const visibleHistoryColumns=computed(()=>orderAndFilterColumns(historyColumns.value,historyPreferences.state));
 let ctrl:AbortController|null=null,serial=0;let timer:ReturnType<typeof setTimeout>|null=null;
+// The immediate company watcher calls bootstrap synchronously during setup.
+// Initialize this guard before registering that watcher to avoid a TDZ exception.
+let bootstrapGeneration=0;
 watch(search,value=>{
   if(timer)clearTimeout(timer);
   timer=setTimeout(()=>{page.value=1;debouncedSearch.value=value.trim();},300);
@@ -97,7 +100,6 @@ watch(()=>props.companyId,()=>{
   void bootstrap();
 },{immediate:true});
 watch([tab,page,perPage,warehouseId,debouncedSearch],()=>{void load();});
-let bootstrapGeneration=0;
 async function bootstrap(){
   const companyId=props.companyId;
   if(!companyId)return;

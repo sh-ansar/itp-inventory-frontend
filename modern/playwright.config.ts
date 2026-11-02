@@ -13,7 +13,7 @@ export default defineConfig({
   outputDir: "test-results",
   globalTeardown: qa ? "./tests/e2e/auth.teardown.ts" : undefined,
   use: {
-    baseURL: "http://127.0.0.1:5174/inventory/",
+    baseURL: process.env.INVENTORY_E2E_BASE_URL || "http://127.0.0.1:5174/inventory/",
     browserName: "chromium",
     headless: true,
     trace: "retain-on-failure",
