@@ -1,21 +1,38 @@
 <script setup lang="ts">
 import { computed, onUnmounted, reactive, ref, watch } from "vue";
+import { useRoute } from "vue-router";
 import { BarChart3, Download, Printer, RefreshCw, Package, Warehouse, ClipboardCheck, AlertTriangle } from "lucide-vue-next";
 import BaseButton from "../components/ui/BaseButton.vue";
 import BaseCard from "../components/ui/BaseCard.vue";
 import BaseDataTable from "../components/ui/BaseDataTable.vue";
 import BaseSelect from "../components/ui/BaseSelect.vue";
 import BaseStatusPill from "../components/ui/BaseStatusPill.vue";
+import BaseSearchField from "../components/ui/BaseSearchField.vue";
+import { InventoryApiError } from "../api/client";
 import { getInventorySummary, summaryCsvHref, summaryPrintDocument, summaryStatusLabel } from "../api/reports";
 import type { InventorySummary } from "../api/reports";
+import { PRINT_FORM_KINDS,getDetailedPrintReport,printFormTitle,renderDetailedPrintDocument } from "../api/printForms";
+import type { PrintFormKind,PrintFormFilters } from "../api/printForms";
+import { inventorySessions } from "../api/stocktakes";
+import type { InventorySession } from "../api/stocktakes";
 import { getFacilityNodes, getResponsiblePeople } from "../api/topology";
 import type { FacilityNode, ResponsiblePerson } from "../api/topology";
 import { useUiSettings } from "../stores/uiSettings";
 
 const props=defineProps<{companyId:string;companyName:string;role:string}>();
 const ui=useUiSettings();
+const route=useRoute();
 const loading=ref(false),error=ref(""),report=ref<InventorySummary|null>(null);
 const facilities=ref<FacilityNode[]>([]),people=ref<ResponsiblePerson[]>([]);
+const sessions=ref<InventorySession[]>([]);
+const warehouses=computed(()=>facilities.value.filter(node=>node.node_type==="warehouse"));
+const printKind=ref<PrintFormKind>("asset-register");
+const printSessionId=ref(typeof route.query.print_session==="string"?route.query.print_session:"");
+const printWarehouseId=ref("");
+const printDisposalStatus=ref("");
+const printSearch=ref("");
+const printing=ref(false),printError=ref("");
+let dictionarySerial=0;
 const filters=reactive({status:"",facility_node_id:"",responsible_person_id:""});
 let request:AbortController|null=null,serial=0;
 
@@ -52,6 +69,21 @@ const t=computed(()=>ui.locale==="ka"
         noData:"Нет данных",unassigned:"Не назначено",date:"Сформирован",
         popup:"Браузер заблокировал окно печати"});
 
+const printOptions=computed(()=>PRINT_FORM_KINDS.map(kind=>({kind,label:printFormTitle(kind,ui.locale)})));
+const printText=computed(()=>ui.locale==="ka"
+  ?{title:"დასაბეჭდი ფორმები",hint:"ოფიციალური ჩანაწერების საფუძველზე შექმნილი შიდა ფორმები",
+    kind:"დოკუმენტის ტიპი",session:"ინვენტარიზაცია",warehouse:"საწყობი",stage:"ჩამოწერის ეტაპი",
+    search:"ძიება დასაბეჭდად",preview:"ნახვა / ბეჭდვა",choose:"აირჩიეთ ინვენტარიზაცია",
+    all:"ყველა",errorLimit:"ზედმეტად ბევრი სტრიქონია. გამოიყენეთ ფილტრები."}
+  :ui.locale==="en"
+    ?{title:"Printable documents",hint:"Internal forms based on actual inventory records",
+      kind:"Document type",session:"Stocktake",warehouse:"Warehouse",stage:"Disposal stage",
+      search:"Search for printing",preview:"Preview / Print",choose:"Choose a stocktake",
+      all:"All",errorLimit:"Too many rows. Narrow the filters."}
+    :{title:"Расширенные печатные формы",hint:"Внутренние документы на основе фактических данных учёта",
+      kind:"Вид документа",session:"Инвентаризация",warehouse:"Склад",stage:"Этап списания",
+      search:"Поиск для печати",preview:"Просмотр / печать",choose:"Выберите инвентаризацию",
+      all:"Все",errorLimit:"Слишком много строк. Уточните фильтры."});
 const groups=computed(()=>[
   {key:"by_status",title:t.value.statusGroup,rows:report.value?.assets.by_status??[]},
   {key:"by_category",title:t.value.categoryGroup,rows:report.value?.assets.by_category??[]},
@@ -91,20 +123,80 @@ async function load(){
     if(current===serial)loading.value=false;
   }
 }
-watch(()=>props.companyId,async id=>{
+watch(()=>props.companyId,async (id,previousId)=>{
+  const requestId=++dictionarySerial;
   filters.status="";filters.facility_node_id="";filters.responsible_person_id="";
-  report.value=null;facilities.value=[];people.value=[];
+  report.value=null;facilities.value=[];people.value=[];sessions.value=[];
+  if(previousId)printSessionId.value="";
+  printWarehouseId.value="";printDisposalStatus.value="";printSearch.value="";printError.value="";
   if(!id)return;
-  try{
-    const [nodes,persons]=await Promise.all([
-      getFacilityNodes(id),getResponsiblePeople(id,{page:1,per_page:100,active:"1"}),
-    ]);
-    if(id===props.companyId){facilities.value=nodes.data;people.value=persons.data;}
-  }catch{ /* Reports remain usable if optional filter dictionaries are unavailable. */ }
+  const results=await Promise.allSettled([
+    getFacilityNodes(id),
+    getResponsiblePeople(id,{page:1,per_page:100,active:"1"}),
+    inventorySessions(id,{search:"",status:"",page:1,per_page:100}),
+  ]);
+  if(requestId!==dictionarySerial||id!==props.companyId)return;
+  if(results[0].status==="fulfilled")facilities.value=results[0].value.data;
+  if(results[1].status==="fulfilled")people.value=results[1].value.data;
+  if(results[2].status==="fulfilled")sessions.value=results[2].value.data;
+},{immediate:true});
+watch(()=>route.query.print_session,value=>{
+  if(typeof value==="string"&&value.length){
+    printKind.value="stocktake-act";printSessionId.value=value;
+  }
 },{immediate:true});
 watch([()=>props.companyId,filters],()=>{void load();},{immediate:true,deep:true});
-onUnmounted(()=>request?.abort());
+onUnmounted(()=>{dictionarySerial++;request?.abort();});
 
+function detailedFilters():PrintFormFilters{
+  if(printKind.value==="stocktake-act")return {session_id:printSessionId.value};
+  if(printKind.value==="warehouse-balances")return {
+    warehouse_node_id:printWarehouseId.value,search:printSearch.value.trim(),
+  };
+  return {
+    status:filters.status,
+    facility_node_id:filters.facility_node_id,
+    responsible_person_id:filters.responsible_person_id,
+    disposal_status:printKind.value==="disposal-register"?printDisposalStatus.value:"",
+    search:printSearch.value.trim(),
+  };
+}
+async function printDetailed(){
+  if(printing.value||!props.companyId)return;
+  if(printKind.value==="stocktake-act"&&!printSessionId.value){
+    printError.value=printText.value.choose;return;
+  }
+  const popup=window.open("","_blank","width=1100,height=870");
+  if(!popup){printError.value=t.value.popup;return;}
+  popup.opener=null;
+  const company=props.companyId,kind=printKind.value;
+  const controller=new AbortController();
+  printError.value="";printing.value=true;
+  popup.document.open();
+  popup.document.write('<!doctype html><html><head><meta charset="utf-8"><title>ITP Inventory</title></head><body>ITP Inventory…</body></html>');
+  popup.document.close();
+  try{
+    const report=await getDetailedPrintReport(company,kind,detailedFilters(),controller.signal);
+    if(company!==props.companyId){popup.close();return;}
+    const selected={
+      facility:facilities.value.find(x=>x.id===filters.facility_node_id)?.name,
+      custodian:people.value.find(x=>x.id===filters.responsible_person_id)?.name,
+      warehouse:warehouses.value.find(x=>x.id===printWarehouseId.value)?.name,
+    };
+    popup.document.open();
+    popup.document.write(renderDetailedPrintDocument(report,ui.locale,selected));
+    popup.document.close();
+    popup.focus();
+    popup.print();
+  }catch(error){
+    popup.close();
+    printError.value=error instanceof InventoryApiError && error.status===413
+      ?printText.value.errorLimit:error instanceof Error?error.message:printText.value.errorLimit;
+  }finally{
+    printing.value=false;
+    controller.abort();
+  }
+}
 function printReport(){
   if(!report.value||loading.value)return;
   // The data is already loaded. Open synchronously in response to the click.
@@ -162,6 +254,51 @@ function dateLabel(value:string){
         </BaseSelect>
       </label>
     </BaseCard>
+    <BaseCard class="print-forms-panel">
+      <div class="print-forms-heading">
+        <div class="print-forms-title"><Printer :size="20" aria-hidden="true"/>
+          <div><h3>{{printText.title}}</h3><p class="muted">{{printText.hint}}</p></div>
+        </div>
+        <BaseButton :disabled="printing||!companyId||(printKind==='stocktake-act'&&!printSessionId)"
+          :aria-label="printText.preview" @click="printDetailed">
+          <Printer :size="17" aria-hidden="true"/>{{printText.preview}}
+        </BaseButton>
+      </div>
+      <div class="print-forms-grid">
+        <label class="print-field"><span>{{printText.kind}}</span>
+          <BaseSelect v-model="printKind" :aria-label="printText.kind">
+            <option v-for="option in printOptions" :key="option.kind" :value="option.kind">{{option.label}}</option>
+          </BaseSelect>
+        </label>
+        <label v-if="printKind==='stocktake-act'" class="print-field"><span>{{printText.session}}</span>
+          <BaseSelect v-model="printSessionId" :aria-label="printText.session">
+            <option value="">{{printText.choose}}</option>
+            <option v-for="session in sessions" :key="session.id" :value="session.id">{{session.name}}</option>
+            <option v-if="printSessionId&&!sessions.some(x=>x.id===printSessionId)" :value="printSessionId">{{printSessionId}}</option>
+          </BaseSelect>
+        </label>
+        <label v-if="printKind==='warehouse-balances'" class="print-field"><span>{{printText.warehouse}}</span>
+          <BaseSelect v-model="printWarehouseId" :aria-label="printText.warehouse">
+            <option value="">{{printText.all}}</option>
+            <option v-for="node in warehouses" :key="node.id" :value="node.id">{{node.name}}</option>
+          </BaseSelect>
+        </label>
+        <label v-if="printKind==='disposal-register'" class="print-field"><span>{{printText.stage}}</span>
+          <BaseSelect v-model="printDisposalStatus" :aria-label="printText.stage">
+            <option value="">{{printText.all}}</option>
+            <option value="draft">{{ui.locale==="en"?"Draft":ui.locale==="ka"?"პროექტი":"Черновик"}}</option>
+            <option value="submitted">{{ui.locale==="en"?"Submitted":ui.locale==="ka"?"გაგზავნილია":"На согласовании"}}</option>
+            <option value="approved">{{ui.locale==="en"?"Approved":ui.locale==="ka"?"დამტკიცებულია":"Согласовано"}}</option>
+            <option value="disposed">{{ui.locale==="en"?"Disposed":ui.locale==="ka"?"ჩამოწერილია":"Завершено"}}</option>
+          </BaseSelect>
+        </label>
+        <div v-if="printKind!=='stocktake-act'" class="print-search">
+          <span>{{printText.search}}</span>
+          <BaseSearchField v-model="printSearch" :label="printText.search"/>
+        </div>
+      </div>
+      <p v-if="printError" class="report-error" role="alert">{{printError}}</p>
+    </BaseCard>
     <div class="report-metrics">
       <BaseCard><Package :size="23" aria-hidden="true"/><strong>{{report?.assets.total??0}}</strong><span>{{t.assets}}</span></BaseCard>
       <BaseCard><Warehouse :size="23" aria-hidden="true"/><strong>{{report?.warehouses.total_items??0}}</strong><span>{{t.stockItems}}</span></BaseCard>
@@ -203,6 +340,18 @@ function dateLabel(value:string){
 
 <style scoped>
 .report-page{display:grid;gap:18px;min-width:0}
+.print-forms-panel{min-width:0}
+.print-forms-heading{display:flex;align-items:center;justify-content:space-between;gap:14px;flex-wrap:wrap;margin:0 0 18px}
+.print-forms-title{display:flex;align-items:flex-start;gap:11px;min-width:0}
+.print-forms-title svg{flex:none;color:var(--color-primary)}
+.print-forms-heading h3{font-size:15px;font-weight:650;margin:0}
+.print-forms-heading p{font-size:12px;margin:4px 0 0}
+.print-forms-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:13px}
+.print-field,.print-search{display:grid;gap:6px;min-width:0;color:var(--color-muted);font-size:12px}
+.print-search :deep(.registry-search){max-width:none}
+@media(max-width:760px){.print-forms-grid{grid-template-columns:1fr 1fr}}
+@media(max-width:550px){.print-forms-grid{grid-template-columns:1fr}.print-forms-heading :deep(.base-button){width:100%}}
+
 .report-heading{display:flex;align-items:center;justify-content:space-between;gap:14px;flex-wrap:wrap}
 .report-heading h2{margin:0}.report-heading p{margin:6px 0 0}
 .report-actions{display:flex;gap:9px;flex-wrap:wrap;align-items:center}
