@@ -275,7 +275,7 @@ onUnmounted(()=>{abort?.abort();drag=null});
           <ArrowLeft :size="19" aria-hidden="true"/>
         </BaseIconButton>
         <div><h2>{{ plan?.node_name||ui.t("plan.title") }}</h2>
-          <p class="muted">{{ companyName }} · {{ ui.t("plan.subtitle") }}</p></div>
+          <p class="muted">{{ ui.t("plan.subtitle") }}</p></div>
       </div>
       <div class="plan-actions">
         <span class="plan-mode">{{ ui.t(canEdit?"plan.edit":"plan.view") }}</span>
