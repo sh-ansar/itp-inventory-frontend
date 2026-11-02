@@ -6,7 +6,7 @@ import BaseCard from "../components/ui/BaseCard.vue";
 import BaseDataTable from "../components/ui/BaseDataTable.vue";
 import BaseSelect from "../components/ui/BaseSelect.vue";
 import BaseStatusPill from "../components/ui/BaseStatusPill.vue";
-import { getInventorySummary, summaryCsvHref, summaryPrintDocument } from "../api/reports";
+import { getInventorySummary, summaryCsvHref, summaryPrintDocument, summaryStatusLabel } from "../api/reports";
 import type { InventorySummary } from "../api/reports";
 import { getFacilityNodes, getResponsiblePeople } from "../api/topology";
 import type { FacilityNode, ResponsiblePerson } from "../api/topology";
@@ -59,13 +59,13 @@ const groups=computed(()=>[
   {key:"by_responsible",title:t.value.personGroup,rows:report.value?.assets.by_responsible??[]},
 ]);
 const groupColumns=computed(()=>[
-  {key:"name",label:t.value.name,minWidth:170},
-  {key:"total",label:t.value.count,minWidth:100,align:"right" as const},
+  {key:"name",label:t.value.name,minWidth:110},
+  {key:"total",label:t.value.count,minWidth:70,align:"right" as const},
 ]);
 const warehouseColumns=computed(()=>[
-  {key:"name",label:t.value.name,minWidth:170},
-  {key:"items",label:t.value.item,minWidth:110,align:"right" as const},
-  {key:"quantity_milli",label:t.value.quantity,minWidth:120,align:"right" as const},
+  {key:"name",label:t.value.name,minWidth:110},
+  {key:"items",label:t.value.item,minWidth:65,align:"right" as const},
+  {key:"quantity_milli",label:t.value.quantity,minWidth:85,align:"right" as const},
 ]);
 const sessionColumns=computed(()=>[
   {key:"status",label:t.value.status,minWidth:150},
@@ -173,15 +173,15 @@ function dateLabel(value:string){
       <BaseCard v-for="group in groups" :key="group.key" class="report-panel">
         <div class="panel-header"><BarChart3 :size="18" aria-hidden="true"/><h3>{{group.title}}</h3></div>
         <BaseDataTable :rows="group.rows" row-key="id" :columns="groupColumns"
-          :loading="loading" :caption="group.title" :empty-title="t.noData" :min-table-width="350">
-          <template #cell-name="{row}">{{row.name||t.unassigned}}</template>
+          :loading="loading" :caption="group.title" :empty-title="t.noData" :min-table-width="0">
+          <template #cell-name="{row}">{{group.key==="by_status" && row.name ? summaryStatusLabel(row.name,ui.locale) : row.name||t.unassigned}}</template>
         </BaseDataTable>
       </BaseCard>
       <BaseCard class="report-panel">
         <div class="panel-header"><Warehouse :size="18" aria-hidden="true"/><h3>{{t.warehouseGroup}}</h3></div>
         <BaseDataTable :rows="report?.warehouses.by_warehouse??[]" row-key="id"
           :columns="warehouseColumns" :loading="loading" :caption="t.warehouseGroup"
-          :empty-title="t.noData" :min-table-width="430">
+          :empty-title="t.noData" :min-table-width="0">
           <template #cell-name="{row}">{{row.name||t.unassigned}}</template>
           <template #cell-quantity_milli="{row}">{{(row.quantity_milli/1000).toLocaleString(ui.locale)}}</template>
         </BaseDataTable>
@@ -192,7 +192,7 @@ function dateLabel(value:string){
           :loading="loading" :caption="t.sessionGroup" :empty-title="t.noData" :min-table-width="650">
           <template #cell-status="{row}">
             <BaseStatusPill :tone="row.status==='completed'?'success':'warning'">
-              {{ui.t(row.status==='completed'?'stock.completed':'stock.inProgress')}}
+              {{summaryStatusLabel(row.status,ui.locale)}}
             </BaseStatusPill>
           </template>
         </BaseDataTable>
