@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import BaseSelect from "../ui/ui/BaseSelect.vue";
 import BaseConfirmDialog from "../ui/BaseConfirmDialog.vue";
 import { useConfirmDialog } from "../../composables/useConfirmDialog";
 import { computed, reactive, ref, watch } from "vue";
@@ -113,46 +114,46 @@ async function save() {
         </label>
         <label class="field">
           <span>{{ ui.t("form.category") }}</span>
-          <select v-model="fields.category_id" :disabled="busy">
+          <BaseSelect v-model="fields.category_id" :disabled="busy">
             <option value="">{{ ui.t("form.none") }}</option>
             <option v-for="item in references.categories" :key="item.id" :value="item.id">{{ item.name }}</option>
-          </select>
+          </BaseSelect>
           <small v-if="validation.category_id" role="alert">{{ validation.category_id[0] }}</small>
         </label>
         <label class="field">
           <span>{{ ui.t("asset.facilityNode") }}</span>
-          <select v-model="fields.facility_node_id" :disabled="busy">
+          <BaseSelect v-model="fields.facility_node_id" :disabled="busy">
             <option value="">{{ ui.t("form.none") }}</option>
             <option v-for="item in facilities" :key="item.id" :value="item.id">
               {{ ui.t("topology.type."+item.node_type) }} · {{ item.name }}
             </option>
-          </select>
+          </BaseSelect>
           <small v-if="validation.facility_node_id" role="alert">{{ validation.facility_node_id[0] }}</small>
         </label>
         <label class="field">
           <span>{{ ui.t("asset.responsiblePerson") }}</span>
-          <select v-model="fields.responsible_person_id" :disabled="busy">
+          <BaseSelect v-model="fields.responsible_person_id" :disabled="busy">
             <option value="">{{ ui.t("form.none") }}</option>
             <option v-for="person in people.filter(p=>p.is_active)" :key="person.id" :value="person.id">
               {{ person.name }} · {{ person.code }}
             </option>
-          </select>
+          </BaseSelect>
           <small v-if="validation.responsible_person_id" role="alert">{{ validation.responsible_person_id[0] }}</small>
         </label>
         <label class="field">
           <span>{{ ui.t("form.accounting") }}</span>
-          <select v-model="fields.accounting_location_id" :disabled="busy">
+          <BaseSelect v-model="fields.accounting_location_id" :disabled="busy">
             <option value="">{{ ui.t("form.none") }}</option>
             <option v-for="item in references.accounting_locations" :key="item.id" :value="item.id">{{ item.name }}</option>
-          </select>
+          </BaseSelect>
           <small v-if="validation.accounting_location_id" role="alert">{{ validation.accounting_location_id[0] }}</small>
         </label>
         <label class="field">
           <span>{{ ui.t("form.physical") }}</span>
-          <select v-model="fields.physical_location_id" :disabled="busy">
+          <BaseSelect v-model="fields.physical_location_id" :disabled="busy">
             <option value="">{{ ui.t("form.none") }}</option>
             <option v-for="item in references.physical_locations" :key="item.id" :value="item.id">{{ item.name }}</option>
-          </select>
+          </BaseSelect>
           <small v-if="validation.physical_location_id" role="alert">{{ validation.physical_location_id[0] }}</small>
         </label>
       </div>
