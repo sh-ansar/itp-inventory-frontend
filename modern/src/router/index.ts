@@ -10,6 +10,7 @@ import FacilitiesPage from "../pages/FacilitiesPage.vue";
 import FacilityPlanPage from "../pages/FacilityPlanPage.vue";
 import ResponsiblePeoplePage from "../pages/ResponsiblePeoplePage.vue";
 import WarehousesPage from "../pages/WarehousesPage.vue";
+import ReportsPage from "../pages/ReportsPage.vue";
 
 export const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -23,6 +24,7 @@ export const router = createRouter({
     { path: "/facilities/:nodeId/plan", component: FacilityPlanPage, name: "facility-plan" },
     { path: "/people", component: ResponsiblePeoplePage, name: "people" },
     { path: "/warehouses", component: WarehousesPage, name: "warehouses" },
+    { path: "/reports", component: ReportsPage, name: "reports" },
     { path: "/stocktakes", component: StocktakesPage, name: "stocktakes" },
     { path: "/stocktakes/:sessionId", component: StocktakeDetailPage, name: "stocktake" },
     { path: "/scan/:publicId", component: ScanPage, name: "scan" },
