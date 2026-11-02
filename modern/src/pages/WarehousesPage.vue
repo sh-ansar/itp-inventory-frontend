@@ -187,12 +187,12 @@ onUnmounted(()=>{ctrl?.abort();if(timer)clearTimeout(timer)});
       <div><h2>{{ ui.t("stock.warehouseTitle") }}</h2>
         <p class="muted">{{ ui.t("stock.warehouseSubtitle") }}</p></div>
       <div class="header-actions">
-        <BaseButton variant="secondary" :disabled="loading" @click="bootstrap">
-          <RefreshCw :size="17" aria-hidden="true"/>{{ ui.t("actions.refresh") }}</BaseButton>
-        <BaseButton v-if="canWrite" variant="secondary" @click="createItem">
-          <Plus :size="17" aria-hidden="true"/>{{ ui.t("stock.newItem") }}</BaseButton>
-        <BaseButton v-if="canWrite&&warehouses.length&&allItems.length" @click="createMovement()">
-          <ArrowLeftRight :size="17" aria-hidden="true"/>{{ ui.t("stock.newOperation") }}</BaseButton>
+        <BaseButton variant="secondary" :disabled="loading" :aria-label="ui.t('actions.refresh')" :title="ui.t('actions.refresh')" @click="bootstrap">
+          <RefreshCw :size="17" aria-hidden="true"/><span class="header-action-label">{{ ui.t("actions.refresh") }}</span></BaseButton>
+        <BaseButton v-if="canWrite" variant="secondary" :aria-label="ui.t('stock.newItem')" :title="ui.t('stock.newItem')" @click="createItem">
+          <Plus :size="17" aria-hidden="true"/><span class="header-action-label">{{ ui.t("stock.newItem") }}</span></BaseButton>
+        <BaseButton v-if="canWrite&&warehouses.length&&allItems.length" :aria-label="ui.t('stock.newOperation')" :title="ui.t('stock.newOperation')" @click="createMovement()">
+          <ArrowLeftRight :size="17" aria-hidden="true"/><span class="header-action-label">{{ ui.t("stock.newOperation") }}</span></BaseButton>
       </div>
     </div>
     <p v-if="issue" class="error" role="alert">{{ issue }}</p>
@@ -375,5 +375,5 @@ onUnmounted(()=>{ctrl?.abort();if(timer)clearTimeout(timer)});
 .warehouse-form :is(input,select,textarea){width:100%;min-width:0}
 .warehouse-form small{color:var(--color-danger);font-size:11px}
 .warehouse-form textarea{resize:vertical}
-@media(max-width:690px){.header-actions{width:100%}.header-actions :deep(.base-button){flex:1}.warehouse-toolbar{flex-direction:column;align-items:stretch}.warehouse-picker,.warehouse-picker select{width:100%;min-width:0}.tabs button{flex:1}}
+@media(max-width:690px){.header-actions{width:100%}.header-actions :deep(.base-button){flex:1;min-width:44px;justify-content:center}.header-action-label{display:none}.warehouse-toolbar{flex-direction:column;align-items:stretch}.warehouse-picker,.warehouse-picker select{width:100%;min-width:0}.tabs button{flex:1}}
 </style>
