@@ -236,7 +236,7 @@ onUnmounted(()=>{ctrl?.abort();if(timer)clearTimeout(timer)});
             </BaseSelect>
           </label>
           <BaseButton variant="secondary" :title="settingsTitle" :aria-label="settingsTitle"
-            :disabled="!activePreferences.value.ready.value" @click="settingsOpen=true">
+            :disabled="!activePreferences.ready.value" @click="settingsOpen=true">
             <SlidersHorizontal :size="17" aria-hidden="true"/>{{settingsTitle}}
           </BaseButton>
         </div>
@@ -293,12 +293,12 @@ onUnmounted(()=>{ctrl?.abort();if(timer)clearTimeout(timer)});
     </template>
 
     <TableSettingsDialog :open="settingsOpen" :columns="activeColumns"
-      :hidden-columns="activePreferences.value.state.hidden_columns"
-      :column-order="activePreferences.value.state.column_order"
-      :busy="!activePreferences.value.ready.value||activePreferences.value.saving.value"
-      @close="settingsOpen=false" @reset="activePreferences.value.reset()"
-      @update:hidden-columns="activePreferences.value.state.hidden_columns=$event"
-      @update:column-order="activePreferences.value.state.column_order=$event"/>
+      :hidden-columns="activePreferences.state.hidden_columns"
+      :column-order="activePreferences.state.column_order"
+      :busy="!activePreferences.ready.value||activePreferences.saving.value"
+      @close="settingsOpen=false" @reset="activePreferences.reset()"
+      @update:hidden-columns="activePreferences.state.hidden_columns=$event"
+      @update:column-order="activePreferences.state.column_order=$event"/>
     <BaseDialog :open="itemOpen" :title="ui.t('stock.newItemTitle')" @close="!saving&&(itemOpen=false)">
       <form id="stock-item-form" class="warehouse-form" @submit.prevent="saveItem">
         <p v-if="formError" class="error" role="alert">{{ formError }}</p>
