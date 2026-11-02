@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import BaseSelect from "../components/ui/BaseSelect.vue";
 import BaseConfirmDialog from "../components/ui/BaseConfirmDialog.vue";
 import { useConfirmDialog } from "../composables/useConfirmDialog";
 import { computed, onUnmounted, ref, watch } from "vue";
@@ -226,9 +227,9 @@ async function upload(event:Event){
         <label v-if="current==='categories'">{{ ui.t("types.icon") }}
           <div class="icon-picker">
             <EquipmentTypeIcon :size="30" :icon-key="iconKey"/>
-            <select v-model="iconKey" :disabled="saving">
+            <BaseSelect v-model="iconKey" :disabled="saving">
               <option v-for="value in icons" :key="value" :value="value">{{ value }}</option>
-            </select>
+            </BaseSelect>
           </div>
         </label>
       </form>
