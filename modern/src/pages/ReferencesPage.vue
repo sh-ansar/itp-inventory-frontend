@@ -2,6 +2,7 @@
 import { computed, onUnmounted, ref, watch } from "vue";
 import { BookOpen, Plus, RefreshCw, Pencil, Upload, Sparkles } from "lucide-vue-next";
 import BaseButton from "../components/ui/BaseButton.vue";
+import BaseIconButton from "../components/ui/BaseIconButton.vue";
 import BaseCard from "../components/ui/BaseCard.vue";
 import BaseDataTable from "../components/ui/BaseDataTable.vue";
 import BaseDialog from "../components/ui/BaseDialog.vue";
@@ -191,14 +192,14 @@ async function upload(event:Event){
         </template>
         <template #cell-actions="{row}">
           <div v-if="canWrite" class="category-actions">
-            <button type="button" :title="ui.t('types.edit')"
+            <BaseIconButton type="button" :title="ui.t('types.edit')"
               :aria-label="ui.t('types.edit')+': '+row.name" @click="showCreate(row)">
               <Pencil :size="16" aria-hidden="true"/>
-            </button>
-            <button type="button" :title="ui.t('types.customIcon')"
+            </BaseIconButton>
+            <BaseIconButton type="button" :title="ui.t('types.customIcon')"
               :aria-label="ui.t('types.customIcon')+': '+row.name" @click="selectUpload(row)">
               <Upload :size="16" aria-hidden="true"/>
-            </button>
+            </BaseIconButton>
           </div>
         </template>
       </BaseDataTable>
@@ -253,8 +254,6 @@ async function upload(event:Event){
 .reference-form input,.reference-form select{width:100%}
 .reference-form small{color:var(--color-danger);font-size:12px}
 .category-actions{display:flex;align-items:center;justify-content:end;gap:7px}
-.category-actions button{display:grid;place-items:center;width:34px;height:34px;border:1px solid var(--color-stroke-strong);border-radius:var(--radius-sm);background:var(--color-surface);color:var(--color-text)}
-.category-actions button:hover{color:var(--color-primary);background:var(--color-accent-soft)}
 .icon-picker{display:flex;align-items:center;gap:13px}
 .icon-picker svg{flex:none;color:var(--color-primary)}
 .sr-file{position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(100%)}
