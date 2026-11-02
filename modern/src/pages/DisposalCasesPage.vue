@@ -2,8 +2,9 @@
 import BaseSelect from "../components/ui/BaseSelect.vue";
 import { computed, onUnmounted, ref, watch } from "vue";
 import { useRoute, useRouter } from "vue-router";
-import { Archive, ClipboardCheck, FileText, RefreshCw, Search, ShieldCheck } from "lucide-vue-next";
+import { Archive, ClipboardCheck, Eye, FileText, RefreshCw, Search, ShieldCheck } from "lucide-vue-next";
 import BaseButton from "../components/ui/BaseButton.vue";
+import BaseIconButton from "../components/ui/BaseIconButton.vue";
 import BaseCard from "../components/ui/BaseCard.vue";
 import BaseDataTable from "../components/ui/BaseDataTable.vue";
 import BasePagination from "../components/ui/BasePagination.vue";
@@ -27,7 +28,7 @@ const columns=computed(()=>[
   {key:"order_number",label:ui.t("disposal.order"),minWidth:165},
   {key:"documents",label:ui.t("disposal.attachments"),minWidth:105},
   {key:"updated_at",label:ui.t("disposal.lastUpdate"),minWidth:160},
-  {key:"actions",label:ui.t("table.actions"),minWidth:120,align:"right" as const},
+  {key:"actions",label:ui.t("table.actions"),minWidth:80,align:"right" as const},
 ]);
 const activeFilter=computed(()=>status.value);
 let ctrl:AbortController|null=null,serial=0,timer:ReturnType<typeof setTimeout>|null=null;
@@ -145,8 +146,9 @@ onUnmounted(()=>{ctrl?.abort();if(timer)clearTimeout(timer);});
         </template>
         <template #cell-updated_at="{row}">{{ prettyDate(row.updated_at) }}</template>
         <template #cell-actions="{row}">
-          <button type="button" class="open-case" :aria-label="ui.t('disposal.open')+': '+row.asset.inventory_number"
-            @click="open(row)">{{ ui.t("disposal.open") }}</button>
+          <BaseIconButton type="button" :title="ui.t('disposal.open')"
+            :aria-label="ui.t('disposal.open')+': '+row.asset.inventory_number"
+            @click="open(row)"><Eye :size="17" aria-hidden="true"/></BaseIconButton>
         </template>
       </BaseDataTable>
       <BasePagination v-if="!loading&&total>0" :page="page" :last-page="lastPage"
