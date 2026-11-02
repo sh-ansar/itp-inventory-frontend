@@ -16,7 +16,7 @@ const emit=defineEmits<{
 const attrs=useAttrs();
 const slots=useSlots();
 const current=computed(()=>String(props.modelValue!==undefined?props.modelValue??"":props.value??""));
-const label=computed(()=>String(attrs["aria-label"]??attrs.title??"Select"));
+const label=computed(()=>String(attrs["aria-label"]??attrs.title??""));
 // The original BaseSelect accepted <option> and <optgroup> children everywhere.
 // Interpret those nodes during render, so existing 38 call-sites continue sharing
 // the same component without requiring a second dropdown implementation.
