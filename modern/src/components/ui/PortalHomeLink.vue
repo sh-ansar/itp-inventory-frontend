@@ -1,17 +1,23 @@
 <script setup lang="ts">
 withDefaults(defineProps<{ compact?: boolean }>(), { compact: false });
+// Runtime URL: HRM serves the shared corporate Portal marks under the same host.
+const logos = {
+  light: "/hrm/brand/itp-portal-light-v2.png",
+  dark: "/hrm/brand/itp-portal-dark-v2.png",
+  compact: "/hrm/brand/itp-mark.svg",
+};
 </script>
 
 <template>
   <a class="portal-home" :class="{ 'portal-home--compact': compact }"
     href="https://platform.itpmining.kz/" title="ITP Portal" aria-label="ITP Portal">
     <img class="portal-home__full portal-home__light"
-      src="/hrm/brand/itp-portal-light-v2.png"
+      :src="logos.light"
       alt="" aria-hidden="true" width="120" height="31" />
     <img class="portal-home__full portal-home__dark"
-      src="/hrm/brand/itp-portal-dark-v2.png"
+      :src="logos.dark"
       alt="" aria-hidden="true" width="120" height="31" />
-    <img class="portal-home__mark" src="/hrm/brand/itp-mark.svg"
+    <img class="portal-home__mark" :src="logos.compact"
       alt="" aria-hidden="true" width="33" height="25" />
   </a>
 </template>
