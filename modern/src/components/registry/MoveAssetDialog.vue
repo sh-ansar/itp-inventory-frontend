@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import BaseSelect from "../ui/BaseSelect.vue";
 import BaseConfirmDialog from "../ui/BaseConfirmDialog.vue";
 import { useConfirmDialog } from "../../composables/useConfirmDialog";
 import { computed, ref, watch } from "vue";
@@ -88,10 +89,10 @@ async function save() {
       <p v-if="targets.length === 0" class="muted">{{ ui.t("movement.noLocations") }}</p>
       <label class="field">
         <span>{{ ui.t("movement.location") }} *</span>
-        <select v-model="destination" :disabled="saving || targets.length === 0" required>
+        <BaseSelect v-model="destination" :disabled="saving || targets.length === 0" required>
           <option value="">{{ ui.t("form.none") }}</option>
           <option v-for="location in targets" :key="location.id" :value="location.id">{{ location.name }}</option>
-        </select>
+        </BaseSelect>
         <small v-if="validation.to_location_id" role="alert">{{ validation.to_location_id[0] }}</small>
       </label>
       <label class="field">
