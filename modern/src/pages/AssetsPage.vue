@@ -25,7 +25,7 @@ import AssetMovementHistoryDialog from "../components/registry/AssetMovementHist
 import { companyAssets, referenceData } from "../api/inventory";
 import { bulkAssignCustodian, bulkMoveAssets, registryExportHref } from "../api/parity";
 import type { Asset, ReferenceData } from "../api/inventory";
-import { getFacilityNodes, getResponsiblePeople } from "../api/topology";
+import { getFacilityNodes, getAllActiveResponsiblePeople } from "../api/topology";
 import type { FacilityNode, ResponsiblePerson } from "../api/topology";
 import { useUiSettings } from "../stores/uiSettings";
 
@@ -147,10 +147,10 @@ watch(() => props.companyId, id => {
   const current = ++referenceSerial;
   if (id) void Promise.all([
     referenceData(id,controller.signal),getFacilityNodes(id,controller.signal),
-    getResponsiblePeople(id,{per_page:100,active:"1"},controller.signal),
+    getAllActiveResponsiblePeople(id,controller.signal),
   ]).then(([data,map,persons])=>{
     if (current === referenceSerial && !controller.signal.aborted){
-      references.value=data;facilities.value=map.data;people.value=persons.data;
+      references.value=data;facilities.value=map.data;people.value=persons;
     }
   }).catch(error => {
     if (current === referenceSerial && !controller.signal.aborted) {
