@@ -1,8 +1,10 @@
 <script setup lang="ts">
+import BaseSelect from "../components/ui/BaseSelect.vue";
 import { computed, onUnmounted, reactive, ref, watch } from "vue";
 import { RouterLink } from "vue-router";
 import { ArrowLeftRight, Boxes, Plus, RefreshCw, Warehouse, PackageCheck } from "lucide-vue-next";
 import BaseButton from "../components/ui/BaseButton.vue";
+import BaseIconButton from "../components/ui/BaseIconButton.vue";
 import BaseCard from "../components/ui/BaseCard.vue";
 import BaseDataTable from "../components/ui/BaseDataTable.vue";
 import BaseDialog from "../components/ui/BaseDialog.vue";
@@ -58,7 +60,7 @@ const itemColumns=computed(()=>[
   {key:"unit",label:ui.t("stock.unit"),minWidth:95},
   {key:"balances_sum_quantity_milli",label:ui.t("stock.quantity"),minWidth:130},
   {key:"minimum_quantity_milli",label:ui.t("stock.minimum"),minWidth:120},
-  {key:"actions",label:ui.t("table.actions"),minWidth:170,align:"right" as const},
+  {key:"actions",label:ui.t("table.actions"),minWidth:80,align:"right" as const},
 ]);
 const historyColumns=computed(()=>[
   {key:"created_at",label:ui.t("table.created"),minWidth:165},
@@ -183,14 +185,14 @@ onUnmounted(()=>{ctrl?.abort();if(timer)clearTimeout(timer)});
   <div class="warehouse-page">
     <div class="warehouse-header">
       <div><h2>{{ ui.t("stock.warehouseTitle") }}</h2>
-        <p class="muted">{{ companyName }} · {{ ui.t("stock.warehouseSubtitle") }}</p></div>
+        <p class="muted">{{ ui.t("stock.warehouseSubtitle") }}</p></div>
       <div class="header-actions">
-        <BaseButton variant="secondary" :disabled="loading" @click="bootstrap">
-          <RefreshCw :size="17" aria-hidden="true"/>{{ ui.t("actions.refresh") }}</BaseButton>
-        <BaseButton v-if="canWrite" variant="secondary" @click="createItem">
-          <Plus :size="17" aria-hidden="true"/>{{ ui.t("stock.newItem") }}</BaseButton>
-        <BaseButton v-if="canWrite&&warehouses.length&&allItems.length" @click="createMovement()">
-          <ArrowLeftRight :size="17" aria-hidden="true"/>{{ ui.t("stock.newOperation") }}</BaseButton>
+        <BaseButton variant="secondary" :disabled="loading" :aria-label="ui.t('actions.refresh')" :title="ui.t('actions.refresh')" @click="bootstrap">
+          <RefreshCw :size="17" aria-hidden="true"/><span class="header-action-label">{{ ui.t("actions.refresh") }}</span></BaseButton>
+        <BaseButton v-if="canWrite" variant="secondary" :aria-label="ui.t('stock.newItem')" :title="ui.t('stock.newItem')" @click="createItem">
+          <Plus :size="17" aria-hidden="true"/><span class="header-action-label">{{ ui.t("stock.newItem") }}</span></BaseButton>
+        <BaseButton v-if="canWrite&&warehouses.length&&allItems.length" :aria-label="ui.t('stock.newOperation')" :title="ui.t('stock.newOperation')" @click="createMovement()">
+          <ArrowLeftRight :size="17" aria-hidden="true"/><span class="header-action-label">{{ ui.t("stock.newOperation") }}</span></BaseButton>
       </div>
     </div>
     <p v-if="issue" class="error" role="alert">{{ issue }}</p>
@@ -214,10 +216,10 @@ onUnmounted(()=>{ctrl?.abort();if(timer)clearTimeout(timer)});
               @click="selectTab(option.id)">{{ option.label }}</button>
           </div>
           <label class="warehouse-picker"><span>{{ ui.t("stock.warehouse") }}</span>
-            <select v-model="warehouseId" :aria-label="ui.t('stock.warehouse')" @change="page=1">
+            <BaseSelect v-model="warehouseId" :aria-label="ui.t('stock.warehouse')" @change="page=1">
               <option v-for="warehouse in warehouses" :key="warehouse.id" :value="warehouse.id">
                 {{ warehouse.name }}</option>
-            </select>
+            </BaseSelect>
           </label>
         </div>
         <div v-if="tab==='catalog'" class="warehouse-search">
@@ -245,8 +247,10 @@ onUnmounted(()=>{ctrl?.abort();if(timer)clearTimeout(timer)});
             {{ fmt(row.balances_sum_quantity_milli) }}</template>
           <template #cell-minimum_quantity_milli="{row}">{{ fmt(row.minimum_quantity_milli) }}</template>
           <template #cell-actions="{row}">
-            <button v-if="canWrite" type="button" class="text-action" @click="createMovement(row)">
-              {{ ui.t("stock.newOperation") }}</button>
+            <BaseIconButton v-if="canWrite" type="button" :title="ui.t('stock.newOperation')"
+              :aria-label="ui.t('stock.newOperation')+': '+row.name" @click="createMovement(row)">
+              <ArrowLeftRight :size="17" aria-hidden="true"/>
+            </BaseIconButton>
           </template>
         </BaseDataTable>
         <BaseDataTable v-else :rows="history" row-key="id" :columns="historyColumns"
@@ -279,14 +283,14 @@ onUnmounted(()=>{ctrl?.abort();if(timer)clearTimeout(timer)});
         <label><span>{{ ui.t("table.name") }} *</span>
           <input v-model="itemFields.name" required minlength="2" maxlength="255" :disabled="saving"/></label>
         <label><span>{{ ui.t("stock.unit") }} *</span>
-          <select v-model="itemFields.unit" :disabled="saving">
+          <BaseSelect v-model="itemFields.unit" :disabled="saving">
             <option v-for="unit in ['pcs','pack','kg','m','l']" :key="unit" :value="unit">{{ unit }}</option>
-          </select></label>
+          </BaseSelect></label>
         <label><span>{{ ui.t("types.title") }}</span>
-          <select v-model="itemFields.category_id" :disabled="saving">
+          <BaseSelect v-model="itemFields.category_id" :disabled="saving">
             <option value="">{{ ui.t("form.none") }}</option>
             <option v-for="cat in refs.categories" :key="cat.id" :value="cat.id">{{ cat.name }}</option>
-          </select></label>
+          </BaseSelect></label>
         <label><span>{{ ui.t("stock.minimum") }}</span>
           <input v-model="itemFields.minimum_quantity" type="text" inputmode="decimal"
             pattern="[0-9]+(\.[0-9]{1,3})?" :disabled="saving"/>
@@ -303,26 +307,26 @@ onUnmounted(()=>{ctrl?.abort();if(timer)clearTimeout(timer)});
       <form id="stock-movement-form" class="warehouse-form" @submit.prevent="saveMovement">
         <p v-if="formError" class="error" role="alert">{{ formError }}</p>
         <label><span>{{ ui.t("stock.sku") }} *</span>
-          <select v-model="moveFields.stock_item_id" required :disabled="saving">
+          <BaseSelect v-model="moveFields.stock_item_id" required :disabled="saving">
             <option value="">{{ ui.t("form.none") }}</option>
             <option v-for="item in allItems" :key="item.id" :value="item.id">{{ item.code }} · {{ item.name }}</option>
-          </select></label>
+          </BaseSelect></label>
         <label><span>{{ ui.t("stock.operation") }} *</span>
-          <select v-model="moveFields.operation" :disabled="saving">
+          <BaseSelect v-model="moveFields.operation" :disabled="saving">
             <option value="receipt">{{ ui.t("stock.operation.receipt") }}</option>
             <option value="issue">{{ ui.t("stock.operation.issue") }}</option>
             <option value="transfer">{{ ui.t("stock.operation.transfer") }}</option>
-          </select></label>
+          </BaseSelect></label>
         <label><span>{{ ui.t(moveFields.operation==='receipt'?'stock.warehouse':'stock.sourceWarehouse') }} *</span>
-          <select v-model="moveFields.warehouse_node_id" required :disabled="saving">
+          <BaseSelect v-model="moveFields.warehouse_node_id" required :disabled="saving">
             <option v-for="warehouse in warehouses" :key="warehouse.id" :value="warehouse.id">{{ warehouse.name }}</option>
-          </select></label>
+          </BaseSelect></label>
         <label v-if="moveFields.operation==='transfer'"><span>{{ ui.t("stock.targetWarehouse") }} *</span>
-          <select v-model="moveFields.target_warehouse_node_id" required :disabled="saving">
+          <BaseSelect v-model="moveFields.target_warehouse_node_id" required :disabled="saving">
             <option value="">{{ ui.t("form.none") }}</option>
             <option v-for="warehouse in warehouses.filter(w=>w.id!==moveFields.warehouse_node_id)"
               :key="warehouse.id" :value="warehouse.id">{{ warehouse.name }}</option>
-          </select></label>
+          </BaseSelect></label>
         <label><span>{{ ui.t("stock.quantity") }} *</span>
           <input v-model="moveFields.quantity" inputmode="decimal" type="text"
             pattern="[0-9]+(\.[0-9]{1,3})?" required :disabled="saving"/>
@@ -371,5 +375,5 @@ onUnmounted(()=>{ctrl?.abort();if(timer)clearTimeout(timer)});
 .warehouse-form :is(input,select,textarea){width:100%;min-width:0}
 .warehouse-form small{color:var(--color-danger);font-size:11px}
 .warehouse-form textarea{resize:vertical}
-@media(max-width:690px){.header-actions{width:100%}.header-actions :deep(.base-button){flex:1}.warehouse-toolbar{flex-direction:column;align-items:stretch}.warehouse-picker,.warehouse-picker select{width:100%;min-width:0}.tabs button{flex:1}}
+@media(max-width:690px){.header-actions{width:100%}.header-actions :deep(.base-button){flex:1;min-width:44px;justify-content:center}.header-action-label{display:none}.warehouse-toolbar{flex-direction:column;align-items:stretch}.warehouse-picker,.warehouse-picker select{width:100%;min-width:0}.tabs button{flex:1}}
 </style>

@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import BaseSelect from "../ui/BaseSelect.vue";
 import BaseConfirmDialog from "../ui/BaseConfirmDialog.vue";
 import { useConfirmDialog } from "../../composables/useConfirmDialog";
 import { computed, reactive, ref, watch } from "vue";
@@ -286,11 +287,11 @@ function tone(status:string):"success"|"warning"|"neutral"{
           </ul>
           <form v-if="canUpload" class="upload-form" @submit.prevent="upload">
             <label class="field"><span>{{ ui.t("disposal.docType") }}</span>
-              <select v-model="uploadType" :disabled="busy">
+              <BaseSelect v-model="uploadType" :disabled="busy">
                 <option v-if="record.status==='draft'" value="write_off_order">{{ ui.t("disposal.doc.write_off_order") }}</option>
                 <option v-if="record.status==='approved'" value="disposal_act">{{ ui.t("disposal.doc.disposal_act") }}</option>
                 <option value="supporting">{{ ui.t("disposal.doc.supporting") }}</option>
-              </select>
+              </BaseSelect>
             </label>
             <label class="field"><span>{{ ui.t("disposal.file") }}</span>
               <input ref="docFile" type="file" accept=".pdf,.png,.jpg,.jpeg,application/pdf,image/png,image/jpeg"
@@ -344,10 +345,10 @@ function tone(status:string):"success"|"warning"|"neutral"{
               </label>
             </div>
             <label class="field"><span>{{ ui.t("disposal.method") }} *</span>
-              <select v-model="method" :disabled="busy" required>
+              <BaseSelect v-model="method" :disabled="busy" required>
                 <option v-for="value in (['recycling','destruction','waste_transfer','other'] as const)"
                   :key="value" :value="value">{{ ui.t("disposal.method."+value) }}</option>
-              </select>
+              </BaseSelect>
             </label>
             <p v-if="!hasDocument('disposal_act')" class="muted">{{ ui.t("disposal.actMissing") }}</p>
             <BaseButton type="submit" :disabled="busy||disposalAct.trim().length<2||

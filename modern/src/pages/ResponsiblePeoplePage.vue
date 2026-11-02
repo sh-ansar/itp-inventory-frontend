@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import BaseSelect from "../components/ui/BaseSelect.vue";
 import BaseConfirmDialog from "../components/ui/BaseConfirmDialog.vue";
 import { useConfirmDialog } from "../composables/useConfirmDialog";
 import { computed, onUnmounted, reactive, ref, watch } from "vue";
@@ -108,7 +109,7 @@ onUnmounted(()=>{ctrl?.abort();if(timer)clearTimeout(timer)});
   <div class="people-page">
     <div class="people-header">
       <div><h2>{{ ui.t("people.title") }}</h2>
-        <p class="muted">{{ companyName }} · {{ ui.t("people.subtitle") }}</p></div>
+        <p class="muted">{{ ui.t("people.subtitle") }}</p></div>
       <div class="actions">
         <BaseButton variant="secondary" :disabled="loading" @click="load">
           <RefreshCw :size="17" aria-hidden="true"/>{{ ui.t("actions.refresh") }}</BaseButton>
@@ -128,11 +129,11 @@ onUnmounted(()=>{ctrl?.abort();if(timer)clearTimeout(timer)});
           :placeholder="ui.t('people.search')"/>
         <label class="status-filter">
           <span>{{ ui.t("table.status") }}</span>
-          <select v-model="status" :aria-label="ui.t('table.status')" @change="page=1">
+          <BaseSelect v-model="status" :aria-label="ui.t('table.status')" @change="page=1">
             <option value="1">{{ ui.t("people.active") }}</option>
             <option value="0">{{ ui.t("people.inactive") }}</option>
             <option value="">{{ ui.t("filter.all") }}</option>
-          </select>
+          </BaseSelect>
         </label>
       </div>
       <BaseDataTable :rows="rows" row-key="id" :columns="columns" :loading="loading"

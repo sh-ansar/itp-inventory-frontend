@@ -226,7 +226,7 @@ onUnmounted(()=>{ctrl?.abort();assetCtrl?.abort();});
   <div class="facility-page">
     <div class="page-heading">
       <div><h2>{{ ui.t("topology.title") }}</h2>
-        <p class="muted">{{ companyName }} · {{ ui.t("topology.subtitle") }}</p></div>
+        <p class="muted">{{ ui.t("topology.subtitle") }}</p></div>
       <div class="heading-actions">
         <BaseButton variant="secondary" :disabled="busy" @click="refresh">
           <RefreshCw :size="17" aria-hidden="true"/>{{ ui.t("actions.refresh") }}</BaseButton>
@@ -259,7 +259,6 @@ onUnmounted(()=>{ctrl?.abort();assetCtrl?.abort();});
             <span v-if="node.direct_asset_count" class="tree-count">{{ node.direct_asset_count }}</span>
           </button>
         </div>
-        <p class="tree-hint muted">{{ ui.t("topology.dragHelp") }}</p>
       </BaseCard>
 
       <div class="map-main">

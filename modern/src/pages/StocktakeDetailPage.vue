@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import BaseSelect from "../components/ui/BaseSelect.vue";
 import { computed, nextTick, onUnmounted, ref, watch } from "vue";
 import { RouterLink, useRoute, useRouter } from "vue-router";
 import { ArrowLeft, Check, ClipboardCheck, Download, History, QrCode, RefreshCw, RotateCcw, Paperclip, Upload } from "lucide-vue-next";
@@ -288,17 +289,17 @@ onUnmounted(()=>{listCtrl?.abort();if(searchTimer)clearTimeout(searchTimer);});
           </label>
           <label v-if="stocktake?.scope_type==='facility'" class="form-field">
             <span>{{ ui.t("stock.actual") }} · {{ ui.t("stock.facilityNode") }}</span>
-            <select v-model="scanFacility" :disabled="scanning" required>
+            <BaseSelect v-model="scanFacility" :disabled="scanning" required>
               <option value="">{{ ui.t("form.none") }}</option>
               <option v-for="node in facilities" :key="node.id" :value="node.id">
                 {{ node.name }}</option>
-            </select>
+            </BaseSelect>
           </label>
           <label v-else class="form-field"><span>{{ ui.t("stock.actual") }}</span>
-            <select v-model="scanLocation" :disabled="scanning" required>
+            <BaseSelect v-model="scanLocation" :disabled="scanning" required>
               <option value="">{{ ui.t("form.none") }}</option>
               <option v-for="loc in references.physical_locations" :key="loc.id" :value="loc.id">{{ loc.name }}</option>
-            </select>
+            </BaseSelect>
           </label>
           <BaseButton type="submit" :disabled="scanning||!scanText.trim()||!(stocktake?.scope_type==='facility'?scanFacility:scanLocation)">
             <Check :size="17" aria-hidden="true"/>{{ ui.t("stock.scanConfirm") }}
@@ -325,12 +326,12 @@ onUnmounted(()=>{listCtrl?.abort();if(searchTimer)clearTimeout(searchTimer);});
             :placeholder="ui.t('stock.itemSearch')"/>
           <label class="form-field">
             <span>{{ ui.t("stock.filter") }}</span>
-            <select v-model="filter" :aria-label="ui.t('stock.filter')" @change="page=1">
+            <BaseSelect v-model="filter" :aria-label="ui.t('stock.filter')" @change="page=1">
               <option value="">{{ ui.t("filter.all") }}</option>
               <option value="pending">{{ ui.t("stock.pending") }}</option>
               <option value="counted">{{ ui.t("stock.checked") }}</option>
               <option value="discrepancy">{{ ui.t("stock.discrepancies") }}</option>
-            </select>
+            </BaseSelect>
           </label>
         </div>
         <div v-if="issue" class="error" role="alert">{{ issue }}</div>
@@ -367,16 +368,16 @@ onUnmounted(()=>{listCtrl?.abort();if(searchTimer)clearTimeout(searchTimer);});
           <strong>{{ counting?.expected_facility_node_name||counting?.expected_location_name||ui.t("form.none") }}</strong></div>
         <label v-if="counting?.expected_facility_node_id" class="form-field">
           <span>{{ ui.t("stock.actual") }} · {{ ui.t("stock.facilityNode") }} *</span>
-          <select v-model="actualFacilityId" :disabled="savingCount" required>
+          <BaseSelect v-model="actualFacilityId" :disabled="savingCount" required>
             <option value="">{{ ui.t("form.none") }}</option>
             <option v-for="node in facilities" :key="node.id" :value="node.id">{{ node.name }}</option>
-          </select>
+          </BaseSelect>
         </label>
         <label v-else class="form-field"><span>{{ ui.t("stock.actual") }} *</span>
-          <select v-model="actualLocationId" :disabled="savingCount" required>
+          <BaseSelect v-model="actualLocationId" :disabled="savingCount" required>
             <option value="">{{ ui.t("form.none") }}</option>
             <option v-for="loc in references.physical_locations" :key="loc.id" :value="loc.id">{{ loc.name }}</option>
-          </select>
+          </BaseSelect>
         </label>
         <label class="form-field"><span>{{ ui.t("stock.note") }}</span>
           <textarea v-model="countNote" maxlength="1000" rows="3" :disabled="savingCount"/>

@@ -1,8 +1,10 @@
 <script setup lang="ts">
+import BaseSelect from "../components/ui/BaseSelect.vue";
 import { computed, onUnmounted, ref, watch } from "vue";
 import { useRoute, useRouter } from "vue-router";
-import { Archive, ClipboardCheck, FileText, RefreshCw, Search, ShieldCheck } from "lucide-vue-next";
+import { Archive, ClipboardCheck, Eye, FileText, RefreshCw, Search, ShieldCheck } from "lucide-vue-next";
 import BaseButton from "../components/ui/BaseButton.vue";
+import BaseIconButton from "../components/ui/BaseIconButton.vue";
 import BaseCard from "../components/ui/BaseCard.vue";
 import BaseDataTable from "../components/ui/BaseDataTable.vue";
 import BasePagination from "../components/ui/BasePagination.vue";
@@ -26,7 +28,7 @@ const columns=computed(()=>[
   {key:"order_number",label:ui.t("disposal.order"),minWidth:165},
   {key:"documents",label:ui.t("disposal.attachments"),minWidth:105},
   {key:"updated_at",label:ui.t("disposal.lastUpdate"),minWidth:160},
-  {key:"actions",label:ui.t("table.actions"),minWidth:120,align:"right" as const},
+  {key:"actions",label:ui.t("table.actions"),minWidth:80,align:"right" as const},
 ]);
 const activeFilter=computed(()=>status.value);
 let ctrl:AbortController|null=null,serial=0,timer:ReturnType<typeof setTimeout>|null=null;
@@ -95,7 +97,7 @@ onUnmounted(()=>{ctrl?.abort();if(timer)clearTimeout(timer);});
   <div class="disposals-page">
     <header class="page-heading">
       <div><h2>{{ ui.t("disposal.title") }}</h2>
-        <p class="muted">{{ companyName }} · {{ ui.t("disposal.subtitle") }}</p></div>
+        <p class="muted">{{ ui.t("disposal.subtitle") }}</p></div>
       <div class="page-actions">
         <BaseButton variant="secondary" :disabled="loading" @click="load">
           <RefreshCw :size="17" aria-hidden="true"/>{{ ui.t("actions.refresh") }}
@@ -110,10 +112,6 @@ onUnmounted(()=>{ctrl?.abort();if(timer)clearTimeout(timer);});
         <div><strong>{{ total.toLocaleString(ui.locale) }}</strong>
           <span class="muted">{{ ui.t("disposal.received") }}</span></div>
       </BaseCard>
-      <BaseCard class="metric"><ShieldCheck :size="22" aria-hidden="true"/>
-        <div><strong>{{ ui.t("disposal.stage") }}</strong>
-          <span class="muted">{{ ui.t("disposal.controlNote") }}</span></div>
-      </BaseCard>
     </div>
     <p v-if="issue" role="alert" class="error">{{ issue }}</p>
     <p v-if="notice" role="status" class="notice">{{ notice }}</p>
@@ -123,13 +121,13 @@ onUnmounted(()=>{ctrl?.abort();if(timer)clearTimeout(timer);});
           :placeholder="ui.t('disposal.search')"/>
         <label class="filter-field">
           <span>{{ ui.t("disposal.stage") }}</span>
-          <select v-model="status" :aria-label="ui.t('disposal.stage')" @change="page=1">
+          <BaseSelect v-model="status" :aria-label="ui.t('disposal.stage')" @change="page=1">
             <option value="">{{ ui.t("disposal.all") }}</option>
             <option value="draft">{{ ui.t("disposal.stage.draft") }}</option>
             <option value="submitted">{{ ui.t("disposal.stage.submitted") }}</option>
             <option value="approved">{{ ui.t("disposal.stage.approved") }}</option>
             <option value="disposed">{{ ui.t("disposal.stage.disposed") }}</option>
-          </select>
+          </BaseSelect>
         </label>
       </div>
       <BaseDataTable :rows="rows" row-key="id" :columns="columns" :loading="loading"
@@ -148,8 +146,9 @@ onUnmounted(()=>{ctrl?.abort();if(timer)clearTimeout(timer);});
         </template>
         <template #cell-updated_at="{row}">{{ prettyDate(row.updated_at) }}</template>
         <template #cell-actions="{row}">
-          <button type="button" class="open-case" :aria-label="ui.t('disposal.open')+': '+row.asset.inventory_number"
-            @click="open(row)">{{ ui.t("disposal.open") }}</button>
+          <BaseIconButton type="button" :title="ui.t('disposal.open')"
+            :aria-label="ui.t('disposal.open')+': '+row.asset.inventory_number"
+            @click="open(row)"><Eye :size="17" aria-hidden="true"/></BaseIconButton>
         </template>
       </BaseDataTable>
       <BasePagination v-if="!loading&&total>0" :page="page" :last-page="lastPage"
@@ -173,7 +172,7 @@ onUnmounted(()=>{ctrl?.abort();if(timer)clearTimeout(timer);});
   padding:0 12px;border:1px solid var(--color-stroke-strong);background:var(--color-surface);border-radius:var(--radius-sm);
   color:var(--color-text);text-decoration:none;font-size:var(--font-label-size)}
 .registry-link:hover{color:var(--color-primary);background:var(--color-hover)}
-.summary-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:13px}
+.summary-grid{display:grid;grid-template-columns:minmax(0,300px);gap:13px}
 .metric{display:flex;align-items:center;gap:14px;min-width:0}
 .metric>svg{flex:none;color:var(--color-primary)}
 .metric>div{display:grid;gap:5px;min-width:0}
@@ -191,7 +190,7 @@ onUnmounted(()=>{ctrl?.abort();if(timer)clearTimeout(timer);});
 .open-case:hover{background:var(--color-hover);color:var(--color-primary)}
 .error{color:var(--color-danger)}.notice{color:var(--color-success)}
 @media(max-width:760px){.toolbar{display:grid;grid-template-columns:1fr}.filter-field{min-width:0}
- .filter-field select{width:100%;min-width:0}.summary-grid{grid-template-columns:1fr 1fr}}
+ .filter-field select{width:100%;min-width:0}.summary-grid{grid-template-columns:1fr}}
 @media(max-width:520px){.page-actions{width:100%}.page-actions :deep(.base-button),.registry-link{flex:1}
  .summary-grid{grid-template-columns:1fr}.metric strong{font-size:17px}}
 </style>

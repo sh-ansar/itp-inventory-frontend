@@ -1,7 +1,8 @@
 <script setup lang="ts">
+import BaseSelect from "../components/ui/BaseSelect.vue";
 import { computed, onUnmounted, ref, watch } from "vue";
 import { RouterLink, useRoute, useRouter } from "vue-router";
-import { ClipboardCheck, Plus, RefreshCw, Download } from "lucide-vue-next";
+import { ArrowUpRight, ClipboardCheck, Plus, RefreshCw, Download } from "lucide-vue-next";
 import BaseButton from "../components/ui/BaseButton.vue";
 import BaseCard from "../components/ui/BaseCard.vue";
 import BaseDataTable from "../components/ui/BaseDataTable.vue";
@@ -44,7 +45,7 @@ const columns=computed(()=>[
   {key:"discrepancies",label:ui.t("stock.discrepancies"),minWidth:110},
   {key:"created_at",label:ui.t("stock.createdAt"),minWidth:160},
   {key:"created_by_name",label:ui.t("stock.initiator"),minWidth:160},
-  {key:"actions",label:ui.t("table.actions"),minWidth:180,align:"right" as const},
+  {key:"actions",label:ui.t("table.actions"),minWidth:110,align:"right" as const},
 ]);
 
 let listReq:AbortController|null=null;
@@ -110,7 +111,7 @@ onUnmounted(()=>{
 <template>
   <div class="stock-page">
     <div class="stock-heading">
-      <div><h2>{{ ui.t("stock.title") }}</h2><p class="muted">{{ companyName }}</p></div>
+      <div><h2>{{ ui.t("stock.title") }}</h2></div>
       <div class="stock-actions">
         <BaseButton variant="secondary" :disabled="loading" @click="load">
           <RefreshCw :size="17" aria-hidden="true"/>{{ ui.t("actions.refresh") }}
@@ -137,10 +138,6 @@ onUnmounted(()=>{
         <strong>{{ total.toLocaleString(ui.locale) }}</strong>
         <span class="muted">{{ ui.t("stock.totalSessions") }}</span>
       </BaseCard>
-      <BaseCard>
-        <span class="muted">{{ ui.t("table.page") }}</span>
-        <strong>{{ page }} / {{ lastPage }}</strong>
-      </BaseCard>
     </div>
     <BaseCard class="stock-table-card">
       <div class="stock-toolbar">
@@ -148,11 +145,11 @@ onUnmounted(()=>{
           :placeholder="ui.t('stock.search')"/>
         <label class="stock-filter">
           <span>{{ ui.t("stock.status") }}</span>
-          <select v-model="status" :aria-label="ui.t('stock.status')" @change="page=1">
+          <BaseSelect v-model="status" :aria-label="ui.t('stock.status')" @change="page=1">
             <option value="">{{ ui.t("filter.all") }}</option>
             <option value="in_progress">{{ ui.t("stock.inProgress") }}</option>
             <option value="completed">{{ ui.t("stock.completed") }}</option>
-          </select>
+          </BaseSelect>
         </label>
       </div>
       <BaseDataTable :rows="sessions" row-key="id" :columns="columns" :loading="loading"
@@ -176,8 +173,9 @@ onUnmounted(()=>{
         <template #cell-created_at="{row}">{{ formatDate(row.created_at) }}</template>
         <template #cell-actions="{row}">
           <div class="stock-row-actions">
-            <RouterLink class="stock-link" :to="{name:'stocktake',params:{sessionId:row.id}}">
-              {{ ui.t("stock.open") }}
+            <RouterLink class="stock-link" :to="{name:'stocktake',params:{sessionId:row.id}}"
+              :title="ui.t('stock.open')" :aria-label="ui.t('stock.open')+': '+row.name">
+              <ArrowUpRight :size="17" aria-hidden="true"/>
             </RouterLink>
             <a class="stock-download" :href="inventoryReportHref(companyId,row.id)"
               :title="ui.t('stock.report')" :aria-label="ui.t('stock.report')+': '+row.name"
@@ -212,7 +210,7 @@ onUnmounted(()=>{
 .stock-progress{display:grid;gap:7px;font-size:12px;white-space:nowrap}
 .stock-progress progress{width:100%;max-width:150px;height:8px;accent-color:var(--color-primary)}
 .stock-row-actions{display:flex;align-items:center;justify-content:flex-end;gap:10px}
-.stock-link{color:var(--color-text);text-decoration:underline;text-underline-offset:3px;white-space:nowrap}
+.stock-link{display:grid;place-items:center;width:35px;height:35px;flex:none;border:1px solid var(--color-stroke-strong);border-radius:var(--radius-sm);color:var(--color-text);background:var(--color-surface)}
 .stock-link:hover{color:var(--color-primary)}
 .stock-download{display:grid;place-items:center;width:35px;height:35px;flex:none;
  border:1px solid var(--color-stroke-strong);border-radius:var(--radius-sm);color:var(--color-text)}

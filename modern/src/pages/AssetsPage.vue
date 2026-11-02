@@ -1,7 +1,8 @@
 <script setup lang="ts">
+import BaseSelect from "../components/ui/BaseSelect.vue";
 import { computed, onUnmounted, ref, watch } from "vue";
 import { useRouter } from "vue-router";
-import { Archive, History, Pencil, Plus, RefreshCw, PackageOpen, QrCode, ArrowRightLeft, Route, FileCheck2, Download, UserRoundCheck } from "lucide-vue-next";
+import { Archive, History, Pencil, Plus, RefreshCw, PackageOpen, ClipboardList, QrCode, ArrowRightLeft, Route, FileCheck2, Download, UserRoundCheck } from "lucide-vue-next";
 import BaseButton from "../components/ui/BaseButton.vue";
 import BaseIconButton from "../components/ui/BaseIconButton.vue";
 import BaseCard from "../components/ui/BaseCard.vue";
@@ -217,18 +218,17 @@ onUnmounted(() => {
     <div class="page-heading">
       <div>
         <h2>{{ ui.t("table.assets") }}</h2>
-        <p class="muted">{{ companyName }}</p>
       </div>
       <div class="page-actions">
-        <BaseButton variant="secondary" :disabled="loading" :aria-label="ui.t('actions.refresh')"
-          @click="loadAssets"><RefreshCw :size="17" aria-hidden="true" /> {{ ui.t("actions.refresh") }}</BaseButton>
-        <a class="export-link" :href="exportHref" :download="'inventory-assets.xlsx'"><Download :size="16" aria-hidden="true"/>{{bulkText.export}}</a>
-        <BaseButton v-if="canWrite && selectedAssets.length" variant="secondary" @click="bulkMode='custodian';bulkOpen=true"><UserRoundCheck :size="16"/>{{bulkText.assign}} ({{selectedAssets.length}})</BaseButton>
-        <BaseButton v-if="canWrite && selectedAssets.length" variant="secondary" @click="bulkMode='move';bulkOpen=true"><ArrowRightLeft :size="16"/>{{bulkText.move}} ({{selectedAssets.length}})</BaseButton>
-        <BaseButton v-if="canWrite && selectedKeys.length" variant="secondary" @click="createStocktakeForSelected">
-          {{ ui.t("stock.createFromSelected") }} ({{ selectedKeys.length }})
+        <BaseButton variant="secondary" :disabled="loading" :aria-label="ui.t('actions.refresh')" :title="ui.t('actions.refresh')"
+          @click="loadAssets"><RefreshCw :size="17" aria-hidden="true" /><span class="page-action-label">{{ ui.t("actions.refresh") }}</span></BaseButton>
+        <a class="export-link" :href="exportHref" :download="'inventory-assets.xlsx'" :title="bulkText.export" :aria-label="bulkText.export"><Download :size="16" aria-hidden="true"/><span class="page-action-label">{{bulkText.export}}</span></a>
+        <BaseButton v-if="canWrite && selectedAssets.length" variant="secondary" :title="bulkText.assign" :aria-label="bulkText.assign+' ('+selectedAssets.length+')'" @click="bulkMode='custodian';bulkOpen=true"><UserRoundCheck :size="16"/><span class="page-action-label">{{bulkText.assign}} ({{selectedAssets.length}})</span></BaseButton>
+        <BaseButton v-if="canWrite && selectedAssets.length" variant="secondary" :title="bulkText.move" :aria-label="bulkText.move+' ('+selectedAssets.length+')'" @click="bulkMode='move';bulkOpen=true"><ArrowRightLeft :size="16"/><span class="page-action-label">{{bulkText.move}} ({{selectedAssets.length}})</span></BaseButton>
+        <BaseButton v-if="canWrite && selectedKeys.length" variant="secondary" :title="ui.t('stock.createFromSelected')" :aria-label="ui.t('stock.createFromSelected')+' ('+selectedKeys.length+')'" @click="createStocktakeForSelected">
+          <ClipboardList :size="16" aria-hidden="true"/><span class="page-action-label">{{ ui.t("stock.createFromSelected") }} ({{ selectedKeys.length }})</span>
         </BaseButton>
-        <BaseButton v-if="canWrite" @click="create"><Plus :size="17" aria-hidden="true" /> {{ ui.t("actions.create") }}</BaseButton>
+        <BaseButton v-if="canWrite" :title="ui.t('actions.create')" :aria-label="ui.t('actions.create')" @click="create"><Plus :size="17" aria-hidden="true"/><span class="page-action-label">{{ ui.t("actions.create") }}</span></BaseButton>
       </div>
     </div>
     <div class="summary-grid">
@@ -236,10 +236,6 @@ onUnmounted(() => {
         <PackageOpen :size="23" aria-hidden="true"/>
         <div class="summary-value">{{ total.toLocaleString(ui.locale) }}</div>
         <span class="muted">{{ ui.t("table.total") }}</span>
-      </BaseCard>
-      <BaseCard>
-        <div class="summary-value">{{ page }} / {{ lastPage }}</div>
-        <span class="muted">{{ ui.t("table.page") }}</span>
       </BaseCard>
     </div>
     <div v-if="message" class="notice" role="status">{{ message }} <button type="button" :aria-label="ui.t('actions.close')" @click="message=''">×</button></div>
@@ -249,26 +245,26 @@ onUnmounted(() => {
         <BaseSearchField v-model="search" :label="ui.t('table.search')" :placeholder="ui.t('table.search')" />
         <label class="filter-field">
           <span>{{ ui.t("asset.facilityNode") }}</span>
-          <select v-model="facilityFilter" :aria-label="ui.t('asset.facilityNode')" @change="page=1">
+          <BaseSelect v-model="facilityFilter" :aria-label="ui.t('asset.facilityNode')" @change="page=1">
             <option value="">{{ ui.t("form.none") }}</option>
             <option v-for="node in facilities" :key="node.id" :value="node.id">{{ node.name }}</option>
-          </select>
+          </BaseSelect>
         </label>
         <label class="filter-field">
           <span>{{ ui.t("asset.responsiblePerson") }}</span>
-          <select v-model="personFilter" :aria-label="ui.t('asset.responsiblePerson')" @change="page=1">
+          <BaseSelect v-model="personFilter" :aria-label="ui.t('asset.responsiblePerson')" @change="page=1">
             <option value="">{{ ui.t("form.none") }}</option>
             <option v-for="person in people" :key="person.id" :value="person.id">{{ person.name }}</option>
-          </select>
+          </BaseSelect>
         </label>
         <label class="filter-field">
           <span>{{ ui.t("filter.status") }}</span>
-          <select :value="status" :aria-label="ui.t('filter.status')" @change="changeStatus">
+          <BaseSelect :value="status" :aria-label="ui.t('filter.status')" @change="changeStatus">
             <option value="">{{ ui.t("filter.all") }}</option>
             <option value="active">{{ ui.t("status.active") }}</option>
             <option value="written_off">{{ ui.t("status.written_off") }}</option>
             <option value="disposed">{{ ui.t("status.disposed") }}</option>
-          </select>
+          </BaseSelect>
         </label>
       </div>
       <BaseDataTable
@@ -324,9 +320,9 @@ onUnmounted(() => {
       <p class="muted">{{bulkText.selected}}: {{selectedAssets.length}}. {{bulkText.note}}</p>
       <p v-if="bulkError" class="error" role="alert">{{bulkError}}</p>
       <form id="bulk-person-form" class="bulk-form" @submit.prevent="submitBulk">
-        <label v-if="bulkMode==='move'">{{bulkText.location}}<select v-model="bulkLocation" required><option value="" disabled>{{ui.t("form.none")}}</option>
-          <option v-for="loc in references.physical_locations" :key="loc.id" :value="loc.id">{{loc.name}}</option></select></label>
-        <label v-else>{{ui.t("asset.responsiblePerson")}}<select v-model="bulkPerson"><option value="">{{ui.t("form.none")}}</option><option v-for="person in people" :key="person.id" :value="person.id">{{person.name}}</option></select></label>
+        <label v-if="bulkMode==='move'">{{bulkText.location}}<BaseSelect v-model="bulkLocation" required><option value="" disabled>{{ui.t("form.none")}}</option>
+          <option v-for="loc in references.physical_locations" :key="loc.id" :value="loc.id">{{loc.name}}</option></BaseSelect></label>
+        <label v-else>{{ui.t("asset.responsiblePerson")}}<BaseSelect v-model="bulkPerson"><option value="">{{ui.t("form.none")}}</option><option v-for="person in people" :key="person.id" :value="person.id">{{person.name}}</option></BaseSelect></label>
         <label>{{bulkText.reason}}<textarea v-model="bulkReason" minlength="5" maxlength="1000" required rows="3"/></label>
       </form>
       <template #footer><BaseButton variant="secondary" :disabled="bulkBusy" @click="bulkOpen=false">{{ui.t("actions.cancel")}}</BaseButton><BaseButton type="submit" form="bulk-person-form" :disabled="bulkBusy||bulkReason.trim().length<5||(bulkMode==='move'&&!bulkLocation)">{{bulkMode==='move'?bulkText.move:bulkText.save}}</BaseButton></template>
@@ -352,7 +348,7 @@ onUnmounted(() => {
 .page-heading{display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap}
 .page-heading h2{margin:0}.page-heading p{margin:6px 0 0}
 .page-actions{display:flex;gap:9px;flex-wrap:wrap}
-.summary-grid{display:grid;grid-template-columns:repeat(2,minmax(170px,1fr));gap:14px}
+.summary-grid{display:grid;grid-template-columns:minmax(0,280px);gap:14px}
 .summary-value{font-size:24px;font-weight:600;line-height:32px;margin-top:10px;color:var(--color-text)}
 .registry-card{min-width:0}
 .toolbar{display:flex;gap:12px;align-items:flex-end;justify-content:space-between;flex-wrap:wrap;margin-bottom:17px}
@@ -363,5 +359,5 @@ onUnmounted(() => {
 .notice{display:flex;align-items:center;justify-content:space-between;gap:12px;border:1px solid var(--color-success);border-radius:var(--radius-sm);color:var(--color-success);background:var(--color-success-surface);padding:9px 13px;font-size:13px}
 .notice button{border:0;background:transparent;color:inherit;cursor:pointer;font-size:20px}
 .error{display:flex;justify-content:space-between;gap:12px;align-items:center}
-@media(max-width:650px){.page-actions{width:100%}.page-actions :deep(.base-button){flex:1}.summary-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.toolbar{display:grid;grid-template-columns:1fr}.filter-field select{width:100%}.truncate{max-width:210px}}
+@media(max-width:650px){.page-actions{width:100%}.page-actions :deep(.base-button){flex:1;min-width:44px;justify-content:center}.page-actions .export-link{flex:1;min-width:44px;justify-content:center}.page-actions .page-action-label{display:none}.summary-grid{grid-template-columns:minmax(0,1fr)}.toolbar{display:grid;grid-template-columns:1fr}.filter-field select{width:100%}.truncate{max-width:210px}}
 </style>

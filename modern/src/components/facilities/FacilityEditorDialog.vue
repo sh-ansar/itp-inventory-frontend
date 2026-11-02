@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import BaseSelect from "../ui/BaseSelect.vue";
 import BaseConfirmDialog from "../ui/BaseConfirmDialog.vue";
 import { useConfirmDialog } from "../../composables/useConfirmDialog";
 import { computed, reactive, ref, watch } from "vue";
@@ -120,17 +121,17 @@ async function save(){
           <input v-model="fields.code" type="text" required maxlength="80" :disabled="loading"/>
           <small v-if="fieldErrors.code">{{ fieldErrors.code[0] }}</small></label>
         <label class="field"><span>{{ ui.t("topology.parent") }}</span>
-          <select v-model="fields.parent_id" :disabled="loading">
+          <BaseSelect v-model="fields.parent_id" :disabled="loading">
             <option value="">{{ ui.t("topology.root") }}</option>
             <option v-for="item in parentOptions" :key="item.id" :value="item.id">
               {{ item.code }} · {{ item.name }}</option>
-          </select>
+          </BaseSelect>
           <small v-if="fieldErrors.parent_id">{{ fieldErrors.parent_id[0] }}</small></label>
         <label class="field"><span>{{ ui.t("topology.type") }} *</span>
-          <select v-model="fields.node_type" required :disabled="loading||!defaultChoices.length">
+          <BaseSelect v-model="fields.node_type" required :disabled="loading||!defaultChoices.length">
             <option v-for="type in defaultChoices" :key="type" :value="type">
               {{ ui.t("topology.type."+type) }}</option>
-          </select>
+          </BaseSelect>
           <small v-if="fieldErrors.node_type">{{ fieldErrors.node_type[0] }}</small></label>
         <label class="field" v-if="['site','building','pavilion','warehouse'].includes(fields.node_type)">
           <span>{{ ui.t("topology.address") }}</span>
@@ -143,11 +144,11 @@ async function save(){
             :disabled="loading"/>
           <small v-if="fieldErrors.floor_number">{{ fieldErrors.floor_number[0] }}</small></label>
         <label class="field"><span>{{ ui.t("topology.responsible") }}</span>
-          <select v-model="fields.responsible_person_id" :disabled="loading">
+          <BaseSelect v-model="fields.responsible_person_id" :disabled="loading">
             <option value="">{{ ui.t("form.none") }}</option>
             <option v-for="person in people.filter(p=>p.is_active)" :key="person.id"
               :value="person.id">{{ person.name }}</option>
-          </select></label>
+          </BaseSelect></label>
         <label class="field"><span>{{ ui.t("topology.order") }}</span>
           <input v-model="fields.sort_order" type="number" min="0" max="999999" step="1"
             :disabled="loading"/></label>
