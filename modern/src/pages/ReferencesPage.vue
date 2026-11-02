@@ -162,7 +162,7 @@ async function upload(event:Event){
 <template>
   <div class="references-page">
     <div class="page-heading">
-      <div><h2>{{ ui.t("heading.references") }}</h2><p class="muted">{{ companyName }} · {{ ui.t("references.note") }}</p></div>
+      <div><h2>{{ ui.t("heading.references") }}</h2></div>
       <div class="page-actions">
         <BaseButton variant="secondary" :disabled="busy" @click="refresh">
           <RefreshCw :size="17" aria-hidden="true"/>{{ ui.t("actions.refresh") }}
