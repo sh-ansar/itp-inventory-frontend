@@ -1,9 +1,10 @@
 <script setup lang="ts">
 import { computed, onUnmounted, ref, watch } from "vue";
 import { useRouter } from "vue-router";
-import { Archive, History, Pencil, Plus, RefreshCw, PackageOpen, QrCode, ArrowRightLeft, Route, FileCheck2 } from "lucide-vue-next";
+import { Archive, History, Pencil, Plus, RefreshCw, PackageOpen, QrCode, ArrowRightLeft, Route, FileCheck2, Download, UserRoundCheck } from "lucide-vue-next";
 import BaseButton from "../components/ui/BaseButton.vue";
 import BaseCard from "../components/ui/BaseCard.vue";
+import BaseDialog from "../components/ui/BaseDialog.vue";
 import BaseDataTable from "../components/ui/BaseDataTable.vue";
 import BasePagination from "../components/ui/BasePagination.vue";
 import BaseSearchField from "../components/ui/BaseSearchField.vue";
@@ -16,6 +17,7 @@ import QrLabelDialog from "../components/registry/QrLabelDialog.vue";
 import MoveAssetDialog from "../components/registry/MoveAssetDialog.vue";
 import AssetMovementHistoryDialog from "../components/registry/AssetMovementHistoryDialog.vue";
 import { companyAssets, referenceData } from "../api/inventory";
+import { bulkAssignCustodian, bulkMoveAssets, registryExportHref } from "../api/parity";
 import type { Asset, ReferenceData } from "../api/inventory";
 import { getFacilityNodes, getResponsiblePeople } from "../api/topology";
 import type { FacilityNode, ResponsiblePerson } from "../api/topology";
@@ -25,6 +27,7 @@ const props = defineProps<{companyId: string; companyName: string; role: string}
 const ui = useUiSettings();
 const router = useRouter();
 const selectedKeys = ref<string[]>([]);
+const bulkOpen=ref(false),bulkPerson=ref(""),bulkLocation=ref(""),bulkMode=ref<"custodian"|"move">("custodian"),bulkReason=ref(""),bulkBusy=ref(false),bulkError=ref("");
 const rows = ref<Asset[]>([]);
 const loading = ref(false);
 const issue = ref("");
@@ -56,6 +59,25 @@ const movementHistory = ref<Asset | null>(null);
 
 const canWrite = computed(() => ["company_admin", "inventory_manager"].includes(props.role));
 const canArchive = computed(() => props.role === "company_admin");
+const selectedAssets = computed(() => rows.value.filter(row => selectedKeys.value.includes(row.id)));
+const bulkText = computed(() => ui.locale==="ru" ? {export:"Экспорт Excel",assign:"Назначить МОЛ",title:"Массовое назначение ответственного",reason:"Причина изменения",save:"Назначить выбранным",selected:"Выбрано",note:"Изменения применяются ко всем выбранным активам или не применяются вовсе.",saved:"Ответственные назначены",moved:"Активы перемещены",move:"Переместить выбранные",location:"Новое местонахождение",action:"Операция"} : ui.locale==="ka" ? {export:"Excel ექსპორტი",assign:"პასუხისმგებლის დანიშვნა",title:"პასუხისმგებლის ჯგუფური დანიშვნა",reason:"ცვლილების მიზეზი",save:"დანიშვნა",selected:"არჩეულია",note:"ცვლილება სრულდება ერთიანად ან საერთოდ არ სრულდება.",saved:"პასუხისმგებელი დანიშნულია",moved:"ქონება გადატანილია",move:"არჩეულის გადატანა",location:"ახალი მდებარეობა",action:"ოპერაცია"} : {export:"Export Excel",assign:"Assign custodian",title:"Bulk custodian assignment",reason:"Reason for change",save:"Assign to selected",selected:"Selected",note:"The whole batch succeeds or nothing is changed.",saved:"Custodians assigned",moved:"Assets moved",move:"Move selected assets",location:"New location",action:"Operation"});
+const exportHref = computed(() => registryExportHref(props.companyId, Object.fromEntries(Object.entries({search:debouncedSearch.value,status:status.value,facility_node_id:facilityFilter.value,include_descendants:"1",responsible_person_id:personFilter.value}).filter(([,v])=>v))));
+async function submitBulk() {
+  if (!canWrite.value || bulkBusy.value || selectedAssets.value.length===0 || bulkReason.value.trim().length<5) return;
+  if(bulkMode.value==="move"&&!bulkLocation.value)return;
+  bulkBusy.value=true;bulkError.value="";
+  try {
+    const selected=selectedAssets.value.map(a=>({id:a.id,version:a.version}));
+    if(bulkMode.value==="move"){
+      await bulkMoveAssets(props.companyId,selected,bulkLocation.value,bulkReason.value.trim());
+    } else {
+      await bulkAssignCustodian(props.companyId,selected,bulkPerson.value||null,bulkReason.value.trim());
+    }
+    selectedKeys.value=[];bulkOpen.value=false;bulkReason.value="";
+    message.value=bulkMode.value==="move"?bulkText.value.moved:bulkText.value.saved;
+    await loadAssets();
+  } catch(e) {bulkError.value=e instanceof Error?e.message:String(e)} finally{bulkBusy.value=false}
+}
 const columns = computed(() => [
   { key:"inventory_number", label:ui.t("table.number"), sortable:true, minWidth:135 },
   { key:"name", label:ui.t("table.name"), sortable:true, minWidth:215 },
@@ -84,6 +106,7 @@ watch(() => props.companyId, id => {
   // Clear old tenant state BEFORE any new network request is initiated.
   rows.value = [];
   selectedKeys.value = [];
+  bulkOpen.value=false;bulkError.value="";
   total.value = 0;
   issue.value = ""; message.value = "";
   search.value = ""; debouncedSearch.value = "";
@@ -198,6 +221,9 @@ onUnmounted(() => {
       <div class="page-actions">
         <BaseButton variant="secondary" :disabled="loading" :aria-label="ui.t('actions.refresh')"
           @click="loadAssets"><RefreshCw :size="17" aria-hidden="true" /> {{ ui.t("actions.refresh") }}</BaseButton>
+        <a class="export-link" :href="exportHref" :download="'inventory-assets.xlsx'"><Download :size="16" aria-hidden="true"/>{{bulkText.export}}</a>
+        <BaseButton v-if="canWrite && selectedAssets.length" variant="secondary" @click="bulkMode='custodian';bulkOpen=true"><UserRoundCheck :size="16"/>{{bulkText.assign}} ({{selectedAssets.length}})</BaseButton>
+        <BaseButton v-if="canWrite && selectedAssets.length" variant="secondary" @click="bulkMode='move';bulkOpen=true"><ArrowRightLeft :size="16"/>{{bulkText.move}} ({{selectedAssets.length}})</BaseButton>
         <BaseButton v-if="canWrite && selectedKeys.length" variant="secondary" @click="createStocktakeForSelected">
           {{ ui.t("stock.createFromSelected") }} ({{ selectedKeys.length }})
         </BaseButton>
@@ -293,6 +319,17 @@ onUnmounted(() => {
         @change:page="page=$event"
         @change:size="perPage=$event; page=1" />
     </BaseCard>
+    <BaseDialog :open="bulkOpen" :title="bulkMode==='move'?bulkText.move:bulkText.title" @close="!bulkBusy&&(bulkOpen=false)">
+      <p class="muted">{{bulkText.selected}}: {{selectedAssets.length}}. {{bulkText.note}}</p>
+      <p v-if="bulkError" class="error" role="alert">{{bulkError}}</p>
+      <form id="bulk-person-form" class="bulk-form" @submit.prevent="submitBulk">
+        <label v-if="bulkMode==='move'">{{bulkText.location}}<select v-model="bulkLocation" required><option value="" disabled>{{ui.t("form.none")}}</option>
+          <option v-for="loc in references.physical_locations" :key="loc.id" :value="loc.id">{{loc.name}}</option></select></label>
+        <label v-else>{{ui.t("asset.responsiblePerson")}}<select v-model="bulkPerson"><option value="">{{ui.t("form.none")}}</option><option v-for="person in people" :key="person.id" :value="person.id">{{person.name}}</option></select></label>
+        <label>{{bulkText.reason}}<textarea v-model="bulkReason" minlength="5" maxlength="1000" required rows="3"/></label>
+      </form>
+      <template #footer><BaseButton variant="secondary" :disabled="bulkBusy" @click="bulkOpen=false">{{ui.t("actions.cancel")}}</BaseButton><BaseButton type="submit" form="bulk-person-form" :disabled="bulkBusy||bulkReason.trim().length<5||(bulkMode==='move'&&!bulkLocation)">{{bulkMode==='move'?bulkText.move:bulkText.save}}</BaseButton></template>
+    </BaseDialog>
     <AssetEditorDialog :open="showForm" :asset="editing" :company-id="companyId"
       :references="references" :facilities="facilities" :people="people" @close="showForm=false" @saved="afterSave" />
     <AssetDisposalDialog :asset-id="disposing?.id??null" :company-id="companyId" :role="role"
@@ -309,6 +346,7 @@ onUnmounted(() => {
 </template>
 
 <style scoped>
+.export-link{display:flex;align-items:center;gap:7px;padding:8px 12px;border:1px solid var(--color-stroke-strong);border-radius:var(--radius-sm);text-decoration:none;color:var(--color-text);background:var(--color-surface);font-size:13px}.export-link:hover{background:var(--color-accent-soft)}.bulk-form{display:grid;gap:16px}.bulk-form label{display:grid;gap:6px}.bulk-form select,.bulk-form textarea{width:100%}
 .asset-page{display:grid;gap:20px;min-width:0}
 .page-heading{display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap}
 .page-heading h2{margin:0}.page-heading p{margin:6px 0 0}
