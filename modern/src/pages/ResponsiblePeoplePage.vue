@@ -2,6 +2,7 @@
 import { computed, onUnmounted, reactive, ref, watch } from "vue";
 import { Plus, Pencil, RefreshCw, Users, Info } from "lucide-vue-next";
 import BaseButton from "../components/ui/BaseButton.vue";
+import BaseIconButton from "../components/ui/BaseIconButton.vue";
 import BaseCard from "../components/ui/BaseCard.vue";
 import BaseDialog from "../components/ui/BaseDialog.vue";
 import BaseDataTable from "../components/ui/BaseDataTable.vue";
@@ -141,11 +142,11 @@ onUnmounted(()=>{ctrl?.abort();if(timer)clearTimeout(timer)});
         <template #cell-email="{row}">{{ row.email||"—" }}</template>
         <template #cell-position="{row}">{{ row.position||"—" }}</template>
         <template #cell-actions="{row}">
-          <button v-if="canWrite&&row.source==='manual'" type="button" class="icon-action"
+          <BaseIconButton v-if="canWrite&&row.source==='manual'" type="button"
             :title="ui.t('actions.edit')" :aria-label="ui.t('actions.edit')+': '+row.name"
             @click="openForm(row)">
             <Pencil :size="17" aria-hidden="true"/>
-          </button>
+          </BaseIconButton>
           <span v-else>—</span>
         </template>
       </BaseDataTable>
@@ -197,8 +198,6 @@ onUnmounted(()=>{ctrl?.abort();if(timer)clearTimeout(timer)});
 .people-toolbar{display:flex;align-items:flex-end;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:17px}
 .status-filter{display:grid;gap:6px;min-width:150px;font-size:12px;color:var(--color-muted)}
 .status-filter select{min-width:150px}
-.icon-action{display:grid;place-items:center;width:34px;height:34px;border:1px solid var(--color-stroke-strong);border-radius:var(--radius-sm);background:var(--color-surface);color:var(--color-text)}
-.icon-action:hover{background:var(--color-accent-soft);color:var(--color-primary)}
 .person-form{display:grid;gap:14px}
 .field{display:grid;gap:7px;font-size:12px;font-weight:500}
 .field input{width:100%}

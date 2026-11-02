@@ -3,6 +3,7 @@ import { computed, onUnmounted, ref, watch } from "vue";
 import { useRouter } from "vue-router";
 import { Archive, History, Pencil, Plus, RefreshCw, PackageOpen, QrCode, ArrowRightLeft, Route, FileCheck2, Download, UserRoundCheck } from "lucide-vue-next";
 import BaseButton from "../components/ui/BaseButton.vue";
+import BaseIconButton from "../components/ui/BaseIconButton.vue";
 import BaseCard from "../components/ui/BaseCard.vue";
 import BaseDialog from "../components/ui/BaseDialog.vue";
 import BaseDataTable from "../components/ui/BaseDataTable.vue";
@@ -289,27 +290,27 @@ onUnmounted(() => {
         </template>
         <template #cell-actions="{row}">
           <div class="row-actions">
-            <button type="button" class="icon-action" :title="ui.t('actions.history')"
+            <BaseIconButton type="button" :title="ui.t('actions.history')"
               :aria-label="ui.t('actions.history') + ': ' + row.inventory_number"
-              @click="history=row"><History :size="17" /></button>
-            <button type="button" class="icon-action" :title="ui.t('actions.qr')"
+              @click="history=row"><History :size="17" /></BaseIconButton>
+            <BaseIconButton type="button" :title="ui.t('actions.qr')"
               :aria-label="ui.t('actions.qr') + ': ' + row.inventory_number"
-              @click="qrAsset=row"><QrCode :size="17" /></button>
-            <button type="button" class="icon-action" :title="ui.t('actions.movements')"
+              @click="qrAsset=row"><QrCode :size="17" /></BaseIconButton>
+            <BaseIconButton type="button" :title="ui.t('actions.movements')"
               :aria-label="ui.t('actions.movements') + ': ' + row.inventory_number"
-              @click="movementHistory=row"><Route :size="17" /></button>
-            <button v-if="canWrite && row.status === 'active'" type="button" class="icon-action" :title="ui.t('actions.move')"
+              @click="movementHistory=row"><Route :size="17" /></BaseIconButton>
+            <BaseIconButton v-if="canWrite && row.status === 'active'" type="button" :title="ui.t('actions.move')"
               :aria-label="ui.t('actions.move') + ': ' + row.inventory_number"
-              @click="moving=row"><ArrowRightLeft :size="17" /></button>
-            <button type="button" class="icon-action" :title="ui.t('disposal.title')"
+              @click="moving=row"><ArrowRightLeft :size="17" /></BaseIconButton>
+            <BaseIconButton type="button" :title="ui.t('disposal.title')"
               :aria-label="ui.t('disposal.open') + ': ' + row.inventory_number"
-              @click="disposing=row"><FileCheck2 :size="17" /></button>
-            <button v-if="canWrite && row.status === 'active'" type="button" class="icon-action" :title="ui.t('actions.edit')"
+              @click="disposing=row"><FileCheck2 :size="17" /></BaseIconButton>
+            <BaseIconButton v-if="canWrite && row.status === 'active'" type="button" :title="ui.t('actions.edit')"
               :aria-label="ui.t('actions.edit') + ': ' + row.inventory_number"
-              @click="edit(row)"><Pencil :size="17" /></button>
-            <button v-if="canArchive && row.status === 'active' && !row.has_disposal_case" type="button" class="icon-action danger-action" :title="ui.t('actions.archive')"
+              @click="edit(row)"><Pencil :size="17" /></BaseIconButton>
+            <BaseIconButton tone="danger" v-if="canArchive && row.status === 'active' && !row.has_disposal_case" type="button" :title="ui.t('actions.archive')"
               :aria-label="ui.t('actions.archive') + ': ' + row.inventory_number"
-              @click="archiving=row"><Archive :size="17" /></button>
+              @click="archiving=row"><Archive :size="17" /></BaseIconButton>
           </div>
         </template>
       </BaseDataTable>
@@ -359,9 +360,6 @@ onUnmounted(() => {
 .filter-field select{min-width:170px}
 .truncate{display:block;max-width:360px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .row-actions{display:flex;align-items:center;justify-content:flex-end;gap:6px;white-space:nowrap}
-.icon-action{display:grid;place-items:center;border:1px solid var(--color-stroke-strong);border-radius:var(--radius-sm);background:var(--color-surface);color:var(--color-text);height:36px;width:36px;cursor:pointer}
-.icon-action:hover{color:var(--color-primary);background:var(--color-accent-soft)}
-.icon-action.danger-action:hover{color:var(--color-danger);background:var(--color-danger-surface)}
 .notice{display:flex;align-items:center;justify-content:space-between;gap:12px;border:1px solid var(--color-success);border-radius:var(--radius-sm);color:var(--color-success);background:var(--color-success-surface);padding:9px 13px;font-size:13px}
 .notice button{border:0;background:transparent;color:inherit;cursor:pointer;font-size:20px}
 .error{display:flex;justify-content:space-between;gap:12px;align-items:center}

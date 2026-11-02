@@ -7,6 +7,7 @@ import {
   Maximize2, RefreshCw, LayoutGrid, Table2, ClipboardList, ArrowUpRight, Users, History, Map as MapIcon,
 } from "lucide-vue-next";
 import BaseButton from "../components/ui/BaseButton.vue";
+import BaseIconButton from "../components/ui/BaseIconButton.vue";
 import BaseCard from "../components/ui/BaseCard.vue";
 import BaseDialog from "../components/ui/BaseDialog.vue";
 import BaseDataTable from "../components/ui/BaseDataTable.vue";
@@ -366,16 +367,16 @@ onUnmounted(()=>{ctrl?.abort();assetCtrl?.abort();});
               <template #cell-responsible_person_name="{row}">{{ row.responsible_person_name||"—" }}</template>
               <template #cell-actions="{row}">
                 <div class="table-actions">
-                  <button type="button" :title="ui.t('topology.openInside')" @click="navigate(row.id)">
-                    <ArrowUpRight :size="17" aria-hidden="true"/></button>
-                  <button type="button" :title="ui.t('plan.title')" @click="openPlan(row.id)">
-                    <MapIcon :size="17" aria-hidden="true"/></button>
-                  <button v-if="canWrite" type="button" :title="ui.t('topology.addInside')" @click="create(row.id)">
-                    <Plus :size="17" aria-hidden="true"/></button>
-                  <button v-if="canWrite" type="button" :title="ui.t('actions.edit')" @click="edit(row)">
-                    <Pencil :size="17" aria-hidden="true"/></button>
-                  <button type="button" :title="ui.t('actions.history')" @click="showHistory(row)">
-                    <History :size="17" aria-hidden="true"/></button>
+                  <BaseIconButton type="button" :title="ui.t('topology.openInside')" :aria-label="ui.t('topology.openInside') + ': ' + row.name" @click="navigate(row.id)">
+                    <ArrowUpRight :size="17" aria-hidden="true"/></BaseIconButton>
+                  <BaseIconButton type="button" :title="ui.t('plan.title')" :aria-label="ui.t('plan.title') + ': ' + row.name" @click="openPlan(row.id)">
+                    <MapIcon :size="17" aria-hidden="true"/></BaseIconButton>
+                  <BaseIconButton v-if="canWrite" type="button" :title="ui.t('topology.addInside')" :aria-label="ui.t('topology.addInside') + ': ' + row.name" @click="create(row.id)">
+                    <Plus :size="17" aria-hidden="true"/></BaseIconButton>
+                  <BaseIconButton v-if="canWrite" type="button" :title="ui.t('actions.edit')" :aria-label="ui.t('actions.edit') + ': ' + row.name" @click="edit(row)">
+                    <Pencil :size="17" aria-hidden="true"/></BaseIconButton>
+                  <BaseIconButton type="button" :title="ui.t('actions.history')" :aria-label="ui.t('actions.history') + ': ' + row.name" @click="showHistory(row)">
+                    <History :size="17" aria-hidden="true"/></BaseIconButton>
                 </div>
               </template>
             </BaseDataTable>
@@ -512,8 +513,6 @@ onUnmounted(()=>{ctrl?.abort();assetCtrl?.abort();});
 .table-node-name>span{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .table-node-name svg{flex:none;color:var(--color-muted)}
 .table-actions{display:flex;justify-content:flex-end;gap:6px}
-.table-actions button{display:grid;place-items:center;width:32px;height:32px;border:1px solid var(--color-stroke-strong);border-radius:var(--radius-sm);background:var(--color-surface);color:var(--color-text);cursor:pointer}
-.table-actions button:hover{background:var(--color-accent-soft);color:var(--color-primary)}
 .object-details{display:grid;gap:17px;min-width:0}
 .detail-title{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap}
 .detail-title h3{margin:0;font-size:16px}
