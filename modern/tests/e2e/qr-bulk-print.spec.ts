@@ -41,7 +41,9 @@ test("selected asset produces a printable QR sheet, then clears selection after 
     document.documentElement.scrollWidth-document.documentElement.clientWidth);
   expect(overflow).toBeLessThanOrEqual(1);
 
-  await page.getByRole("combobox",{name:"Статус"}).selectOption("written_off");
+  await page.getByRole("button",{name:"Статус",exact:true}).click();
+  await page.getByRole("dialog",{name:"Статус"}).getByRole("checkbox",{name:"Списан"}).check();
+  await page.keyboard.press("Escape");
   await expect(bulk).toHaveCount(0);
   await company.selectOption({label:"Inventory QA - Solutions"});
   await expect(bulk).toHaveCount(0);
