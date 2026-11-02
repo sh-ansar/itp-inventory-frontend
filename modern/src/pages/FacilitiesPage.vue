@@ -119,7 +119,7 @@ async function refresh(){
       referenceData(props.companyId,controller.signal),
     ]);
     if(controller.signal.aborted||serial!==reqSerial)return;
-    nodes.value=map.data;people.value=persons.data;refs.value=references;
+    nodes.value=map.data;people.value=persons;refs.value=references;
     void loadAssets();
   }catch(e){if(!controller.signal.aborted&&serial===reqSerial)
     error.value=e instanceof Error?e.message:ui.t("generic.unknownError");
