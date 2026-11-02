@@ -129,7 +129,7 @@ onUnmounted(()=>{
   <div ref="root" class="base-dropdown-select" :class="{'is-open':opened,'is-disabled':disabled}">
     <!-- Native semantic select retains keyboard, screen-reader and form behavior;
          pointer users get the unified Inventory popup, never the OS options popup. -->
-    <select ref="nativeSelect" class="dropdown-native" :class="$attrs.class"
+    <select ref="nativeSelect" class="dropdown-native" :class="String($attrs.class||'').split(' ').filter(token=>token!=='company-picker')"
       :aria-label="label||undefined" :aria-expanded="opened" aria-haspopup="listbox"
       :aria-controls="listId" :aria-activedescendant="activeId"
       :value="modelValue" :disabled="disabled" @change="onNativeChange" @keydown="onKey">
