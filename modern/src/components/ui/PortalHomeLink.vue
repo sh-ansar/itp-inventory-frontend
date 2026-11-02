@@ -42,6 +42,6 @@ const logos = {
 .portal-home--compact .portal-home__full,.portal-home--compact .portal-home__fallback{display:none}
 .portal-home--compact .portal-home__mark{display:block;width:29px;height:23px}
 @media(min-width:861px){.portal-home--compact{display:none}}
-@media(max-width:860px){.portal-home:not(.portal-home--compact){display:none}}
+/* The sidebar is a mobile drawer now: keep its Portal footer visible. */
 @media(prefers-reduced-motion:reduce){.portal-home{transition:none}}
 </style>
