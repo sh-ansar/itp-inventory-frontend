@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import BaseConfirmDialog from "../ui/BaseConfirmDialog.vue";
+import { useConfirmDialog } from "../../composables/useConfirmDialog";
 import { computed, ref, watch } from "vue";
 import { ClipboardCheck } from "lucide-vue-next";
 import BaseDialog from "../ui/BaseDialog.vue";
@@ -10,6 +12,9 @@ import type { ReferenceData } from "../../api/inventory";
 import type { FacilityNode } from "../../api/topology";
 import { useUiSettings } from "../../stores/uiSettings";
 
+const { open: confirmOpen, message: confirmMessage, title: confirmTitle,
+  confirmLabel: confirmLabel, danger: confirmDanger, ask: askConfirmation,
+  settle: settleConfirmation } = useConfirmDialog();
 const props = defineProps<{
   open: boolean;
   companyId: string;
@@ -32,9 +37,9 @@ const canSubmit = computed(() => name.value.trim().length >= 3 && !saving.value 
 watch(() => props.open, open => {
   if (open) { name.value=""; locationId.value=""; facilityId.value=props.selectedFacilityId??""; saving.value=false; error.value=""; validation.value={}; }
 });
-function close() {
+async function close() {
   if (saving.value) return;
-  if ((name.value.trim() || locationId.value || facilityId.value!== (props.selectedFacilityId??"")) && !window.confirm(ui.t("form.unsaved"))) return;
+  if ((name.value.trim() || locationId.value || facilityId.value!== (props.selectedFacilityId??"")) && !(await askConfirmation(ui.t("form.unsaved"), {danger:true}))) return;
   emit("close");
 }
 async function save() {
@@ -100,6 +105,9 @@ async function save() {
       </BaseButton>
     </template>
   </BaseDialog>
+  <BaseConfirmDialog :open="confirmOpen" :message="confirmMessage" :title="confirmTitle"
+    :confirm-label="confirmLabel" :danger="confirmDanger"
+    @confirm="settleConfirmation(true)" @cancel="settleConfirmation(false)" />
 </template>
 
 <style scoped>
