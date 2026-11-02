@@ -1,4 +1,4 @@
-import { test, expect, type Page } from "@playwright/test";
+import { test, expect, type Page } from "./fixtures";
 
 test.skip(!process.env.INVENTORY_QA_SECRET_FILE, "Requires isolated local QA fixtures");
 

@@ -1,16 +1,19 @@
 <script setup lang="ts">
 import BaseSelect from "../components/ui/BaseSelect.vue";
-import { computed, onUnmounted, reactive, ref, watch } from "vue";
+import { computed, onUnmounted, reactive, ref, toRef, watch } from "vue";
 import { RouterLink } from "vue-router";
-import { ArrowLeftRight, Boxes, Plus, RefreshCw, Warehouse, PackageCheck } from "lucide-vue-next";
+import { ArrowLeftRight, Boxes, Plus, RefreshCw, Warehouse, PackageCheck , SlidersHorizontal } from "lucide-vue-next";
 import BaseButton from "../components/ui/BaseButton.vue";
 import BaseIconButton from "../components/ui/BaseIconButton.vue";
 import BaseCard from "../components/ui/BaseCard.vue";
+import BaseLoadingState from "../components/ui/BaseLoadingState.vue";
 import BaseDataTable from "../components/ui/BaseDataTable.vue";
 import BaseDialog from "../components/ui/BaseDialog.vue";
 import BasePagination from "../components/ui/BasePagination.vue";
 import BaseSearchField from "../components/ui/BaseSearchField.vue";
 import BaseStatusPill from "../components/ui/BaseStatusPill.vue";
+import TableSettingsDialog from "../components/ui/TableSettingsDialog.vue";
+import { orderAndFilterColumns,useCompanyTablePreferences } from "../composables/useCompanyTablePreferences";
 import { InventoryApiError } from "../api/client";
 import { referenceData } from "../api/inventory";
 import type { ReferenceData } from "../api/inventory";
@@ -23,14 +26,22 @@ import { useUiSettings } from "../stores/uiSettings";
 
 const props=defineProps<{companyId:string;companyName:string;role:string}>();
 const ui=useUiSettings();
+const balancePreferences=useCompanyTablePreferences(toRef(props,"companyId"),"warehouse_balances");
+const catalogPreferences=useCompanyTablePreferences(toRef(props,"companyId"),"warehouse_items");
+const historyPreferences=useCompanyTablePreferences(toRef(props,"companyId"),"warehouse_history");
+const settingsOpen=ref(false);
+const settingsTitle=computed(()=>ui.locale==="ka"?"ცხრილის პარამეტრები":ui.locale==="en"?"Table settings":"Настройки таблицы");
 const tab=ref<"balances"|"catalog"|"history">("balances");
+const activePreferences=computed(()=>tab.value==="balances"?balancePreferences:tab.value==="catalog"?catalogPreferences:historyPreferences);
 const warehouses=ref<FacilityNode[]>([]);
-const warehouseId=ref("");
+const warehouseId=computed({get:()=>balancePreferences.state.warehouse_node_id,set:v=>balancePreferences.state.warehouse_node_id=v});
 const items=ref<StockItem[]>([]),balances=ref<StockBalance[]>([]),history=ref<StockTransaction[]>([]);
 const refs=ref<ReferenceData>({categories:[],accounting_locations:[],physical_locations:[]});
-const loading=ref(false),issue=ref(""),notice=ref("");
-const page=ref(1),perPage=ref(25),total=ref(0),lastPage=ref(1);
-const search=ref(""),debouncedSearch=ref("");
+const loading=ref(false),bootstrapping=ref(false),issue=ref(""),notice=ref("");
+const page=ref(1),total=ref(0),lastPage=ref(1);
+const perPage=computed({get:()=>activePreferences.value.state.per_page,set:v=>activePreferences.value.state.per_page=v});
+const search=computed({get:()=>activePreferences.value.state.search,set:v=>activePreferences.value.state.search=v});
+const debouncedSearch=ref("");
 const allItems=ref<StockItem[]>([]);
 const itemOpen=ref(false),movementOpen=ref(false),saving=ref(false),formError=ref("");
 const fieldErrors=ref<Record<string,string[]>>({});
@@ -70,31 +81,46 @@ const historyColumns=computed(()=>[
   {key:"actor_name",label:ui.t("history.actor"),minWidth:175},
   {key:"reason",label:ui.t("stock.reason"),minWidth:280},
 ]);
+const activeColumns=computed(()=>tab.value==="balances"?balanceColumns.value:tab.value==="catalog"?itemColumns.value:historyColumns.value);
+const visibleBalanceColumns=computed(()=>orderAndFilterColumns(balanceColumns.value,balancePreferences.state));
+const visibleItemColumns=computed(()=>orderAndFilterColumns(itemColumns.value,catalogPreferences.state));
+const visibleHistoryColumns=computed(()=>orderAndFilterColumns(historyColumns.value,historyPreferences.state));
 let ctrl:AbortController|null=null,serial=0;let timer:ReturnType<typeof setTimeout>|null=null;
 watch(search,value=>{
   if(timer)clearTimeout(timer);
   timer=setTimeout(()=>{page.value=1;debouncedSearch.value=value.trim();},300);
 });
 watch(()=>props.companyId,()=>{
-  warehouseId.value="";warehouses.value=[];items.value=[];history.value=[];
-  tab.value="balances";page.value=1;search.value="";debouncedSearch.value="";
+  warehouses.value=[];items.value=[];history.value=[];
+  tab.value="balances";page.value=1;settingsOpen.value=false;debouncedSearch.value="";
   issue.value="";notice.value="";itemOpen.value=false;movementOpen.value=false;
   void bootstrap();
 },{immediate:true});
 watch([tab,page,perPage,warehouseId,debouncedSearch],()=>{void load();});
+let bootstrapGeneration=0;
 async function bootstrap(){
-  if(!props.companyId)return;
+  const companyId=props.companyId;
+  if(!companyId)return;
+  const current=++bootstrapGeneration;
+  bootstrapping.value=true;
   try{
     const [facility,reference,skus]=await Promise.all([
-      getFacilityNodes(props.companyId),referenceData(props.companyId),
-      getStockItems(props.companyId,{page:1,per_page:100}),
+      getFacilityNodes(companyId),referenceData(companyId),
+      getStockItems(companyId,{page:1,per_page:100}),
     ]);
+    // A slower response for the previous company must never replace this tenant's data.
+    if(current!==bootstrapGeneration||props.companyId!==companyId)return;
     warehouses.value=facility.data.filter(n=>n.node_type==="warehouse");
     refs.value=reference;allItems.value=skus.data;
     if(!warehouses.value.some(w=>w.id===warehouseId.value))
       warehouseId.value=warehouses.value[0]?.id??"";
     await load();
-  }catch(e){issue.value=e instanceof Error?e.message:ui.t("generic.unknownError");}
+  }catch(e){
+    if(current===bootstrapGeneration)
+      issue.value=e instanceof Error?e.message:ui.t("generic.unknownError");
+  }finally{
+    if(current===bootstrapGeneration)bootstrapping.value=false;
+  }
 }
 async function load(){
   ctrl?.abort();const controller=new AbortController();ctrl=controller;
@@ -187,6 +213,10 @@ onUnmounted(()=>{ctrl?.abort();if(timer)clearTimeout(timer)});
       <div><h2>{{ ui.t("stock.warehouseTitle") }}</h2>
         <p class="muted">{{ ui.t("stock.warehouseSubtitle") }}</p></div>
       <div class="header-actions">
+        <BaseButton variant="secondary" :title="settingsTitle" :aria-label="settingsTitle"
+          :disabled="!activePreferences.ready.value" @click="settingsOpen=true">
+          <SlidersHorizontal :size="17" aria-hidden="true"/><span class="header-action-label">{{settingsTitle}}</span>
+        </BaseButton>
         <BaseButton variant="secondary" :disabled="loading" :aria-label="ui.t('actions.refresh')" :title="ui.t('actions.refresh')" @click="bootstrap">
           <RefreshCw :size="17" aria-hidden="true"/><span class="header-action-label">{{ ui.t("actions.refresh") }}</span></BaseButton>
         <BaseButton v-if="canWrite" variant="secondary" :aria-label="ui.t('stock.newItem')" :title="ui.t('stock.newItem')" @click="createItem">
@@ -197,7 +227,10 @@ onUnmounted(()=>{ctrl?.abort();if(timer)clearTimeout(timer)});
     </div>
     <p v-if="issue" class="error" role="alert">{{ issue }}</p>
     <p v-if="notice" class="notice" role="status">{{ notice }}</p>
-    <BaseCard v-if="!warehouses.length" class="warehouse-empty">
+    <BaseCard v-if="bootstrapping" class="warehouse-empty">
+      <BaseLoadingState :label="ui.t('generic.loading')"/>
+    </BaseCard>
+    <BaseCard v-else-if="!warehouses.length" class="warehouse-empty">
       <Warehouse :size="30" aria-hidden="true"/><h3>{{ ui.t("stock.warehouseMissing") }}</h3>
       <RouterLink to="/facilities">{{ ui.t("stock.warehouseGo") }}</RouterLink>
     </BaseCard>
@@ -229,7 +262,7 @@ onUnmounted(()=>{ctrl?.abort();if(timer)clearTimeout(timer)});
         <template v-if="tab==='balances'">
           <div class="section-title"><PackageCheck :size="19" aria-hidden="true"/>
             <h3>{{ selectedWarehouse?.name }}</h3></div>
-          <BaseDataTable :rows="balances" row-key="id" :columns="balanceColumns"
+          <BaseDataTable :rows="balances" row-key="id" :columns="visibleBalanceColumns"
             :loading="loading" :caption="ui.t('stock.tab.balances')"
             :empty-title="ui.t('stock.balanceZero')" :min-table-width="770">
             <template #cell-quantity_milli="{row}">
@@ -241,7 +274,7 @@ onUnmounted(()=>{ctrl?.abort();if(timer)clearTimeout(timer)});
           </BaseDataTable>
         </template>
         <BaseDataTable v-else-if="tab==='catalog'" :rows="items" row-key="id"
-          :columns="itemColumns" :loading="loading" :caption="ui.t('stock.tab.catalog')"
+          :columns="visibleItemColumns" :loading="loading" :caption="ui.t('stock.tab.catalog')"
           :empty-title="ui.t('stock.catalogEmpty')" :min-table-width="930">
           <template #cell-balances_sum_quantity_milli="{row}">
             {{ fmt(row.balances_sum_quantity_milli) }}</template>
@@ -253,7 +286,7 @@ onUnmounted(()=>{ctrl?.abort();if(timer)clearTimeout(timer)});
             </BaseIconButton>
           </template>
         </BaseDataTable>
-        <BaseDataTable v-else :rows="history" row-key="id" :columns="historyColumns"
+        <BaseDataTable v-else :rows="history" row-key="id" :columns="visibleHistoryColumns"
           :loading="loading" :caption="ui.t('stock.tab.history')"
           :empty-title="ui.t('stock.historyEmpty')" :min-table-width="1100">
           <template #cell-created_at="{row}">
@@ -274,6 +307,13 @@ onUnmounted(()=>{ctrl?.abort();if(timer)clearTimeout(timer)});
       </BaseCard>
     </template>
 
+    <TableSettingsDialog :open="settingsOpen" :columns="activeColumns"
+      :hidden-columns="activePreferences.state.hidden_columns"
+      :column-order="activePreferences.state.column_order"
+      :busy="!activePreferences.ready.value||activePreferences.saving.value"
+      @close="settingsOpen=false" @reset="activePreferences.reset()"
+      @update:hidden-columns="activePreferences.state.hidden_columns=$event"
+      @update:column-order="activePreferences.state.column_order=$event"/>
     <BaseDialog :open="itemOpen" :title="ui.t('stock.newItemTitle')" @close="!saving&&(itemOpen=false)">
       <form id="stock-item-form" class="warehouse-form" @submit.prevent="saveItem">
         <p v-if="formError" class="error" role="alert">{{ formError }}</p>

@@ -1,4 +1,4 @@
-import { test, expect } from "@playwright/test";
+import { test, expect } from "./fixtures";
 
 test.skip(!process.env.INVENTORY_QA_SECRET_FILE, "Isolated synthetic QA login required");
 

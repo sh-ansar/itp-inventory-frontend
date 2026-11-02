@@ -1,4 +1,4 @@
-import { test, expect, type Page } from "@playwright/test";
+import { test, expect, type Page } from "./fixtures";
 
 test.skip(!process.env.INVENTORY_QA_SECRET_FILE, "Local-only synthetic QA session required");
 
@@ -100,6 +100,9 @@ test.describe("viewer QR permissions", () => {
   test.use({ storageState: "test-results/.auth/viewer.json" });
   test("viewer can scan QR for own company but cannot transfer", async ({page}) => {
   await openInventory(page);
+  // The QA catalog is cumulative. Use server search instead of assuming the
+  // target's inventory number appears on the first page.
+  await page.getByRole("searchbox",{name:"Поиск по всему реестру"}).fill("MIN-0001");
   const row = page.locator("tbody tr").filter({hasText:"MIN-0001"});
   await expect(row).toBeVisible();
   await row.getByRole("button",{name:"QR-этикетка: MIN-0001"}).click();

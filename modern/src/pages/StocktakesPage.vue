@@ -1,14 +1,16 @@
 <script setup lang="ts">
 import BaseSelect from "../components/ui/BaseSelect.vue";
-import { computed, onUnmounted, ref, watch } from "vue";
+import { computed, onUnmounted, ref, toRef, watch } from "vue";
 import { RouterLink, useRoute, useRouter } from "vue-router";
-import { ArrowUpRight, ClipboardCheck, Plus, RefreshCw, Download } from "lucide-vue-next";
+import { ArrowUpRight, ClipboardCheck, Plus, RefreshCw, Download, SlidersHorizontal } from "lucide-vue-next";
 import BaseButton from "../components/ui/BaseButton.vue";
 import BaseCard from "../components/ui/BaseCard.vue";
 import BaseDataTable from "../components/ui/BaseDataTable.vue";
 import BasePagination from "../components/ui/BasePagination.vue";
 import BaseSearchField from "../components/ui/BaseSearchField.vue";
 import BaseStatusPill from "../components/ui/BaseStatusPill.vue";
+import TableSettingsDialog from "../components/ui/TableSettingsDialog.vue";
+import { orderAndFilterColumns, useCompanyTablePreferences } from "../composables/useCompanyTablePreferences";
 import StocktakeCreateDialog from "../components/stocktakes/StocktakeCreateDialog.vue";
 import { referenceData } from "../api/inventory";
 import type { ReferenceData } from "../api/inventory";
@@ -20,12 +22,18 @@ import { useUiSettings } from "../stores/uiSettings";
 
 const props=defineProps<{companyId:string;companyName:string;role:string}>();
 const ui=useUiSettings(), route=useRoute(), router=useRouter();
+const preferences=useCompanyTablePreferences(toRef(props,"companyId"),"stocktakes");
+const settingsOpen=ref(false);
+const settingsTitle=computed(()=>ui.locale==="ka"?"ცხრილის პარამეტრები":ui.locale==="en"?"Table settings":"Настройки таблицы");
 const sessions=ref<InventorySession[]>([]);
 const loading=ref(false), issue=ref(""), notice=ref("");
 const refs=ref<ReferenceData>({categories:[], accounting_locations:[],physical_locations:[]});
 const facilities=ref<FacilityNode[]>([]);
-const page=ref(1), perPage=ref(25), total=ref(0), lastPage=ref(1);
-const search=ref(""), filteredSearch=ref(""), status=ref("");
+const page=ref(1), total=ref(0), lastPage=ref(1);
+const perPage=computed({get:()=>preferences.state.per_page,set:v=>preferences.state.per_page=v});
+const search=computed({get:()=>preferences.state.search,set:v=>preferences.state.search=v});
+const status=computed({get:()=>preferences.state.status,set:v=>preferences.state.status=v});
+const filteredSearch=ref("");
 const creating=ref(false);
 const canWrite=computed(()=>["company_admin","inventory_manager"].includes(props.role));
 const selectedFacilityId=computed(()=>{
@@ -48,6 +56,7 @@ const columns=computed(()=>[
   {key:"actions",label:ui.t("table.actions"),minWidth:110,align:"right" as const},
 ]);
 
+const visibleColumns=computed(()=>orderAndFilterColumns(columns.value,preferences.state));
 let listReq:AbortController|null=null;
 let refsReq:AbortController|null=null;
 let serial=0,refSerial=0;
@@ -57,8 +66,8 @@ watch(search,value=>{
   timer=setTimeout(()=>{page.value=1;filteredSearch.value=value.trim();},300);
 });
 watch(()=>props.companyId,id=>{
-  sessions.value=[];total.value=0;page.value=1;status.value="";
-  search.value="";filteredSearch.value="";issue.value="";notice.value="";creating.value=false;
+  sessions.value=[];total.value=0;page.value=1;
+  filteredSearch.value="";issue.value="";notice.value="";creating.value=false;settingsOpen.value=false;
   refs.value={categories:[],accounting_locations:[],physical_locations:[]};
   facilities.value=[];
   refsReq?.abort();
@@ -151,8 +160,12 @@ onUnmounted(()=>{
             <option value="completed">{{ ui.t("stock.completed") }}</option>
           </BaseSelect>
         </label>
+        <BaseButton variant="secondary" :disabled="!preferences.ready.value"
+          :title="settingsTitle" :aria-label="settingsTitle" @click="settingsOpen=true">
+          <SlidersHorizontal :size="17" aria-hidden="true"/>{{settingsTitle}}
+        </BaseButton>
       </div>
-      <BaseDataTable :rows="sessions" row-key="id" :columns="columns" :loading="loading"
+      <BaseDataTable :rows="sessions" row-key="id" :columns="visibleColumns" :loading="loading"
         :caption="ui.t('stock.title')" :empty-title="ui.t('stock.empty')" :min-table-width="1030">
         <template #cell-name="{row}">
           <div class="stock-name"><strong :title="row.name">{{ row.name }}</strong>
@@ -187,6 +200,11 @@ onUnmounted(()=>{
         :page-size="perPage" :total="total" :locale="ui.locale" :caption="ui.t('stock.title')"
         @change:page="page=$event" @change:size="perPage=$event;page=1"/>
     </BaseCard>
+    <TableSettingsDialog :open="settingsOpen" :columns="columns"
+      :hidden-columns="preferences.state.hidden_columns" :column-order="preferences.state.column_order"
+      :busy="!preferences.ready.value||preferences.saving.value" @close="settingsOpen=false"
+      @reset="preferences.reset()" @update:hidden-columns="preferences.state.hidden_columns=$event"
+      @update:column-order="preferences.state.column_order=$event"/>
     <StocktakeCreateDialog :open="creating" :company-id="companyId" :references="refs"
       :selected-asset-ids="selectedAssetIds" :facilities="facilities" :selected-facility-id="selectedFacilityId" @close="creating=false" @created="created"/>
   </div>
