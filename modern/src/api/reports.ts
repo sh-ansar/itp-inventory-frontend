@@ -27,11 +27,17 @@ export interface SummaryFilters {
   status?:string;
   facility_node_id?:string;
   responsible_person_id?:string;
+  statuses?:string[];
+  facility_node_ids?:string[];
+  responsible_person_ids?:string[];
 }
 const root=(companyId:string)=>"/api/v1/companies/"+encodeURIComponent(companyId)+"/reports/summary";
 const queryOf=(filters:SummaryFilters):string=>{
   const params=new URLSearchParams();
-  for(const [key,value] of Object.entries(filters))if(value)params.set(key,value);
+  for(const [key,value] of Object.entries(filters)){
+    if(Array.isArray(value)){for(const item of value)params.append(key+"[]",item)}
+    else if(value)params.set(key,value);
+  }
   return params.toString()?"?"+params:"";
 };
 export async function getInventorySummary(companyId:string,filters:SummaryFilters,signal?:AbortSignal){
