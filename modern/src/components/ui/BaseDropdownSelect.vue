@@ -16,6 +16,7 @@ const props=withDefaults(defineProps<{
 const emit=defineEmits<{ "update:modelValue":[value:string]; change:[value:string] }>();
 const root=ref<HTMLElement|null>(null);
 const trigger=ref<HTMLButtonElement|null>(null);
+const nativeSelect=ref<HTMLSelectElement|null>(null);
 const panel=ref<HTMLElement|null>(null);
 const searchInput=ref<HTMLInputElement|null>(null);
 const opened=ref(false);
@@ -62,7 +63,11 @@ function close(restoreFocus=false){
   opened.value=false;
   opensUp.value=false;
   query.value="";
-  if(restoreFocus)void nextTick(()=>trigger.value?.focus());
+  if(restoreFocus)void nextTick(()=>nativeSelect.value?.focus());
+}
+function onNativeChange(event:Event){
+  const next=props.options.find(item=>item.value===(event.target as HTMLSelectElement).value);
+  if(next)choose(next);
 }
 function choose(item:SelectOption){
   if(item.disabled)return;
@@ -115,13 +120,18 @@ onUnmounted(()=>{
 
 <template>
   <div ref="root" class="base-dropdown-select" :class="{'is-open':opened,'is-disabled':disabled}">
-    <button ref="trigger" type="button" class="dropdown-trigger"
-      role="combobox" aria-autocomplete="none" aria-haspopup="listbox"
-      :aria-label="label" :aria-expanded="opened" :aria-controls="listId"
-      :aria-activedescendant="activeId"
+    <!-- Native semantic select retains keyboard, screen-reader and form behavior;
+         pointer users get the unified Inventory popup, never the OS options popup. -->
+    <select ref="nativeSelect" class="dropdown-native" :class="$attrs.class"
+      :aria-label="label" :aria-expanded="opened" aria-haspopup="listbox"
+      :aria-controls="listId" :aria-activedescendant="activeId"
+      :value="modelValue" :disabled="disabled" @change="onNativeChange" @keydown="onKey">
+      <option v-for="item in options" :key="item.value" :value="item.value"
+        :disabled="item.disabled">{{item.label}}</option>
+    </select>
+    <button ref="trigger" type="button" class="dropdown-trigger" tabindex="-1" aria-hidden="true"
       :title="selection?.label||placeholder||label"
-      :disabled="disabled"
-      @click="opened?close():open()" @keydown="onKey">
+      :disabled="disabled" @click="opened?close():open()">
       <span class="dropdown-value" :class="{'is-placeholder':!selection}">
         {{selection?.label||placeholder||message.select}}
       </span>
@@ -153,6 +163,13 @@ onUnmounted(()=>{
 
 <style scoped>
 .base-dropdown-select{width:100%;min-width:0;position:relative}
+.dropdown-native{
+  position:absolute;inset:0;z-index:1;width:100%;height:100%;
+  min-height:40px;opacity:0;pointer-events:none;padding:0;margin:0;
+}
+.base-dropdown-select:focus-within .dropdown-trigger{
+  outline:2px solid var(--color-primary);outline-offset:1px;
+}
 .dropdown-trigger{
   display:flex;align-items:center;justify-content:space-between;gap:10px;
   height:var(--control-height,40px);min-height:40px;padding:8px 11px;
