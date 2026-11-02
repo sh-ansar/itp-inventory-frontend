@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, onMounted, reactive, ref, watch } from "vue";
 import { RouterLink, RouterView, useRoute } from "vue-router";
-import { Boxes, ClipboardList, BookOpen, Package, Building2, Users, Warehouse, ExternalLink, LogOut, Sun, Moon, Eye, EyeOff, RefreshCw, FileCheck2 } from "lucide-vue-next";
+import { Boxes, ClipboardList, BookOpen, Package, Building2, Users, Warehouse, ExternalLink, LogOut, Sun, Moon, Eye, EyeOff, RefreshCw, FileCheck2, ShieldCheck } from "lucide-vue-next";
 import BaseButton from "./components/ui/BaseButton.vue";
 import BaseCard from "./components/ui/BaseCard.vue";
 import BaseLoadingState from "./components/ui/BaseLoadingState.vue";
@@ -28,6 +28,7 @@ const passwordVisible = ref(false);
 const currentTitle = computed(() => ui.t(
    route.name === "disposals" ? "disposal.title" :
    route.name === "disposals" ? "disposal.title" :
+   route.name === "company-roles" ? "roles.title" :
    route.name === "references" ? "heading.references" :
    route.name === "scan" ? "qr.scanTitle" :
    route.name === "stocktake" || route.name === "stocktakes" ? "heading.stocktakes" :
@@ -132,6 +133,9 @@ onMounted(boot);
         </RouterLink>
         <RouterLink to="/stocktakes" class="nav-item" active-class="nav-item--active">
           <ClipboardList :size="19" aria-hidden="true"/>{{ ui.t("nav.stocktakes") }}
+        </RouterLink>
+        <RouterLink v-if="selectedCompany?.role_code==='company_admin'" to="/company-roles" class="nav-item" active-class="nav-item--active">
+          <ShieldCheck :size="19" aria-hidden="true"/>{{ ui.t("roles.title") }}
         </RouterLink>
       </nav>
       <div class="sidebar-footer">
