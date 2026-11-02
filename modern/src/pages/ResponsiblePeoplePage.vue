@@ -2,8 +2,8 @@
 import BaseSelect from "../components/ui/BaseSelect.vue";
 import BaseConfirmDialog from "../components/ui/BaseConfirmDialog.vue";
 import { useConfirmDialog } from "../composables/useConfirmDialog";
-import { computed, onUnmounted, reactive, ref, watch } from "vue";
-import { Plus, Pencil, RefreshCw, Users, Info } from "lucide-vue-next";
+import { computed, onUnmounted, reactive, ref, toRef, watch } from "vue";
+import { Plus, Pencil, RefreshCw, Users, Info , SlidersHorizontal } from "lucide-vue-next";
 import BaseButton from "../components/ui/BaseButton.vue";
 import BaseIconButton from "../components/ui/BaseIconButton.vue";
 import BaseCard from "../components/ui/BaseCard.vue";
@@ -12,6 +12,8 @@ import BaseDataTable from "../components/ui/BaseDataTable.vue";
 import BasePagination from "../components/ui/BasePagination.vue";
 import BaseSearchField from "../components/ui/BaseSearchField.vue";
 import BaseStatusPill from "../components/ui/BaseStatusPill.vue";
+import TableSettingsDialog from "../components/ui/TableSettingsDialog.vue";
+import { orderAndFilterColumns,useCompanyTablePreferences } from "../composables/useCompanyTablePreferences";
 import { createResponsiblePerson, getResponsiblePeople, updateResponsiblePerson } from "../api/topology";
 import type { ResponsiblePerson, ResponsibleInput } from "../api/topology";
 import { InventoryApiError } from "../api/client";
@@ -22,10 +24,16 @@ const { open: confirmOpen, message: confirmMessage, title: confirmTitle,
   settle: settleConfirmation } = useConfirmDialog();
 const props=defineProps<{companyId:string;companyName:string;role:string}>();
 const ui=useUiSettings();
+const preferences=useCompanyTablePreferences(toRef(props,"companyId"),"people",{status:"1"});
+const settingsOpen=ref(false);
+const settingsTitle=computed(()=>ui.locale==="ka"?"ცხრილის პარამეტრები":ui.locale==="en"?"Table settings":"Настройки таблицы");
 const rows=ref<ResponsiblePerson[]>([]);
 const loading=ref(false),issue=ref(""),notice=ref("");
-const page=ref(1),perPage=ref(25),total=ref(0),lastPage=ref(1);
-const search=ref(""),query=ref(""),status=ref("1");
+const page=ref(1),total=ref(0),lastPage=ref(1);
+const perPage=computed({get:()=>preferences.state.per_page,set:v=>preferences.state.per_page=v});
+const search=computed({get:()=>preferences.state.search,set:v=>preferences.state.search=v});
+const status=computed({get:()=>preferences.state.status,set:v=>preferences.state.status=v});
+const query=ref("");
 const formOpen=ref(false),editing=ref<ResponsiblePerson|null>(null),saving=ref(false),formError=ref("");
 const fieldErrors=ref<Record<string,string[]>>({});
 const fields=reactive<ResponsibleInput>({
@@ -43,6 +51,7 @@ const columns=computed(()=>[
   {key:"assets_count",label:ui.t("people.assetCount"),minWidth:100},
   {key:"actions",label:ui.t("table.actions"),minWidth:90,align:"right" as const},
 ]);
+const visibleColumns=computed(()=>orderAndFilterColumns(columns.value,preferences.state));
 let ctrl:AbortController|null=null,serial=0;
 let timer:ReturnType<typeof setTimeout>|null=null;
 watch(search,value=>{
@@ -50,7 +59,7 @@ watch(search,value=>{
   timer=setTimeout(()=>{page.value=1;query.value=value.trim();},250);
 });
 watch(()=>props.companyId,()=>{
-  rows.value=[];page.value=1;search.value="";query.value="";
+  rows.value=[];page.value=1;query.value="";settingsOpen.value=false;
   notice.value="";issue.value="";formOpen.value=false;void load();
 },{immediate:true});
 watch([page,perPage,query,status],()=>{void load()});
@@ -135,10 +144,14 @@ onUnmounted(()=>{ctrl?.abort();if(timer)clearTimeout(timer)});
             <option value="">{{ ui.t("filter.all") }}</option>
           </BaseSelect>
         </label>
+        <BaseButton variant="secondary" :disabled="!preferences.ready.value"
+          :title="settingsTitle" :aria-label="settingsTitle" @click="settingsOpen=true">
+          <SlidersHorizontal :size="17" aria-hidden="true"/>{{settingsTitle}}
+        </BaseButton>
       </div>
-      <BaseDataTable :rows="rows" row-key="id" :columns="columns" :loading="loading"
+      <BaseDataTable :rows="rows" row-key="id" :columns="visibleColumns" :loading="loading"
         :caption="ui.t('people.title')" :empty-title="ui.t('people.empty')"
-        :min-table-width="1080">
+        :min-table-width="Math.max(650,visibleColumns.length*132)">
         <template #cell-source="{row}">{{ ui.t("people.source."+row.source) }}</template>
         <template #cell-is_active="{row}">
           <BaseStatusPill :tone="row.is_active?'success':'neutral'">
@@ -161,6 +174,11 @@ onUnmounted(()=>{ctrl?.abort();if(timer)clearTimeout(timer)});
         :caption="ui.t('people.title')"
         @change:page="page=$event" @change:size="perPage=$event;page=1"/>
     </BaseCard>
+    <TableSettingsDialog :open="settingsOpen" :columns="columns"
+      :hidden-columns="preferences.state.hidden_columns" :column-order="preferences.state.column_order"
+      :busy="!preferences.ready.value||preferences.saving.value" @close="settingsOpen=false"
+      @reset="preferences.reset()" @update:hidden-columns="preferences.state.hidden_columns=$event"
+      @update:column-order="preferences.state.column_order=$event"/>
     <BaseDialog :open="formOpen" :title="ui.t(editing?'people.edit':'people.new')" @close="closeForm">
       <form id="person-form" class="person-form" @submit.prevent="save">
         <p v-if="formError" class="error" role="alert">{{ formError }}</p>
