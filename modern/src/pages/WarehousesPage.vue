@@ -4,6 +4,7 @@ import { computed, onUnmounted, reactive, ref, watch } from "vue";
 import { RouterLink } from "vue-router";
 import { ArrowLeftRight, Boxes, Plus, RefreshCw, Warehouse, PackageCheck } from "lucide-vue-next";
 import BaseButton from "../components/ui/BaseButton.vue";
+import BaseIconButton from "../components/ui/BaseIconButton.vue";
 import BaseCard from "../components/ui/BaseCard.vue";
 import BaseDataTable from "../components/ui/BaseDataTable.vue";
 import BaseDialog from "../components/ui/BaseDialog.vue";
@@ -59,7 +60,7 @@ const itemColumns=computed(()=>[
   {key:"unit",label:ui.t("stock.unit"),minWidth:95},
   {key:"balances_sum_quantity_milli",label:ui.t("stock.quantity"),minWidth:130},
   {key:"minimum_quantity_milli",label:ui.t("stock.minimum"),minWidth:120},
-  {key:"actions",label:ui.t("table.actions"),minWidth:170,align:"right" as const},
+  {key:"actions",label:ui.t("table.actions"),minWidth:80,align:"right" as const},
 ]);
 const historyColumns=computed(()=>[
   {key:"created_at",label:ui.t("table.created"),minWidth:165},
@@ -246,8 +247,10 @@ onUnmounted(()=>{ctrl?.abort();if(timer)clearTimeout(timer)});
             {{ fmt(row.balances_sum_quantity_milli) }}</template>
           <template #cell-minimum_quantity_milli="{row}">{{ fmt(row.minimum_quantity_milli) }}</template>
           <template #cell-actions="{row}">
-            <button v-if="canWrite" type="button" class="text-action" @click="createMovement(row)">
-              {{ ui.t("stock.newOperation") }}</button>
+            <BaseIconButton v-if="canWrite" type="button" :title="ui.t('stock.newOperation')"
+              :aria-label="ui.t('stock.newOperation')+': '+row.name" @click="createMovement(row)">
+              <ArrowLeftRight :size="17" aria-hidden="true"/>
+            </BaseIconButton>
           </template>
         </BaseDataTable>
         <BaseDataTable v-else :rows="history" row-key="id" :columns="historyColumns"
