@@ -1,10 +1,11 @@
 <script setup lang="ts">
 import { computed, onMounted, reactive, ref, watch } from "vue";
 import { RouterLink, RouterView, useRoute } from "vue-router";
-import { Boxes, ClipboardList, BookOpen, Package, Building2, Users, Warehouse, ExternalLink, LogOut, Sun, Moon, Eye, EyeOff, RefreshCw, FileCheck2, ShieldCheck } from "lucide-vue-next";
+import { Boxes, ClipboardList, BookOpen, Package, Building2, Users, Warehouse, LogOut, Sun, Moon, Eye, EyeOff, RefreshCw, FileCheck2, ShieldCheck } from "lucide-vue-next";
 import BaseButton from "./components/ui/BaseButton.vue";
 import BaseCard from "./components/ui/BaseCard.vue";
 import BaseLoadingState from "./components/ui/BaseLoadingState.vue";
+import PortalHomeLink from "./components/ui/PortalHomeLink.vue";
 
 import { health, login, currentUser, logout, companies } from "./api/session";
 import type { InventoryUser, CompanyAccess } from "./api/session";
@@ -27,7 +28,6 @@ const credentials = reactive({ email:"", password:"" });
 const passwordVisible = ref(false);
 const currentTitle = computed(() => ui.t(
    route.name === "disposals" ? "disposal.title" :
-   route.name === "disposals" ? "disposal.title" :
    route.name === "company-roles" ? "roles.title" :
    route.name === "references" ? "heading.references" :
    route.name === "scan" ? "qr.scanTitle" :
@@ -40,13 +40,21 @@ const currentTitle = computed(() => ui.t(
 const selectedCompany = computed(() =>
   availableCompanies.value.find(c => c.id === companyId.value) ?? null
 );
+watch(companyId, value => {
+  if (value && user.value && availableCompanies.value.some(c => c.id === value) && typeof localStorage !== "undefined") {
+    localStorage.setItem("inventory.companyId", value);
+  }
+});
+
 
 async function loadIdentity(): Promise<void> {
   const [identity, memberships] = await Promise.all([currentUser(), companies()]);
   user.value = identity;
   availableCompanies.value = memberships;
+  const saved = typeof localStorage !== "undefined" ? localStorage.getItem("inventory.companyId") : null;
+  const demo = memberships.find(c => c.name.startsWith("[DEMO]"));
   companyId.value = memberships.some(c => c.id === companyId.value)
-    ? companyId.value : memberships[0]?.id ?? "";
+    ? companyId.value : memberships.find(c => c.id === saved)?.id ?? demo?.id ?? memberships[0]?.id ?? "";
 }
 
 async function boot() {
@@ -139,11 +147,7 @@ onMounted(boot);
         </RouterLink>
       </nav>
       <div class="sidebar-footer">
-        <a href="https://platform.itpmining.kz/" class="portal-link" :title="ui.t('portal.back')">
-          <ExternalLink :size="18" aria-hidden="true"/>
-          <span>{{ ui.t("portal.back") }}</span>
-        </a>
-        <p class="muted">ITP · Inventory</p>
+        <PortalHomeLink />
       </div>
     </aside>
     <div class="app-main">
@@ -154,11 +158,7 @@ onMounted(boot);
           </div>
         </div>
         <div class="topbar-trailing">
-          <a href="https://platform.itpmining.kz/" class="portal-link portal-link--mobile"
-            :title="ui.t('portal.back')" :aria-label="ui.t('portal.back')">
-            <ExternalLink :size="18" aria-hidden="true"/>
-            <span>{{ ui.t("portal.back") }}</span>
-          </a>
+          <PortalHomeLink compact class="portal-link--mobile" />
           <label v-if="user && availableCompanies.length > 0" class="company-switcher">
             <span>{{ ui.t("auth.company") }}</span>
             <select v-model="companyId" :aria-label="ui.t('auth.company')">
