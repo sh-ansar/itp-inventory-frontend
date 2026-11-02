@@ -14,9 +14,9 @@ import { getInventorySummary, summaryCsvHref, summaryPrintDocument, summaryStatu
 import type { InventorySummary } from "../api/reports";
 import { PRINT_FORM_KINDS,getDetailedPrintReport,printFormTitle,renderDetailedPrintDocument } from "../api/printForms";
 import type { PrintFormKind,PrintFormFilters } from "../api/printForms";
-import { inventorySessions } from "../api/stocktakes";
+import { getAllInventorySessions } from "../api/stocktakes";
 import type { InventorySession } from "../api/stocktakes";
-import { getFacilityNodes, getResponsiblePeople } from "../api/topology";
+import { getFacilityNodes, getAllActiveResponsiblePeople } from "../api/topology";
 import type { FacilityNode, ResponsiblePerson } from "../api/topology";
 import { useUiSettings } from "../stores/uiSettings";
 
@@ -147,13 +147,13 @@ watch(()=>props.companyId,async (id,previousId)=>{
   if(!id)return;
   const results=await Promise.allSettled([
     getFacilityNodes(id),
-    getResponsiblePeople(id,{page:1,per_page:100,active:"1"}),
-    inventorySessions(id,{search:"",status:"",page:1,per_page:100}),
+    getAllActiveResponsiblePeople(id),
+    getAllInventorySessions(id),
   ]);
   if(requestId!==dictionarySerial||id!==props.companyId)return;
   if(results[0].status==="fulfilled")facilities.value=results[0].value.data;
-  if(results[1].status==="fulfilled")people.value=results[1].value.data;
-  if(results[2].status==="fulfilled")sessions.value=results[2].value.data;
+  if(results[1].status==="fulfilled")people.value=results[1].value;
+  if(results[2].status==="fulfilled")sessions.value=results[2].value;
 },{immediate:true});
 watch(()=>route.query.print_session,value=>{
   if(typeof value==="string"&&value.length){
