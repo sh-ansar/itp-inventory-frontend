@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import BaseSelect from "../components/ui/BaseSelect.vue";
 import { computed, onUnmounted, ref, watch } from "vue";
 import { RouterLink, useRoute, useRouter } from "vue-router";
 import { ClipboardCheck, Plus, RefreshCw, Download } from "lucide-vue-next";
@@ -148,11 +149,11 @@ onUnmounted(()=>{
           :placeholder="ui.t('stock.search')"/>
         <label class="stock-filter">
           <span>{{ ui.t("stock.status") }}</span>
-          <select v-model="status" :aria-label="ui.t('stock.status')" @change="page=1">
+          <BaseSelect v-model="status" :aria-label="ui.t('stock.status')" @change="page=1">
             <option value="">{{ ui.t("filter.all") }}</option>
             <option value="in_progress">{{ ui.t("stock.inProgress") }}</option>
             <option value="completed">{{ ui.t("stock.completed") }}</option>
-          </select>
+          </BaseSelect>
         </label>
       </div>
       <BaseDataTable :rows="sessions" row-key="id" :columns="columns" :loading="loading"
