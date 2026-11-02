@@ -40,7 +40,8 @@ input:disabled,select:disabled,textarea:disabled{opacity:.55}
 .nav-item:hover:not(.nav-item--disabled){background:var(--color-hover)}
 .nav-item--active,.nav-item--active:hover{background:var(--color-accent-soft);border-color:var(--color-primary-stroke);color:var(--color-primary)}
 .nav-item--disabled{cursor:not-allowed;opacity:.42}
-.sidebar-footer{margin-top:auto;padding:16px 7px 5px;display:grid;justify-items:start;gap:6px}
+.sidebar-footer{margin-top:auto;padding:0 7px;display:flex;align-items:stretch;min-width:0;border-top:0}
+.sidebar-footer :is(a,img){max-width:100%}
 .sidebar-footer p{margin:0 0 4px}
 .app-main{display:flex;flex-direction:column;min-width:0;min-height:100dvh}
 .topbar{
@@ -115,14 +116,39 @@ input:disabled,select:disabled,textarea:disabled{opacity:.55}
   .nav-item{transition:none}
   *{scroll-behavior:auto!important}
 }
-.portal-link{display:flex;align-items:center;gap:11px;width:100%;min-height:44px;
-  padding:10px 12px;border:1px solid var(--color-stroke-strong);border-radius:var(--radius-sm);
-  background:var(--color-soft);text-decoration:none;color:var(--color-text);
-  font-size:12px;font-weight:500}
-.portal-link svg{flex:none;color:var(--color-primary)}
-.portal-link:hover{border-color:var(--color-primary-stroke);background:var(--color-accent-soft)}
-.portal-link--mobile{display:none;width:auto;min-height:38px;padding:8px 10px}
+
+/* Unified application controls, tables and panel layout across every Inventory module. */
+:where(.view-content) :is(.field,.form-field,.stock-filter,.status-filter,.grant-form label,.member label){
+  color:var(--color-text);font-size:var(--font-label-size);font-weight:500;
+}
+:where(.view-content) :is(input:not([type=checkbox]):not([type=radio]),select,textarea){
+  max-width:100%;border-color:var(--color-stroke-strong);
+  background:var(--color-surface);color:var(--color-text);border-radius:var(--radius-sm);
+  box-shadow:var(--shadow-control);transition:border-color .16s ease,box-shadow .16s ease;
+}
+:where(.view-content) :is(input:not([type=checkbox]):not([type=radio]),select,textarea):focus-visible{
+  outline:2px solid var(--color-primary-stroke);outline-offset:1px;border-color:var(--color-primary);
+}
+:where(.view-content) :is(input,select,textarea):disabled{opacity:.55;cursor:not-allowed}
+:where(.view-content) :is(.page-heading,.detail-heading,.section-heading) h2{
+  font-weight:650;letter-spacing:-.02em;color:var(--color-text);
+}
+:where(.view-content) :is(.page-heading,.detail-heading){min-width:0}
+:where(.view-content) :is(.page-heading,.detail-heading) .muted{line-height:1.6}
+:where(.view-content) :is(.icon-action,.text-action,.clear-selection,.stock-download){
+  border-color:var(--color-stroke-strong);border-radius:var(--radius-sm);
+  color:var(--color-text);transition:background .16s ease,border-color .16s ease,color .16s ease;
+}
+:where(.view-content) :is(.icon-action,.text-action,.clear-selection,.stock-download):hover{
+  color:var(--color-primary);border-color:var(--color-primary-stroke);background:var(--color-accent-soft);
+}
+:where(.view-content) :is(.error,.notice){max-width:100%;overflow-wrap:anywhere}
+:where(.view-content) :is(.member,.grant-form,.table-scroll,.base-data-table){min-width:0}
 @media(max-width:760px){
   .portal-link--mobile{display:flex}
-  .portal-link--mobile span{display:none}
+  .topbar-trailing .portal-link--mobile{order:3;margin-left:auto}
+}
+@media(min-width:761px){.portal-link--mobile{display:none}}
+@media(prefers-reduced-motion:reduce){
+  :where(.view-content) :is(input,select,textarea,.icon-action,.text-action){transition:none}
 }
