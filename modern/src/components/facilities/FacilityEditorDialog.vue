@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import BaseConfirmDialog from "../ui/BaseConfirmDialog.vue";
+import { useConfirmDialog } from "../../composables/useConfirmDialog";
 import { computed, reactive, ref, watch } from "vue";
 import { Save } from "lucide-vue-next";
 import BaseDialog from "../ui/BaseDialog.vue";
@@ -8,6 +10,9 @@ import { createFacilityNode, updateFacilityNode } from "../../api/topology";
 import type { FacilityNode, FacilityType, ResponsiblePerson, FacilityInput } from "../../api/topology";
 import { useUiSettings } from "../../stores/uiSettings";
 
+const { open: confirmOpen, message: confirmMessage, title: confirmTitle,
+  confirmLabel: confirmLabel, danger: confirmDanger, ask: askConfirmation,
+  settle: settleConfirmation } = useConfirmDialog();
 const props=defineProps<{
   open:boolean;companyId:string;node:FacilityNode|null;parentId:string|null;
   nodes:FacilityNode[];people:ResponsiblePerson[];
@@ -75,9 +80,9 @@ watch(()=>fields.parent_id,()=>{
     fields.node_type=defaultChoices.value[0]??"site";
   }
 });
-function close(){
+async function close(){
   if(loading.value)return;
-  if(dirty.value&&!window.confirm(ui.t("form.unsaved")))return;
+  if(dirty.value&&!(await askConfirmation(ui.t("form.unsaved"), {danger:true})))return;
   emit("close");
 }
 async function save(){
@@ -156,6 +161,9 @@ async function save(){
         <Save :size="17" aria-hidden="true"/>{{ ui.t("actions.save") }}</BaseButton>
     </template>
   </BaseDialog>
+  <BaseConfirmDialog :open="confirmOpen" :message="confirmMessage" :title="confirmTitle"
+    :confirm-label="confirmLabel" :danger="confirmDanger"
+    @confirm="settleConfirmation(true)" @cancel="settleConfirmation(false)" />
 </template>
 <style scoped>
 .facility-form{display:grid;gap:18px}
