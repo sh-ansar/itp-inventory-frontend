@@ -181,9 +181,9 @@ test("reports share status/facility/custodian filters and remain responsive",asy
   await expect(page.locator(".report-panel")).toHaveCount(6);
   const status=page.getByRole("button",{name:"Статус",exact:true});
   await status.click();
-  await page.getByRole("dialog",{name:"Статус"}).getByRole("checkbox",{name:"Утилизировано"}).check();
-  await expect(status).toContainText("Утилизировано");
-  await page.getByRole("dialog",{name:"Статус"}).getByRole("checkbox",{name:"Утилизировано"}).uncheck();
+  await page.getByRole("dialog",{name:"Статус"}).getByRole("checkbox",{name:"Утилизирован"}).check();
+  await expect(status).toContainText("Утилизирован");
+  await page.getByRole("dialog",{name:"Статус"}).getByRole("checkbox",{name:"Утилизирован"}).uncheck();
   await page.keyboard.press("Escape");
   const facility=page.getByRole("button",{name:"Объект",exact:true});
   await facility.click();
