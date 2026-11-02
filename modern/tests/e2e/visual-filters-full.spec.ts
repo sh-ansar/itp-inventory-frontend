@@ -50,8 +50,15 @@ test("asset search, status, location, custodian, sort, pagination and persistent
   await page.reload();
   await expect(size).toHaveValue("10");
   await expect(page.locator("thead").first()).not.toContainText("Категория");
-  const sortables=page.locator("th[aria-sort],th button");
-  expect(await sortables.count()).toBeGreaterThan(0);
+  const sortByName=page.getByRole("button",{name:"Сортировать: Наименование"});
+  await sortByName.click();
+  await expect(page.locator('th[aria-sort="ascending"]').filter({has:sortByName})).toBeVisible();
+  await sortByName.click();
+  await expect(page.locator('th[aria-sort="descending"]').filter({has:sortByName})).toBeVisible();
+  const nextPage=page.getByRole("button",{name:"Следующая страница"});
+  await expect(nextPage).toBeEnabled();
+  await nextPage.click();
+  await expect(page.getByRole("button",{name:"Страница 2"})).toHaveAttribute("aria-current","page");
   await page.getByRole("button",{name:"Настройки таблицы"}).click();
   await drawer.getByRole("button",{name:"Сбросить настройки"}).click();
   await drawer.getByRole("button",{name:"Закрыть",exact:true}).click();
