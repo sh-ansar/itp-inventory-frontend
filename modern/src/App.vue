@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import BaseSelect from "./components/ui/BaseSelect.vue";
 import { computed, onMounted, reactive, ref, watch } from "vue";
 import { RouterLink, RouterView, useRoute } from "vue-router";
 import { Boxes, ClipboardList, BookOpen, Package, Building2, Users, Warehouse, LogOut, Sun, Moon, Eye, EyeOff, RefreshCw, FileCheck2, ShieldCheck } from "lucide-vue-next";
@@ -154,20 +155,20 @@ onMounted(boot);
       <header class="topbar">
         <div class="topbar-leading">
           <div class="workspace-title"><h1>{{ currentTitle }}</h1>
-            <p>{{ ui.t("heading.description") }}</p>
+            
           </div>
         </div>
         <div class="topbar-trailing">
           <PortalHomeLink compact class="portal-link--mobile" />
           <label v-if="user && availableCompanies.length > 0" class="company-switcher">
             <span>{{ ui.t("auth.company") }}</span>
-            <select v-model="companyId" :aria-label="ui.t('auth.company')">
+            <BaseSelect v-model="companyId" :aria-label="ui.t('auth.company')">
               <option v-for="company in availableCompanies" :key="company.id" :value="company.id">{{ company.name }}</option>
-            </select>
+            </BaseSelect>
           </label>
-          <select :value="ui.locale" @change="switchLocale" class="locale-select" aria-label="Язык / Language">
+          <BaseSelect :value="ui.locale" @change="switchLocale" class="locale-select" aria-label="Язык / Language">
             <option value="ru">RU</option><option value="en">EN</option><option value="ka">GE</option>
-          </select>
+          </BaseSelect>
           <button type="button" class="theme-toggle"
             :title="ui.t(ui.theme === 'dark' ? 'generic.light' : 'generic.dark')"
             :aria-label="ui.t(ui.theme === 'dark' ? 'generic.light' : 'generic.dark')"
@@ -187,7 +188,7 @@ onMounted(boot);
         <BaseLoadingState v-if="booting" :label="ui.t('generic.loading')" />
         <BaseCard v-else-if="!user" class="login-card">
           <div class="login-heading"><div class="login-icon"><Boxes :size="25" aria-hidden="true"/></div>
-            <div><h2>{{ ui.t("heading.login") }}</h2><p class="muted">{{ ui.t("auth.independent") }}</p></div>
+            <div><h2>{{ ui.t("heading.login") }}</h2></div>
           </div>
           <form class="login-form" @submit.prevent="signIn">
             <label>{{ ui.t("auth.email") }}
