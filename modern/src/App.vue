@@ -2,7 +2,7 @@
 import BaseSelect from "./components/ui/BaseSelect.vue";
 import { computed, onMounted, reactive, ref, watch } from "vue";
 import { RouterLink, RouterView, useRoute } from "vue-router";
-import { Boxes, ClipboardList, BookOpen, Package, Building2, Users, Warehouse, LogOut, Sun, Moon, Eye, EyeOff, RefreshCw, FileCheck2, ShieldCheck } from "lucide-vue-next";
+import { Boxes, ClipboardList, BookOpen, Package, Building2, Users, Warehouse, LogOut, Sun, Moon, Eye, EyeOff, RefreshCw, FileCheck2, ShieldCheck, BarChart3 } from "lucide-vue-next";
 import BaseButton from "./components/ui/BaseButton.vue";
 import BaseCard from "./components/ui/BaseCard.vue";
 import BaseLoadingState from "./components/ui/BaseLoadingState.vue";
@@ -27,7 +27,8 @@ const signoutBusy = ref(false);
 const error = ref("");
 const credentials = reactive({ email:"", password:"" });
 const passwordVisible = ref(false);
-const currentTitle = computed(() => ui.t(
+const reportsTitle=computed(()=>ui.locale==="ka"?"ანგარიშები":ui.locale==="en"?"Reports":"Отчёты");
+const currentTitle = computed(() => route.name === "reports" ? reportsTitle.value : ui.t(
    route.name === "disposals" ? "disposal.title" :
    route.name === "company-roles" ? "roles.title" :
    route.name === "references" ? "heading.references" :
@@ -142,6 +143,9 @@ onMounted(boot);
         </RouterLink>
         <RouterLink to="/stocktakes" class="nav-item" active-class="nav-item--active">
           <ClipboardList :size="19" aria-hidden="true"/>{{ ui.t("nav.stocktakes") }}
+        </RouterLink>
+        <RouterLink to="/reports" class="nav-item" active-class="nav-item--active">
+          <BarChart3 :size="19" aria-hidden="true"/>{{reportsTitle}}
         </RouterLink>
         <RouterLink v-if="selectedCompany?.role_code==='company_admin'" to="/company-roles" class="nav-item" active-class="nav-item--active">
           <ShieldCheck :size="19" aria-hidden="true"/>{{ ui.t("roles.title") }}
