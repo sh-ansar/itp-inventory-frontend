@@ -88,7 +88,7 @@ test("custodian active/inactive/all search and saved table size",async({page})=>
   await expect(active).toHaveValue("");
   await page.getByRole("button",{name:"Настройки таблицы"}).click();
   const dialog=page.getByRole("dialog",{name:"Настройки таблицы"});
-  await expect(dialog.getByRole("checkbox").count()).resolves.toBeGreaterThan(4);
+  expect(await dialog.getByRole("checkbox").count()).toBeGreaterThan(4);
   await dialog.getByRole("button",{name:"Закрыть",exact:true}).click();
 });
 
