@@ -10,7 +10,7 @@ import BaseMultiSelect from "../components/ui/BaseMultiSelect.vue";
 import BaseStatusPill from "../components/ui/BaseStatusPill.vue";
 import BaseSearchField from "../components/ui/BaseSearchField.vue";
 import { InventoryApiError } from "../api/client";
-import { getInventorySummary, summaryCsvHref, summaryPrintDocument, summaryStatusLabel } from "../api/reports";
+import { getInventorySummary, summaryCsvHref, summaryPrintDocument, summaryStatusLabel, warehouseQuantityText } from "../api/reports";
 import type { InventorySummary } from "../api/reports";
 import { PRINT_FORM_KINDS,getDetailedPrintReport,printFormTitle,renderDetailedPrintDocument } from "../api/printForms";
 import type { PrintFormKind,PrintFormFilters } from "../api/printForms";
@@ -112,7 +112,7 @@ const groupColumns=computed(()=>[
 const warehouseColumns=computed(()=>[
   {key:"name",label:t.value.name,minWidth:110},
   {key:"items",label:t.value.item,minWidth:65,align:"right" as const},
-  {key:"quantity_milli",label:t.value.quantity,minWidth:85,align:"right" as const},
+  {key:"quantity_milli",label:t.value.quantity,minWidth:140,align:"right" as const},
 ]);
 const sessionColumns=computed(()=>[
   {key:"status",label:t.value.status,minWidth:150},
@@ -320,7 +320,7 @@ function dateLabel(value:string){
           :columns="warehouseColumns" :loading="loading" :caption="t.warehouseGroup"
           :empty-title="t.noData" :min-table-width="0">
           <template #cell-name="{row}">{{row.name||t.unassigned}}</template>
-          <template #cell-quantity_milli="{row}">{{(row.quantity_milli/1000).toLocaleString(ui.locale)}}</template>
+          <template #cell-quantity_milli="{row}"><span :title="warehouseQuantityText(row,ui.locale)">{{warehouseQuantityText(row,ui.locale)}}</span></template>
         </BaseDataTable>
       </BaseCard>
       <BaseCard class="report-panel">

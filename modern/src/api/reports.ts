@@ -5,6 +5,16 @@ export interface SummaryGroup {
   name:string|null;
   total:number;
 }
+export interface WarehouseUnitQuantity {
+  unit:string;items:number;quantity_milli:number;
+}
+export interface WarehouseSummaryRow {
+  id:string;name:string|null;items:number;
+  // Null when different units coexist; never add kg to pieces.
+  quantity_milli:number|null;
+  unit?:string|null;
+  unit_quantities?:WarehouseUnitQuantity[];
+}
 export interface InventorySummary {
   generated_at:string;
   company:{id:string;name:string};
@@ -19,7 +29,7 @@ export interface InventorySummary {
   warehouses:{
     total_items:number;
     low_stock_items:number;
-    by_warehouse:Array<{id:string;name:string|null;items:number;quantity_milli:number}>;
+    by_warehouse:WarehouseSummaryRow[];
   };
   stocktakes:Array<{status:string;sessions:number;items:number;counted:number;discrepancies:number}>;
 }
@@ -47,6 +57,25 @@ export const summaryCsvHref=(companyId:string,filters:SummaryFilters)=>
   "/inventory-api"+root(companyId)+".csv"+queryOf(filters);
 
 export type ReportLocale="ru"|"en"|"ka";
+const units:Record<ReportLocale,Record<string,string>>={
+  ru:{pcs:"шт.",pack:"уп.",kg:"кг",m:"м",l:"л"},
+  en:{pcs:"pcs",pack:"pack",kg:"kg",m:"m",l:"L"},
+  ka:{pcs:"ც",pack:"შეკ.",kg:"კგ",m:"მ",l:"ლ"},
+};
+export function warehouseQuantityText(row:WarehouseSummaryRow,locale:ReportLocale):string{
+  const parts=row.unit_quantities ??
+    (typeof row.quantity_milli==="number"
+      ? [{unit:row.unit||"",items:row.items,quantity_milli:row.quantity_milli}]
+      : []);
+  if(!parts.length)return "—";
+  const formatter=new Intl.NumberFormat(locale==="ka"?"ka-GE":locale==="en"?"en-GB":"ru-RU",
+    {minimumFractionDigits:0,maximumFractionDigits:3});
+  return parts.map(item=>{
+    const amount=formatter.format(item.quantity_milli/1000);
+    const unit=units[locale][item.unit]||item.unit;
+    return amount+(unit?" "+unit:"");
+  }).join(" · ");
+}
 const statusNames:Record<ReportLocale,Record<string,string>>={
   ru:{active:"На учёте",written_off:"Списано",disposed:"Утилизировано",
       in_progress:"В процессе",completed:"Завершена",draft:"Черновик",approved:"Согласовано",submitted:"На согласовании"},
@@ -85,7 +114,7 @@ export function summaryPrintDocument(report:InventorySummary,locale:ReportLocale
 
   const stockRows=report.warehouses.by_warehouse.map(row=>
     "<tr><td>"+escapeHtml(row.name||words.unassigned)+"</td><td class=\"num\">"+row.items+
-    "</td><td class=\"num\">"+(row.quantity_milli/1000).toFixed(3)+"</td></tr>").join("");
+    "</td><td class=\"num\">"+escapeHtml(warehouseQuantityText(row,locale))+"</td></tr>").join("");
   const sessionRows=report.stocktakes.map(row=>
     "<tr><td>"+escapeHtml(summaryStatusLabel(row.status,locale))+"</td><td class=\"num\">"+row.sessions+"</td><td class=\"num\">"+
     row.items+"</td><td class=\"num\">"+row.counted+"</td><td class=\"num\">"+row.discrepancies+"</td></tr>").join("");
