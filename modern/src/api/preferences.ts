@@ -3,6 +3,9 @@ import { inventoryRequest } from "./client";
 export interface TablePreferenceSettings {
   search: string;
   status: string;
+  statuses: string[];
+  facility_node_ids: string[];
+  responsible_person_ids: string[];
   facility_node_id: string;
   responsible_person_id: string;
   warehouse_node_id: string;
