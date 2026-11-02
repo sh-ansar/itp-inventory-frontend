@@ -62,6 +62,29 @@ describe("Detailed printable Inventory forms",()=>{
     expect(doc.body.textContent).toContain("pcs");
     expect(doc.querySelector("h2")?.textContent).toContain("North warehouse");
   });
+  it("keeps identically named floors and warehouses separate by UUID",()=>{
+    const facilityReport=example("by-facility");
+    facilityReport.rows=[
+      {...facilityReport.rows[0],facility_node_id:"building-a",facility_name:"First floor"},
+      {...facilityReport.rows[0],facility_node_id:"building-b",facility_name:"First floor"},
+    ];
+    facilityReport.row_count=2;
+    const facilityDoc=new DOMParser().parseFromString(
+      renderDetailedPrintDocument(facilityReport,"ru"),"text/html",
+    );
+    expect(facilityDoc.querySelectorAll(".group")).toHaveLength(2);
+    expect(facilityDoc.querySelectorAll("table")).toHaveLength(2);
+    const warehouseReport=example("warehouse-balances");
+    warehouseReport.rows=[
+      {...warehouseReport.rows[0],warehouse_node_id:"warehouse-a",warehouse_name:"Central"},
+      {...warehouseReport.rows[0],warehouse_node_id:"warehouse-b",warehouse_name:"Central"},
+    ];
+    warehouseReport.row_count=2;
+    const warehouseDoc=new DOMParser().parseFromString(
+      renderDetailedPrintDocument(warehouseReport,"en"),"text/html",
+    );
+    expect(warehouseDoc.querySelectorAll(".group")).toHaveLength(2);
+  });
   it("translates document titles for Russian, English and Georgian",()=>{
     for(const kind of PRINT_FORM_KINDS){
       for(const language of ["ru","en","ka"] as const){
