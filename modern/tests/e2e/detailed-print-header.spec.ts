@@ -134,3 +134,23 @@ test("print form remains company-scoped after switching company and cannot acces
   expect(solution.rows.some((x:{inventory_number:string})=>x.inventory_number==="MIN-0001")).toBe(false);
   await popupSolutions.close();
 });
+
+
+test("stocktake detail opens exactly its own printable act",async({page})=>{
+  await openMining(page,"stocktakes");
+  const company=await page.getByRole("combobox",{name:"Компания"}).inputValue();
+  const sessions=await page.evaluate(async id=>{
+    const response=await fetch("/inventory-api/api/v1/companies/"+encodeURIComponent(id)+
+      "/inventory-sessions?per_page=10&page=1",{credentials:"same-origin"});
+    if(!response.ok)throw new Error("Could not load QA inventory sessions");
+    return (await response.json()).data as Array<{id:string}>;
+  },company);
+  expect(sessions.length).toBeGreaterThan(0);
+  const sessionId=sessions[0].id;
+  await page.goto(root+"stocktakes/"+sessionId);
+  await expect(page.getByRole("link",{name:"Печатать акт"})).toBeVisible();
+  await page.getByRole("link",{name:"Печатать акт"}).click();
+  await expect(page).toHaveURL(/\/inventory\/reports\?print_session=/);
+  await expect(page.getByRole("combobox",{name:"Вид документа"})).toHaveValue("stocktake-act");
+  await expect(page.getByRole("combobox",{name:"Инвентаризация"})).toHaveValue(sessionId);
+});
