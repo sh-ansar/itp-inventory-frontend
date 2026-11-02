@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import BaseConfirmDialog from "../components/ui/BaseConfirmDialog.vue";
+import { useConfirmDialog } from "../composables/useConfirmDialog";
 import { computed, onUnmounted, ref, watch } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import {
@@ -21,6 +23,9 @@ import type { FacilityNode, FacilityType, ResponsiblePerson } from "../api/topol
 import { useUiSettings } from "../stores/uiSettings";
 import type { Component } from "vue";
 
+const { open: confirmOpen, message: confirmMessage, title: confirmTitle,
+  confirmLabel: confirmLabel, danger: confirmDanger, ask: askConfirmation,
+  settle: settleConfirmation } = useConfirmDialog();
 const props=defineProps<{companyId:string;companyName:string;role:string}>();
 const ui=useUiSettings(),router=useRouter(),route=useRoute();
 const nodes=ref<FacilityNode[]>([]);
@@ -186,7 +191,7 @@ async function dropOn(event:DragEvent,parent:FacilityNode|null){
   const id=raw.slice("inventory-node:".length);
   const item=lookup.value.get(id);
   if(!item||item.id===parent?.id||item.parent_id===parent?.id)return;
-  if(!window.confirm(ui.t("topology.moveConfirm")))return;
+  if(!(await askConfirmation(ui.t("topology.moveConfirm"))))return;
   try{
     await updateFacilityNode(props.companyId,item.id,{
       code:item.code,name:item.name,node_type:item.node_type,parent_id:parent?.id??null,
@@ -443,6 +448,10 @@ onUnmounted(()=>{ctrl?.abort();assetCtrl?.abort();});
       </ol>
     </BaseDialog>
   </div>
+
+  <BaseConfirmDialog :open="confirmOpen" :message="confirmMessage" :title="confirmTitle"
+    :confirm-label="confirmLabel" :danger="confirmDanger"
+    @confirm="settleConfirmation(true)" @cancel="settleConfirmation(false)" />
 </template>
 
 <style scoped>

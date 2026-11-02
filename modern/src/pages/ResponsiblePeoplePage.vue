@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import BaseConfirmDialog from "../components/ui/BaseConfirmDialog.vue";
+import { useConfirmDialog } from "../composables/useConfirmDialog";
 import { computed, onUnmounted, reactive, ref, watch } from "vue";
 import { Plus, Pencil, RefreshCw, Users, Info } from "lucide-vue-next";
 import BaseButton from "../components/ui/BaseButton.vue";
@@ -14,6 +16,9 @@ import type { ResponsiblePerson, ResponsibleInput } from "../api/topology";
 import { InventoryApiError } from "../api/client";
 import { useUiSettings } from "../stores/uiSettings";
 
+const { open: confirmOpen, message: confirmMessage, title: confirmTitle,
+  confirmLabel: confirmLabel, danger: confirmDanger, ask: askConfirmation,
+  settle: settleConfirmation } = useConfirmDialog();
 const props=defineProps<{companyId:string;companyName:string;role:string}>();
 const ui=useUiSettings();
 const rows=ref<ResponsiblePerson[]>([]);
@@ -73,9 +78,9 @@ function openForm(person:ResponsiblePerson|null=null){
   original.value=JSON.stringify(fields);
   fieldErrors.value={};formError.value="";formOpen.value=true;
 }
-function closeForm(){
+async function closeForm(){
   if(saving.value)return;
-  if(JSON.stringify(fields)!==original.value&&!window.confirm(ui.t("form.unsaved")))return;
+  if(JSON.stringify(fields)!==original.value && !(await askConfirmation(ui.t("form.unsaved"))))return;
   formOpen.value=false;
 }
 async function save(){
@@ -184,6 +189,10 @@ onUnmounted(()=>{ctrl?.abort();if(timer)clearTimeout(timer)});
       </template>
     </BaseDialog>
   </div>
+
+  <BaseConfirmDialog :open="confirmOpen" :message="confirmMessage" :title="confirmTitle"
+    :confirm-label="confirmLabel" :danger="confirmDanger"
+    @confirm="settleConfirmation(true)" @cancel="settleConfirmation(false)" />
 </template>
 
 <style scoped>

@@ -120,8 +120,8 @@ test("real API: bulk custodians, moves, XLSX, signed report and company roles", 
   await expect(viewer.locator("select")).toHaveValue("viewer");
 
   await viewer.locator("input").last().fill("Revalidate membership invitation flow");
-  page.once("dialog",async d=>d.accept());
   await viewer.getByRole("button",{name:"Отозвать доступ"}).click();
+  await page.getByRole("dialog",{name:"Подтвердить действие"}).getByRole("button",{name:"Отозвать доступ"}).click();
   await expect(viewer).toHaveCount(0);
   const grant=page.locator(".grant-form");
   await grant.locator('input[type=email]').fill("inventory.viewer@example.test");

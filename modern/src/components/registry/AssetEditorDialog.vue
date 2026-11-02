@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import BaseConfirmDialog from "../ui/BaseConfirmDialog.vue";
+import { useConfirmDialog } from "../../composables/useConfirmDialog";
 import { computed, reactive, ref, watch } from "vue";
 import { Save } from "lucide-vue-next";
 import BaseDialog from "../ui/BaseDialog.vue";
@@ -9,6 +11,9 @@ import type { Asset, AssetInput, ReferenceData } from "../../api/inventory";
 import type { FacilityNode, ResponsiblePerson } from "../../api/topology";
 import { useUiSettings } from "../../stores/uiSettings";
 
+const { open: confirmOpen, message: confirmMessage, title: confirmTitle,
+  confirmLabel: confirmLabel, danger: confirmDanger, ask: askConfirmation,
+  settle: settleConfirmation } = useConfirmDialog();
 const props = defineProps<{
   open: boolean;
   companyId: string;
@@ -48,9 +53,9 @@ watch(() => [props.open,props.asset?.id,props.companyId], normalize, { immediate
 const dirty = computed(() => JSON.stringify(fields) !== original.value);
 const formTitle = computed(() => props.asset ? ui.t("form.editTitle") : ui.t("form.createTitle"));
 
-function close() {
+async function close() {
   if (busy.value) return;
-  if (dirty.value && !window.confirm(ui.t("form.unsaved"))) return;
+  if (dirty.value && !(await askConfirmation(ui.t("form.unsaved"), {danger:true}))) return;
   emit("close");
 }
 function inputData(): AssetInput {
@@ -164,6 +169,9 @@ async function save() {
       </BaseButton>
     </template>
   </BaseDialog>
+  <BaseConfirmDialog :open="confirmOpen" :message="confirmMessage" :title="confirmTitle"
+    :confirm-label="confirmLabel" :danger="confirmDanger"
+    @confirm="settleConfirmation(true)" @cancel="settleConfirmation(false)" />
 </template>
 
 <style scoped>

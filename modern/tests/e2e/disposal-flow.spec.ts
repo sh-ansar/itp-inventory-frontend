@@ -57,8 +57,8 @@ test("disposal case: draft, protected order, submit, approve, disposal act, immu
   await drawer.getByRole("button",{name:"Направить на согласование"}).click();
   await expect(drawer.locator(".asset-heading .status-pill")).toContainText("На согласовании");
   await expect(drawer.getByRole("button",{name:"Утвердить списание"})).toBeEnabled();
-  page.once("dialog",dialog=>dialog.accept());
   await drawer.getByRole("button",{name:"Утвердить списание"}).click();
+  await page.getByRole("dialog",{name:"Подтвердить действие"}).getByRole("button",{name:"Утвердить списание"}).click();
   await expect(drawer.locator(".asset-heading .status-pill")).toContainText("Списано");
   await expect(drawer.getByText("Статус имущества")).toBeVisible();
   await expect(drawer.getByText("Прикрепите акт утилизации.")).toBeVisible();
@@ -70,8 +70,8 @@ test("disposal case: draft, protected order, submit, approve, disposal act, immu
   await drawer.getByLabel("Номер акта утилизации").fill("ACT-"+number);
   await drawer.getByLabel("Дата утилизации").fill("2026-10-31");
   await drawer.getByLabel("Способ утилизации").selectOption("recycling");
-  page.once("dialog",dialog=>dialog.accept());
   await drawer.getByRole("button",{name:"Подтвердить утилизацию"}).click();
+  await page.getByRole("dialog",{name:"Подтвердить действие"}).getByRole("button",{name:"Подтвердить утилизацию"}).click();
   await expect(drawer.locator(".asset-heading .status-pill")).toContainText("Утилизировано");
   await expect(drawer.getByRole("button",{name:"Прикрепить документ"})).toHaveCount(0);
   await expect(drawer.getByRole("button",{name:"Подтвердить утилизацию"})).toHaveCount(0);
@@ -96,7 +96,7 @@ test("disposal case: draft, protected order, submit, approve, disposal act, immu
   await expect(page.locator("tbody tr").filter({hasText:number})).toBeVisible();
 
   const viewer=await browser.newContext({
-    baseURL:"http://127.0.0.1:5174/inventory/",
+    baseURL:new URL("/inventory/",page.url()).href,
     storageState:"test-results/.auth/viewer.json",
   });
   try{

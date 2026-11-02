@@ -1,5 +1,5 @@
 <script setup lang="ts">
-withDefaults(defineProps<{ variant?: 'primary' | 'secondary'; disabled?: boolean; type?: 'button' | 'submit' | 'reset'; iconOnly?: boolean }>(),{
+withDefaults(defineProps<{ variant?: 'primary' | 'secondary' | 'danger'; disabled?: boolean; type?: 'button' | 'submit' | 'reset'; iconOnly?: boolean }>(),{
   variant:'primary',type:'button',disabled:false,iconOnly:false,
 })
 </script>
@@ -28,6 +28,7 @@ withDefaults(defineProps<{ variant?: 'primary' | 'secondary'; disabled?: boolean
 .icon-only :deep(svg){width:18px;height:18px}
 .base-button :deep(*){position:relative;z-index:1}
 .primary{border-color:var(--color-primary);background:var(--color-primary);color:var(--color-on-primary);box-shadow:var(--shadow-control)}
+.danger{border-color:var(--color-danger);background:var(--color-danger);color:#fff;box-shadow:var(--shadow-control)}
 .secondary{border-color:var(--color-stroke);background:var(--color-surface-raised);background-clip:padding-box;color:var(--color-text);box-shadow:var(--shadow-control);backdrop-filter:blur(20px)}
 .secondary:hover:not(:disabled){background:var(--color-surface-raised);border-color:var(--color-stroke)}
 @media(max-width:600px){.base-button{font-size:12px;line-height:16px}}

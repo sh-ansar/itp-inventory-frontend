@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import BaseConfirmDialog from "../components/ui/BaseConfirmDialog.vue";
+import { useConfirmDialog } from "../composables/useConfirmDialog";
 import { computed, onUnmounted, ref, watch } from "vue";
 import { BookOpen, Plus, RefreshCw, Pencil, Upload, Sparkles } from "lucide-vue-next";
 import BaseButton from "../components/ui/BaseButton.vue";
@@ -16,6 +18,9 @@ import {
 import type { RefItem, ReferenceData } from "../api/inventory";
 import { useUiSettings } from "../stores/uiSettings";
 
+const { open: confirmOpen, message: confirmMessage, title: confirmTitle,
+  confirmLabel: confirmLabel, danger: confirmDanger, ask: askConfirmation,
+  settle: settleConfirmation } = useConfirmDialog();
 const props = defineProps<{companyId: string; companyName: string; role: string}>();
 const ui = useUiSettings();
 type Kind = keyof ReferenceData;
@@ -85,9 +90,9 @@ function showCreate(item:RefItem|null=null) {
   iconKey.value=item?.icon_key??"box";
   errors.value = {};issue.value = ""; open.value = true;
 }
-function close() {
+async function close() {
   if (saving.value) return;
-  if ((code.value.trim() || name.value.trim()) && !window.confirm(ui.t("form.unsaved"))) return;
+  if ((code.value.trim() || name.value.trim()) && !(await askConfirmation(ui.t("form.unsaved")))) return;
   open.value = false;
 }
 async function save() {
@@ -235,6 +240,10 @@ async function upload(event:Event){
       </template>
     </BaseDialog>
   </div>
+
+  <BaseConfirmDialog :open="confirmOpen" :message="confirmMessage" :title="confirmTitle"
+    :confirm-label="confirmLabel" :danger="confirmDanger"
+    @confirm="settleConfirmation(true)" @cancel="settleConfirmation(false)" />
 </template>
 
 <style scoped>

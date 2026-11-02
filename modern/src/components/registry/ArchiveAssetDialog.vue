@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import BaseConfirmDialog from "../ui/BaseConfirmDialog.vue";
+import { useConfirmDialog } from "../../composables/useConfirmDialog";
 import { ref, watch } from "vue";
 import { Archive } from "lucide-vue-next";
 import BaseDialog from "../ui/BaseDialog.vue";
@@ -8,6 +10,9 @@ import { archiveAsset } from "../../api/inventory";
 import type { Asset } from "../../api/inventory";
 import { useUiSettings } from "../../stores/uiSettings";
 
+const { open: confirmOpen, message: confirmMessage, title: confirmTitle,
+  confirmLabel: confirmLabel, danger: confirmDanger, ask: askConfirmation,
+  settle: settleConfirmation } = useConfirmDialog();
 const props = defineProps<{asset: Asset | null; companyId: string}>();
 const emit = defineEmits<{close: []; archived: []}>();
 const ui = useUiSettings();
@@ -15,9 +20,9 @@ const reason = ref("");
 const busy = ref(false);
 const error = ref("");
 watch(() => props.asset?.id, () => { reason.value = ""; error.value = ""; });
-function close() {
+async function close() {
   if (busy.value) return;
-  if (reason.value.trim() && !window.confirm(ui.t("form.unsaved"))) return;
+  if (reason.value.trim() && !(await askConfirmation(ui.t("form.unsaved"), {danger:true}))) return;
   emit("close");
 }
 async function archive() {
@@ -52,6 +57,9 @@ async function archive() {
       </BaseButton>
     </template>
   </BaseDialog>
+  <BaseConfirmDialog :open="confirmOpen" :message="confirmMessage" :title="confirmTitle"
+    :confirm-label="confirmLabel" :danger="confirmDanger"
+    @confirm="settleConfirmation(true)" @cancel="settleConfirmation(false)" />
 </template>
 
 <style scoped>
