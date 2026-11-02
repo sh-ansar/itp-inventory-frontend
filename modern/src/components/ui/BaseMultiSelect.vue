@@ -62,6 +62,10 @@ function open(){
     });
   }
 }
+function openKeyboard(){
+  if(!opened.value){open();return;}
+  root.value?.querySelector<HTMLInputElement>(".multi-options input:not(:disabled)")?.focus();
+}
 function close(focus=false){
   if(!opened.value)return;
   opened.value=false;
@@ -94,7 +98,7 @@ watch(()=>props.disabled,disabled=>{if(disabled)close()});
     <button ref="trigger" type="button" class="multi-trigger"
       :aria-label="label" :aria-expanded="opened" aria-haspopup="dialog"
       :aria-controls="panelId" :disabled="disabled" :title="selectedOptions.join(', ')||summary"
-      @click="open" @keydown.down.prevent="open" @keydown.esc="escape">
+      @click="open" @keydown.down.prevent="openKeyboard" @keydown.esc="escape">
       <span class="multi-summary" :class="{placeholder:!modelValue.length}">{{summary}}</span>
       <span v-if="modelValue.length" class="multi-count">{{modelValue.length}}</span>
       <ChevronDown :size="16" class="chevron" aria-hidden="true"/>
@@ -167,6 +171,7 @@ watch(()=>props.disabled,disabled=>{if(disabled)close()});
 .multi-option{display:flex;align-items:center;gap:9px;padding:8px 9px;border-radius:var(--radius-sm);
   min-height:38px;cursor:pointer;font-size:13px;color:var(--color-text)}
 .multi-option:hover{background:var(--color-accent-soft)}
+.multi-option:focus-within{outline:2px solid var(--color-primary);outline-offset:-2px}
 .multi-option.selected{background:var(--color-accent-soft)}
 .multi-option.disabled{opacity:.55;cursor:not-allowed}
 .multi-option input{width:16px;height:16px;accent-color:var(--color-primary);flex:none}
