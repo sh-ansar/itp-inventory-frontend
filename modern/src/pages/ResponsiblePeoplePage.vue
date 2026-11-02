@@ -120,10 +120,11 @@ onUnmounted(()=>{ctrl?.abort();if(timer)clearTimeout(timer)});
       <div><h2>{{ ui.t("people.title") }}</h2>
         <p class="muted">{{ ui.t("people.subtitle") }}</p></div>
       <div class="actions">
-        <BaseButton variant="secondary" :disabled="loading" @click="load">
-          <RefreshCw :size="17" aria-hidden="true"/>{{ ui.t("actions.refresh") }}</BaseButton>
-        <BaseButton v-if="canWrite" @click="openForm()">
-          <Plus :size="17" aria-hidden="true"/>{{ ui.t("people.new") }}</BaseButton>
+        <BaseButton variant="secondary" :disabled="loading" :title="ui.t('actions.refresh')"
+          :aria-label="ui.t('actions.refresh')" @click="load">
+          <RefreshCw :size="17" aria-hidden="true"/><span class="action-label">{{ ui.t("actions.refresh") }}</span></BaseButton>
+        <BaseButton v-if="canWrite" :title="ui.t('people.new')" :aria-label="ui.t('people.new')" @click="openForm()">
+          <Plus :size="17" aria-hidden="true"/><span class="action-label">{{ ui.t("people.new") }}</span></BaseButton>
       </div>
     </div>
     <p v-if="issue" class="error" role="alert">{{ issue }}</p>
@@ -231,5 +232,5 @@ onUnmounted(()=>{ctrl?.abort();if(timer)clearTimeout(timer)});
 .field input{width:100%}
 .field small{font-size:11px;color:var(--color-danger)}
 .active-check{display:flex;align-items:center;gap:9px;font-size:12px}
-@media(max-width:650px){.actions{width:100%}.actions :deep(.base-button){flex:1}.people-toolbar{flex-direction:column;align-items:stretch}.status-filter,.status-filter select{width:100%}}
+@media(max-width:650px){.actions{width:100%}.actions :deep(.base-button){flex:1;min-width:0;justify-content:center}.action-label{display:none}.people-toolbar{flex-direction:column;align-items:stretch}.status-filter,.status-filter select{width:100%}}
 </style>
