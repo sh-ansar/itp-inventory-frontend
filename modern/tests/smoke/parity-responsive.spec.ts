@@ -61,6 +61,14 @@ for(const width of [360,390,768,1440]){
     await expect(portal).toHaveCount(1);
     await expect(portal).toHaveAttribute("href", "https://platform.itpmining.kz/");
     await expect(portal).toHaveAttribute("aria-label", "ITP Portal");
+    if (width > 760) {
+      await expect(portal.locator(".portal-home__light")).toBeVisible();
+      await page.getByRole("button",{name:"Тёмная тема"}).click();
+      await expect(portal.locator(".portal-home__dark")).toBeVisible();
+      await expect(portal.locator(".portal-home__light")).toHaveCount(0);
+    } else {
+      await expect(portal.locator(".portal-home__mark")).toBeVisible();
+    }
     await expect(page.getByText("QA-001").first()).toBeVisible();
     await expect(page.getByRole("link",{name:/Excel/i})).toBeVisible();
     const overflow=await page.evaluate(()=>document.documentElement.scrollWidth-window.innerWidth);
