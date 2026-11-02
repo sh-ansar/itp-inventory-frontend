@@ -42,9 +42,10 @@ test("desktop sidebar collapses to icon-only 66px, persists across refresh, rest
   await page.setViewportSize({width:1440,height:900});
   await page.goto("/inventory/registry");
   await expect(page.locator(".sidebar")).toBeVisible();
-  await page.getByRole("button",{name:"Развернуть меню"}).click().catch(async()=>{
-    await page.getByRole("button",{name:"Свернуть меню"}).click();
-  });
+  if(await page.locator(".shell").evaluate(node=>node.classList.contains("shell--collapsed"))){
+    await page.getByRole("button",{name:"Развернуть меню"}).click();
+  }
+  await page.getByRole("button",{name:"Свернуть меню"}).click();
   await expect(page.locator(".shell")).toHaveClass(/shell--collapsed/);
   await expect(page.locator(".sidebar")).toHaveCSS("width","66px");
   await expect(page.getByRole("link",{name:"Реестр активов"})).toHaveAttribute("title",/Реестр/);
