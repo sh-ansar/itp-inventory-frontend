@@ -144,3 +144,19 @@ test("company administrator can see role management and inspect membership list"
   await page.getByRole("link",{name:"Пользователи и роли"}).click();
   await expect(page.getByRole("heading",{name:"Пользователи и роли"})).toBeVisible();
 });
+
+test("Portal shortcut stays visible in the mobile drawer and collapsed desktop sidebar",async({page})=>{
+  await page.setViewportSize({width:390,height:850});
+  await page.goto("/inventory/registry");
+  await page.getByRole("button",{name:"Открыть меню"}).click();
+  const shortcut=page.locator(".sidebar-footer .portal-home");
+  await expect(shortcut).toBeVisible();
+  await expect(shortcut).toHaveAttribute("href","https://platform.itpmining.kz/");
+  await page.getByRole("button",{name:"Закрыть меню"}).last().click();
+  await page.setViewportSize({width:1440,height:900});
+  await page.reload();
+  if(!await page.locator(".shell").evaluate(node=>node.classList.contains("shell--collapsed")))
+    await page.getByRole("button",{name:"Свернуть меню"}).click();
+  await expect(page.locator(".sidebar-footer .portal-home")).toBeVisible();
+  await expect(page.locator(".sidebar-footer .portal-home__mark")).toBeVisible();
+});
