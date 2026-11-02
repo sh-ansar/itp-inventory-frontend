@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import BaseSelect from "../components/ui/BaseSelect.vue";
 import BaseConfirmDialog from "../components/ui/BaseConfirmDialog.vue";
 import { useConfirmDialog } from "../composables/useConfirmDialog";
 
@@ -92,22 +93,22 @@ watch(()=>[props.companyId,props.role],()=>void load(),{immediate:true});
     <form class="grant-form" @submit.prevent="addMember">
       <h3><UserPlus :size="18"/>{{words.add}}</h3>
       <label>{{words.email}}<input v-model.trim="addEmail" type="email" autocomplete="off" required maxlength="255" /></label>
-      <label>{{words.role}}<select v-model="addRole">
+      <label>{{words.role}}<BaseSelect v-model="addRole">
         <option value="viewer">{{words.viewer}}</option>
         <option value="inventory_manager">{{words.manager}}</option>
         <option value="company_admin">{{words.admin}}</option>
-      </select></label>
+      </BaseSelect></label>
       <label>{{words.reason}}<input v-model.trim="addReason" required minlength="5" maxlength="1000"/></label>
       <BaseButton type="submit" :disabled="addBusy||addReason.trim().length<5"><UserPlus :size="16"/>{{words.add}}</BaseButton>
     </form>
     <p v-if="!loading&&!members.length" class="muted">{{words.noUsers}}</p>
     <div v-for="m in members" :key="m.user_id" class="member">
       <div class="identity"><strong>{{m.name}}</strong><small>{{m.email}}</small></div>
-      <label>{{words.role}}<select v-model="drafts[m.user_id]" :disabled="saving!==null">
+      <label>{{words.role}}<BaseSelect v-model="drafts[m.user_id]" :disabled="saving!==null">
         <option value="viewer">{{words.viewer}}</option>
         <option value="inventory_manager">{{words.manager}}</option>
         <option value="company_admin">{{words.admin}}</option>
-      </select></label>
+      </BaseSelect></label>
       <label v-if="drafts[m.user_id]!==m.role_code">{{words.reason}}
         <input v-model.trim="reasons[m.user_id]" minlength="5" maxlength="1000" required />
       </label>
