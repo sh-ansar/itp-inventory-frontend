@@ -7,6 +7,7 @@ import {
   RefreshCw, Save, Search, Trash2, Warehouse, X, ZoomIn, ZoomOut,
 } from "lucide-vue-next";
 import BaseButton from "../components/ui/BaseButton.vue";
+import BaseIconButton from "../components/ui/BaseIconButton.vue";
 import BaseCard from "../components/ui/BaseCard.vue";
 import BaseDialog from "../components/ui/BaseDialog.vue";
 import EquipmentTypeIcon from "../components/ui/EquipmentTypeIcon.vue";
@@ -265,9 +266,9 @@ onUnmounted(()=>{abort?.abort();drag=null});
   <div class="plan-page">
     <header class="plan-header">
       <div class="plan-heading">
-        <button type="button" class="icon-control" :title="ui.t('plan.back')" @click="toMap">
+        <BaseIconButton type="button" :title="ui.t('plan.back')" :aria-label="ui.t('plan.back')" @click="toMap">
           <ArrowLeft :size="19" aria-hidden="true"/>
-        </button>
+        </BaseIconButton>
         <div><h2>{{ plan?.node_name||ui.t("plan.title") }}</h2>
           <p class="muted">{{ companyName }} · {{ ui.t("plan.subtitle") }}</p></div>
       </div>
@@ -420,8 +421,8 @@ onUnmounted(()=>{abort?.abort();drag=null});
           </BaseCard>
           <BaseCard v-if="selected" class="selection-card">
             <div class="catalog-heading"><h3>{{ selected.name }}</h3>
-              <button class="icon-control" type="button" :title="ui.t('actions.cancel')"
-                @click="selectedId=null"><X :size="17" aria-hidden="true"/></button></div>
+              <BaseIconButton type="button" :title="ui.t('actions.cancel')" :aria-label="ui.t('actions.cancel')"
+                @click="selectedId=null"><X :size="17" aria-hidden="true"/></BaseIconButton></div>
             <p class="muted">{{ selected.code }}</p>
             <div class="selected-stats">
               <div><span>{{ ui.t("plan.coordinates") }}</span>
@@ -465,8 +466,6 @@ onUnmounted(()=>{abort?.abort();drag=null});
 .plan-heading p{margin:5px 0 0;font-size:12px}
 .plan-actions{gap:8px}
 .plan-mode{font-size:11px;color:var(--color-muted);background:var(--color-soft);border:1px solid var(--color-stroke);padding:8px 10px;border-radius:var(--radius-sm)}
-.icon-control{display:grid;place-items:center;width:36px;height:36px;flex:none;border:1px solid var(--color-stroke-strong);border-radius:var(--radius-sm);color:var(--color-text);background:var(--color-surface);cursor:pointer}
-.icon-control:hover{color:var(--color-primary);background:var(--color-hover)}
 .plan-loading{min-height:330px;display:grid;place-items:center}
 .plan-statbar{display:flex;align-items:center;gap:18px;flex-wrap:wrap;font-size:12px}
 .plan-statbar>span{display:flex;align-items:center;gap:6px;color:var(--color-muted)}
