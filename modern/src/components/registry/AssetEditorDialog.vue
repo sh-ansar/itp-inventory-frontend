@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import BaseSelect from "../ui/ui/BaseSelect.vue";
+import BaseSelect from "../ui/BaseSelect.vue";
 import BaseConfirmDialog from "../ui/BaseConfirmDialog.vue";
 import { useConfirmDialog } from "../../composables/useConfirmDialog";
 import { computed, reactive, ref, watch } from "vue";
