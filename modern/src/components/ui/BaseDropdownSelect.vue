@@ -204,8 +204,8 @@ onUnmounted(()=>{
 .dropdown-search{display:flex;align-items:center;gap:8px;padding:0 9px;
   border:1px solid var(--color-stroke-strong);border-radius:var(--radius-sm);
   color:var(--color-muted);margin-bottom:5px}
-.dropdown-search input{flex:1;min-width:0;border:0;outline:0;background:transparent;
-  color:var(--color-text);height:37px;font-size:13px;box-shadow:none}
+.dropdown-search input{flex:1;min-width:0;min-height:0;margin:0;padding:0;border:0;border-radius:0;outline:0;background:transparent;
+  color:var(--color-text);height:37px;font-size:13px;box-shadow:none;appearance:none}
 .dropdown-options{overflow-y:auto;overscroll-behavior:contain;max-height:min(270px,55dvh);scrollbar-width:thin}
 .dropdown-option{min-height:39px;padding:9px 10px;display:flex;align-items:center;gap:10px;
   color:var(--color-text);font-size:13px;line-height:19px;cursor:pointer;
