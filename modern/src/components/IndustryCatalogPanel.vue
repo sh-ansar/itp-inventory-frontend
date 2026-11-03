@@ -39,6 +39,8 @@ const message=ref(""),error=ref("");
 const fields=ref<Record<string,string[]>>({});
 const editing=ref<IndustryCatalogItem|null>(null);
 const code=ref(""),name=ref(""),parentId=ref(""),precision=ref("0");
+const initialForm=ref("");
+const formSnapshot=()=>JSON.stringify({code:code.value,name:name.value,parentId:parentId.value,precision:precision.value});
 let serial=0;
 let abort:AbortController|null=null;
 const {open:confirmOpen,message:confirmMessage,title:confirmTitle,
@@ -89,11 +91,11 @@ function edit(row:IndustryCatalogItem|null=null){
   code.value=row?.code??"";name.value=row?.name??"";
   parentId.value=row?.parent_id??"";precision.value=String(row?.precision??0);
   fields.value={};error.value="";message.value="";
-  dialogOpen.value=true;
+  initialForm.value=formSnapshot();dialogOpen.value=true;
 }
 async function close(){
   if(saving.value)return;
-  if((name.value||code.value)&&!(await ask(translate(
+  if(formSnapshot()!==initialForm.value&&!(await ask(translate(
     "Закрыть форму без сохранения?","Close without saving?","შენახვის გარეშე დახურვა?"
   ))))return;
   dialogOpen.value=false;
@@ -191,7 +193,7 @@ async function archive(row:IndustryCatalogItem){
       <form id="industry-catalog-form" class="reference-form" @submit.prevent="save">
         <p v-if="error" class="industry-error" role="alert">{{error}}</p>
         <label v-if="!editing">{{translate("Код","Code","კოდი")}} *
-          <input v-model="code" required autocomplete="off" maxlength="80" pattern="[a-zA-Z0-9_-]+"
+          <input v-model="code" required autocomplete="off" maxlength="80" pattern="(?:[a-zA-Z0-9_]|-)+"
             :disabled="saving" />
           <small v-if="fields.code">{{fields.code[0]}}</small>
         </label>

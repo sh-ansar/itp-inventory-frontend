@@ -294,7 +294,7 @@ onMounted(boot);
         </div>
         <RouterView v-else v-slot="{Component}">
           <component :is="Component" :company-id="selectedCompany?.id??''"
-            :company-name="selectedCompany?.name??''" :role="selectedCompany?.role_code??''" @updated="updateAccountName"/>
+            :company-name="selectedCompany?.name??''" :role="selectedCompany?.role_code??''" v-on="route.name==='profile'?{updated:updateAccountName}:{}"/>
         </RouterView>
       </main>
     </div>

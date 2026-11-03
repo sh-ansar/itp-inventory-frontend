@@ -128,10 +128,10 @@ async function showPreview(row:DocumentTemplate){
           </BaseSelect>
         </label>
         <label>{{t("Префикс инвентарного номера","Asset number prefix","ინვენტარის პრეფიქსი")}}
-          <input v-model="company.asset_number_prefix" required pattern="[A-Z0-9_-]+" maxlength="30" :disabled="!canWrite||saving"/>
+          <input v-model="company.asset_number_prefix" required pattern="(?:[A-Z0-9_]|-)+" maxlength="30" :disabled="!canWrite||saving"/>
         </label>
         <label>{{t("Префикс документов","Document prefix","დოკუმენტის პრეფიქსი")}}
-          <input v-model="company.document_number_prefix" required pattern="[A-Z0-9_-]+" maxlength="30" :disabled="!canWrite||saving"/>
+          <input v-model="company.document_number_prefix" required pattern="(?:[A-Z0-9_]|-)+" maxlength="30" :disabled="!canWrite||saving"/>
         </label>
         <label>{{t("Язык документов по умолчанию","Default document language","დოკუმენტის ენა")}}
           <BaseSelect v-model="company.default_locale" :disabled="!canWrite||saving">

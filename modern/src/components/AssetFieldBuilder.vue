@@ -28,6 +28,7 @@ const error=ref(""),message=ref("");
 const editing=ref<AssetFieldDefinition|null>(null);
 const code=ref(""),labelRu=ref(""),labelEn=ref(""),labelKa=ref(""),fieldType=ref<FieldType>("text");
 const required=ref(false),options=ref(""),sortOrder=ref(0);
+const originalForm=ref("");
 const validation=ref<Record<string,string[]>>({});
 const {open:confirmOpen,message:confirmMessage,title:confirmTitle,confirmLabel,danger,
   ask:setConfirm,settle}=useConfirmDialog();
@@ -40,11 +41,13 @@ const columns=computed(()=>[
  {key:"is_active",label:t("Статус","Status","სტატუსი"),minWidth:100},
  {key:"actions",label:t("Действия","Actions","ქმედებები"),align:"right" as const,minWidth:115},
 ]);
-const fieldLabels:Record<FieldType,string>={
+// Keep options reactive when the user switches RU/EN/GE without reopening the page.
+const fieldLabels=computed<Record<FieldType,string>>(()=>({
   text:t("Текст","Text","ტექსტი"),number:t("Число","Number","რიცხვი"),
   date:t("Дата","Date","თარიღი"),boolean:t("Да/нет","Yes/no","დიახ/არა"),
   select:t("Выбор","Select","არჩევანი"),
-};
+}));
+const fieldTypeName=(type:string)=>fieldLabels.value[type as FieldType]??type;
 let abort:AbortController|null=null,serial=0;
 async function refresh(){
   abort?.abort();const next=new AbortController();abort=next;const current=++serial;
@@ -74,13 +77,27 @@ async function loadFields(){
 watch(()=>props.companyId,()=>{open.value=false;categoryId.value="";void refresh();},{immediate:true});
 watch(categoryId,()=>{if(categoryId.value)void loadFields();});
 onUnmounted(()=>abort?.abort());
+function snapshotForm(){
+  return JSON.stringify({
+    code:code.value,labelRu:labelRu.value,labelEn:labelEn.value,labelKa:labelKa.value,
+    fieldType:fieldType.value,required:required.value,options:options.value,sortOrder:sortOrder.value,
+  });
+}
+async function closeEditor(){
+  if(saving.value)return;
+  if(snapshotForm()!==originalForm.value && !(await setConfirm(t(
+    "Закрыть форму без сохранения?","Discard unsaved changes?","დავხუროთ შენახვის გარეშე?"
+  ))))return;
+  open.value=false;
+}
 function edit(row:AssetFieldDefinition|null=null){
   if(!canWrite.value||!categoryId.value)return;
   editing.value=row;code.value=row?.code??"";labelRu.value=row?.label_ru??"";
   labelEn.value=row?.label_en??"";labelKa.value=row?.label_ka??"";
   fieldType.value=row?.field_type??"text";options.value=(row?.options??[]).join("\n");
   required.value=row?.required??false;sortOrder.value=row?.sort_order??0;
-  validation.value={};error.value="";open.value=true;
+  validation.value={};error.value="";
+  originalForm.value=snapshotForm();open.value=true;
 }
 async function save(){
   if(saving.value||!labelRu.value.trim())return;
@@ -139,6 +156,7 @@ async function archive(row:AssetFieldDefinition){
     <BaseCard>
       <BaseDataTable :rows="displayed" row-key="id" :columns="columns" :loading="busy"
         :caption="t('Характеристики','Custom fields','ველები')" :min-table-width="700">
+        <template #cell-field_type="{row}">{{fieldTypeName(row.field_type)}}</template>
         <template #cell-required="{row}">{{row.required?t("Да","Yes","დიახ"):t("Нет","No","არა")}}</template>
         <template #cell-is_active="{row}">{{row.is_active?t("Активен","Active","აქტიური"):t("Архив","Archived","არქივი")}}</template>
         <template #cell-actions="{row}">
@@ -149,7 +167,7 @@ async function archive(row:AssetFieldDefinition){
         </template>
       </BaseDataTable>
     </BaseCard>
-    <BaseDialog :open="open" :title="t('Характеристика имущества','Asset attribute','ქონების ველი')" @close="open=false">
+    <BaseDialog :open="open" :title="t('Характеристика имущества','Asset attribute','ქონების ველი')" @close="closeEditor">
       <form id="field-builder-form" class="field-form" @submit.prevent="save">
         <p v-if="error" role="alert" class="error">{{error}}</p>
         <label v-if="!editing">{{t("Код (латиницей)","Code","კოდი")}} *
@@ -180,7 +198,7 @@ async function archive(row:AssetFieldDefinition){
           <input v-model.number="sortOrder" type="number" min="0" max="10000"/>
         </label>
       </form>
-      <template #footer><BaseButton variant="secondary" @click="open=false">{{t("Отмена","Cancel","გაუქმება")}}</BaseButton>
+      <template #footer><BaseButton variant="secondary" @click="closeEditor">{{t("Отмена","Cancel","გაუქმება")}}</BaseButton>
         <BaseButton type="submit" form="field-builder-form" :disabled="saving||!labelRu.trim()">{{t("Сохранить","Save","შენახვა")}}</BaseButton>
       </template>
     </BaseDialog>
