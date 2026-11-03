@@ -1,0 +1,30 @@
+name: Inventory public reachability diagnostic
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - feat/inventory-p1bc-profile-20261103
+
+permissions:
+  contents: read
+
+jobs:
+  public-reachability:
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    steps:
+      - name: Check public DNS and HTTP endpoints without credentials
+        shell: bash
+        run: |
+          set +e
+          echo "DNS_RESULT_START"
+          getent ahosts platform.itpmining.kz | head -n 3
+          echo "DNS_RESULT_EXIT=${PIPESTATUS[0]}"
+          echo "DNS_RESULT_END"
+          for path in /inventory/ /inventory-api/api/v1/health /hrm/; do
+            echo "CHECK_PATH=${path}"
+            curl -sSL --connect-timeout 8 --max-time 15 -o /dev/null \
+              -w 'CHECK_HTTP_STATUS=%{http_code};REMOTE_IP=%{remote_ip};TOTAL_SECONDS=%{time_total}\n' \
+              "https://platform.itpmining.kz${path}"
+            echo "CHECK_CURL_EXIT=$?"
+          done
