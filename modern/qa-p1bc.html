@@ -1,0 +1,24 @@
+<!doctype html><html lang="ru"><head><meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/></head><body style="margin:0">
+<div id="app"></div>
+<script type="module">
+import {createApp,h} from "vue";
+import {createPinia} from "pinia";
+import "/src/styles/tokens.css";
+import "/src/style.css";
+import ProfilePage from "/src/pages/ProfilePage.vue";
+import CompanySettingsPage from "/src/pages/CompanySettingsPage.vue";
+import AssetFieldBuilder from "/src/components/AssetFieldBuilder.vue";
+import AssetEditorDialog from "/src/components/registry/AssetEditorDialog.vue";
+const view=new URLSearchParams(location.search).get("view")??"profile";
+const views={
+  profile:()=>h(ProfilePage),
+  settings:()=>h(CompanySettingsPage,{companyId:"company-qa",companyName:"Example Mining",role:"company_admin"}),
+  fields:()=>h(AssetFieldBuilder,{companyId:"company-qa",role:"company_admin"}),
+  asset:()=>h(AssetEditorDialog,{open:true,companyId:"company-qa",asset:null,
+    references:{categories:[{id:"cat-qa",code:"IT",name:"IT devices"}],accounting_locations:[],physical_locations:[]},
+    facilities:[],people:[],manufacturers:[],models:[]}),
+};
+const app=createApp({render:()=>h("main",{style:"max-width:1100px;margin:auto;padding:20px;min-width:0"},[views[view]?.()??views.profile()])});
+app.use(createPinia());app.mount("#app");
+</script></body></html>
