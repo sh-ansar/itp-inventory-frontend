@@ -3,7 +3,7 @@ import BaseSelect from "../components/ui/BaseSelect.vue";
 import BaseConfirmDialog from "../components/ui/BaseConfirmDialog.vue";
 import { useConfirmDialog } from "../composables/useConfirmDialog";
 import { computed, onUnmounted, ref, watch } from "vue";
-import { BookOpen, Plus, RefreshCw, Pencil, Upload, Sparkles } from "lucide-vue-next";
+import { BookOpen, Plus, RefreshCw, Pencil, Upload, Sparkles, Archive, Users, Warehouse, Building2, Settings2 } from "lucide-vue-next";
 import BaseButton from "../components/ui/BaseButton.vue";
 import BaseIconButton from "../components/ui/BaseIconButton.vue";
 import BaseCard from "../components/ui/BaseCard.vue";
@@ -11,7 +11,7 @@ import BaseDataTable from "../components/ui/BaseDataTable.vue";
 import BaseDialog from "../components/ui/BaseDialog.vue";
 import EquipmentTypeIcon from "../components/ui/EquipmentTypeIcon.vue";
 import { InventoryApiError } from "../api/client";
-import { createLocation, referenceData } from "../api/inventory";
+import { createLocation, updateLocation, archiveReference, referenceData } from "../api/inventory";
 import {
   createEquipmentType, getEquipmentPresets, initializeEquipmentPresets,
   updateEquipmentType, uploadEquipmentIcon,
@@ -39,15 +39,20 @@ const fileInput=ref<HTMLInputElement|null>(null);
 let serial = 0;
 let controller: AbortController | null = null;
 const canWrite = computed(() => ["company_admin", "inventory_manager"].includes(props.role));
-const rows = computed<RefItem[]>(() => dictionary.value[current.value]);
+const showArchived = ref(false);
+const rows = computed<RefItem[]>(() => dictionary.value[current.value].filter(item => showArchived.value || item.is_active !== false));
+const dictionaryGroups = computed(() => ([
+  {key:"property",label:ui.locale === "ru" ? "Имущество и номенклатура" : ui.locale === "ka" ? "ქონება და ნომენკლატურა" : "Assets and catalog",items:[{path:"/warehouses",label:ui.t("nav.warehouses"),icon:Warehouse}]},
+  {key:"places",label:ui.locale === "ru" ? "Объекты и расположение" : ui.locale === "ka" ? "ობიექტები და მდებარეობა" : "Facilities and locations",items:[{path:"/facilities",label:ui.t("nav.facilities"),icon:Building2}]},
+  {key:"people",label:ui.locale === "ru" ? "Ответственные и доступ" : ui.locale === "ka" ? "პასუხისმგებელი პირები და წვდომა" : "People and access",items:[{path:"/people",label:ui.t("nav.people"),icon:Users},{path:"/company-roles",label:ui.t("nav.companyRoles"),icon:Settings2}]},
+]));
 const columns = computed(() => [
   ...(current.value==="categories"?[{key:"icon_key",label:ui.t("types.icon"),minWidth:85}]:[]),
   {key:"code",label:ui.t("table.code"),minWidth:125},
   {key:"name",label:ui.t("table.name"),minWidth:300},
-  ...(current.value==="categories"?[
-    {key:"is_base",label:ui.t("references.kind"),minWidth:110},
-    {key:"actions",label:ui.t("table.actions"),minWidth:150,align:"right" as const},
-  ]:[]),
+  ...(current.value==="categories"?[{key:"is_base",label:ui.t("references.kind"),minWidth:110}]:[]),
+  {key:"is_active",label:ui.locale==="ru"?"Статус":ui.locale==="ka"?"სტატუსი":"Status",minWidth:125},
+  {key:"actions",label:ui.t("table.actions"),minWidth:150,align:"right" as const},
 ]);
 const title = computed(() => ui.t(current.value === "categories" ? "types.title" :
   current.value === "accounting_locations" ? "references.accounting" : "references.physical"));
@@ -110,6 +115,8 @@ async function save() {
           code:code.value.trim(),name:name.value.trim(),icon_key:iconKey.value,
         });
       }
+    } else if (editing.value) {
+      await updateLocation(props.companyId,editing.value.id,editing.value.version??1,name.value.trim());
     } else {
       await createLocation(props.companyId,
         current.value === "accounting_locations" ? "accounting" : "physical",
@@ -125,6 +132,22 @@ async function save() {
     } else issue.value = e instanceof Error ? e.message : ui.t("generic.unknownError");
   } finally { saving.value = false; }
 }
+async function archiveItem(item: RefItem) {
+  if (!canWrite.value || saving.value || item.is_active === false) return;
+  const label = ui.locale === "ru" ? "Архивировать справочную запись «"+item.name+"»? Привязанные активы сохранят историю."
+    : ui.locale === "ka" ? "გადავიტანოთ ჩანაწერი არქივში: "+item.name+"?"
+    : "Archive reference “"+item.name+"”? Existing assets keep their history.";
+  if (!(await askConfirmation(label))) return;
+  saving.value = true; issue.value = ""; message.value = "";
+  try {
+    await archiveReference(props.companyId,current.value,item.id,item.version??1);
+    await refresh();
+    message.value = ui.locale === "ru" ? "Запись архивирована" : ui.locale === "ka" ? "ჩანაწერი დაარქივებულია" : "Reference archived";
+  } catch(e) {
+    issue.value = e instanceof Error ? e.message : ui.t("generic.unknownError");
+  } finally { saving.value = false; }
+}
+
 async function installPresets(){
   if(!canWrite.value||presetsBusy.value)return;
   presetsBusy.value=true;issue.value="";
@@ -176,6 +199,16 @@ async function upload(event:Event){
           <Plus :size="17" aria-hidden="true"/><span class="action-label">{{ ui.t("actions.add") }}</span></BaseButton>
       </div>
     </div>
+    <div class="reference-hub" aria-label="Reference sections">
+      <section v-for="group in dictionaryGroups" :key="group.key" class="reference-hub-group">
+        <h3>{{group.label}}</h3>
+        <div class="reference-hub-links">
+          <RouterLink v-for="item in group.items" :key="item.path" :to="item.path" class="reference-hub-link">
+            <component :is="item.icon" :size="17" aria-hidden="true"/>{{item.label}}
+          </RouterLink>
+        </div>
+      </section>
+    </div>
     <div class="reference-tabs" role="group" :aria-label="ui.t('references.kind')">
       <button v-for="kind in kinds" :key="kind" type="button"
         :class="{selected: current===kind}" :aria-pressed="current===kind"
@@ -184,6 +217,10 @@ async function upload(event:Event){
         <span class="count">{{ dictionary[kind].length }}</span>
       </button>
     </div>
+    <label class="archive-toggle">
+      <input v-model="showArchived" type="checkbox"/>
+      {{ui.locale==="ru"?"Показывать архивные записи":ui.locale==="ka"?"არქივირებული ჩანაწერების ჩვენება":"Show archived references"}}
+    </label>
     <p v-if="message" class="notice" role="status">{{ message }}</p>
     <div v-if="issue && !open" class="error" role="alert">{{ issue }}</div>
     <BaseCard class="reference-card">
@@ -197,15 +234,25 @@ async function upload(event:Event){
         <template #cell-is_base="{row}">
           <span class="muted">{{ ui.t(row.is_base?'types.base':'types.custom') }}</span>
         </template>
+        <template #cell-is_active="{row}">
+          <span :class="row.is_active===false?'ref-archived':'ref-active'">
+            {{row.is_active===false?(ui.locale==="ru"?"Архив":ui.locale==="ka"?"არქივი":"Archived"):(ui.locale==="ru"?"Активен":ui.locale==="ka"?"აქტიური":"Active")}}
+          </span>
+        </template>
         <template #cell-actions="{row}">
-          <div v-if="canWrite" class="category-actions">
+          <div v-if="canWrite && row.is_active!==false" class="category-actions">
             <BaseIconButton type="button" :title="ui.t('types.edit')"
               :aria-label="ui.t('types.edit')+': '+row.name" @click="showCreate(row)">
               <Pencil :size="16" aria-hidden="true"/>
             </BaseIconButton>
-            <BaseIconButton type="button" :title="ui.t('types.customIcon')"
+            <BaseIconButton v-if="current==='categories'" type="button" :title="ui.t('types.customIcon')"
               :aria-label="ui.t('types.customIcon')+': '+row.name" @click="selectUpload(row)">
               <Upload :size="16" aria-hidden="true"/>
+            </BaseIconButton>
+            <BaseIconButton type="button" :title="ui.locale==='ru'?'Архивировать':ui.locale==='ka'?'არქივში გადატანა':'Archive'"
+              :aria-label="(ui.locale==='ru'?'Архивировать: ':ui.locale==='ka'?'არქივში: ':'Archive: ')+row.name"
+              :disabled="saving" @click="archiveItem(row)">
+              <Archive :size="16" aria-hidden="true"/>
             </BaseIconButton>
           </div>
         </template>
@@ -249,6 +296,16 @@ async function upload(event:Event){
 </template>
 
 <style scoped>
+.reference-hub{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,225px),1fr));gap:12px}
+.reference-hub-group{padding:15px;border:1px solid var(--color-stroke);border-radius:var(--radius-md);background:var(--color-surface-raised);min-width:0}
+.reference-hub-group h3{margin:0 0 10px;font-size:13px;line-height:20px;font-weight:600}
+.reference-hub-links{display:flex;flex-wrap:wrap;gap:7px}
+.reference-hub-link{display:inline-flex;align-items:center;gap:7px;min-height:36px;padding:7px 10px;border:1px solid var(--color-stroke);border-radius:var(--radius-sm);color:var(--color-text);text-decoration:none;font-size:12px}
+.reference-hub-link:hover,.reference-hub-link:focus-visible{border-color:var(--color-primary);color:var(--color-primary);outline-offset:2px}
+.archive-toggle{display:flex;gap:8px;align-items:center;font-size:12px;color:var(--color-muted);width:fit-content;cursor:pointer}
+.archive-toggle input{width:17px;height:17px;min-height:0;margin:0;accent-color:var(--color-primary)}
+.ref-archived{color:var(--color-muted)}.ref-active{color:var(--color-primary)}
+
 .references-page{display:grid;gap:20px;min-width:0}
 .page-heading{display:flex;justify-content:space-between;align-items:center;gap:16px;flex-wrap:wrap}
 .page-heading h2,.reference-heading h3{margin:0}
