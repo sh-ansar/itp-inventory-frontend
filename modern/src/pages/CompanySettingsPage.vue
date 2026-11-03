@@ -18,6 +18,10 @@ const props=defineProps<{companyId:string;companyName:string;role:string}>();
 const ui=useUiSettings();
 const t=(ru:string,en:string,ka:string)=>ui.locale==="en"?en:ui.locale==="ka"?ka:ru;
 const canWrite=computed(()=>props.role==="company_admin");
+const supportedIntl=(Intl as typeof Intl & {supportedValuesOf?:(key:string)=>string[]}).supportedValuesOf;
+const timezones=[...new Set(["Asia/Almaty","Asia/Tbilisi","UTC",...(supportedIntl?.("timeZone")??[])])].sort();
+const currencies=[...new Set(["KZT","GEL","USD","EUR",...(supportedIntl?.("currency")??[])])].sort();
+
 const busy=ref(false),saving=ref(false),error=ref(""),message=ref("");
 const company=ref<CompanySettings|null>(null);
 const templates=ref<DocumentTemplate[]>([]);
@@ -115,16 +119,12 @@ async function showPreview(row:DocumentTemplate){
         </label>
         <label>{{t("Часовой пояс","Time zone","დროის სარტყელი")}}
           <BaseSelect v-model="company.timezone" :disabled="!canWrite||saving">
-            <option value="Asia/Almaty">Asia/Almaty</option>
-            <option value="Asia/Astana">Asia/Astana</option>
-            <option value="Asia/Tbilisi">Asia/Tbilisi</option>
-            <option value="Europe/London">Europe/London</option>
-            <option value="UTC">UTC</option>
+            <option v-for="zone in timezones" :key="zone" :value="zone">{{zone}}</option>
           </BaseSelect>
         </label>
         <label>{{t("Валюта","Currency","ვალუტა")}}
           <BaseSelect v-model="company.currency" :disabled="!canWrite||saving">
-            <option value="KZT">KZT</option><option value="GEL">GEL</option><option value="USD">USD</option><option value="EUR">EUR</option>
+            <option v-for="currency in currencies" :key="currency" :value="currency">{{currency}}</option>
           </BaseSelect>
         </label>
         <label>{{t("Префикс инвентарного номера","Asset number prefix","ინვენტარის პრეფიქსი")}}
