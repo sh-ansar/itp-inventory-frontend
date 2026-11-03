@@ -11,6 +11,7 @@ import BaseDataTable from "../components/ui/BaseDataTable.vue";
 import BaseDialog from "../components/ui/BaseDialog.vue";
 import EquipmentTypeIcon from "../components/ui/EquipmentTypeIcon.vue";
 import IndustryCatalogPanel from "../components/IndustryCatalogPanel.vue";
+import AssetFieldBuilder from "../components/AssetFieldBuilder.vue";
 import { InventoryApiError } from "../api/client";
 import { createLocation, updateLocation, archiveReference, referenceData } from "../api/inventory";
 import {
@@ -260,6 +261,7 @@ async function upload(event:Event){
       </BaseDataTable>
     </BaseCard>
     <IndustryCatalogPanel :company-id="companyId" :role="role"/>
+    <AssetFieldBuilder :company-id="companyId" :role="role"/>
     <input ref="fileInput" type="file" accept="image/png,image/webp" class="sr-file"
       :aria-label="ui.t('types.customIcon')" @change="upload"/>
     <BaseDialog :open="open" :title="current==='categories'?
