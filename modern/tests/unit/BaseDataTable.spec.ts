@@ -47,4 +47,21 @@ describe("BaseDataTable - HRM-derived, server-driven", () => {
     expect(wrapper.text()).toContain("Нет записей");
     expect(wrapper.findAll("thead th")).toHaveLength(2);
   });
+  it("keeps the table as a named keyboard-scrollable region",()=>{
+    const wrapper=mount(BaseDataTable,{props:{rows,rowKey:"id",columns,caption:"Asset register"}});
+    const viewport=wrapper.get(".table-scroll");
+    expect(viewport.attributes("role")).toBe("region");
+    expect(viewport.attributes("aria-label")).toBe("Asset register");
+    expect(viewport.attributes("tabindex")).toBe("0");
+  });
+
+  it("marks selected rows without changing the backing data or selected keys",()=>{
+    const wrapper=mount(BaseDataTable,{props:{
+      rows,rowKey:"id",columns,selectable:true,selectedKeys:["b"]
+    }});
+    expect(wrapper.findAll("tbody .table-row--selected")).toHaveLength(1);
+    expect(wrapper.get("tbody .table-row--selected").attributes("data-row-key")).toBe("b");
+    expect(wrapper.get('thead input[type="checkbox"]').element.checked).toBe(false);
+    expect(wrapper.emitted("update:selectedKeys")).toBeUndefined();
+  });
 });
