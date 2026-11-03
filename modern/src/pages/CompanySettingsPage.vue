@@ -172,7 +172,7 @@ async function showPreview(row:DocumentTemplate){
         <label>{{t("Текст шаблона","Template text","შაბლონის ტექსტი")}} *
           <textarea v-model="fields.body" required minlength="5" maxlength="12000" rows="10"/>
         </label>
-        <small>{{t("Доступные поля: {{company_name}}, {{legal_name}}, {{asset_number}}, {{asset_name}}, {{date}}, {{document_number}}, {{responsible_person}}, {{facility_name}}.","Available placeholders: {{company_name}}, {{legal_name}}, {{asset_number}}, {{asset_name}}, {{date}}, {{document_number}}, {{responsible_person}}, {{facility_name}}.","შესაძლებელი ველები: {{company_name}}, {{asset_number}}, {{date}}.")}}</small>
+        <small v-pre>Поля / Placeholders: {{company_name}}, {{legal_name}}, {{asset_number}}, {{asset_name}}, {{date}}, {{document_number}}, {{responsible_person}}, {{facility_name}}</small>
       </form>
       <template #footer>
         <BaseButton variant="secondary" @click="formOpen=false">{{t("Отмена","Cancel","გაუქმება")}}</BaseButton>
