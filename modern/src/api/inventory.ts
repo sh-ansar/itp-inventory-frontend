@@ -94,8 +94,9 @@ export function companyAssets(
   return inventoryRequest<Page<Asset>>(companyPath(companyId) + "/assets?" + query, { signal });
 }
 
-export const referenceData = (companyId: string, signal?: AbortSignal) =>
-  inventoryRequest<ReferenceData>(companyPath(companyId) + "/reference-data", { signal });
+export const referenceData = (companyId: string, signal?: AbortSignal, includeArchived = false) =>
+  inventoryRequest<ReferenceData>(companyPath(companyId)
+    + "/reference-data" + (includeArchived ? "?include_archived=1" : ""), { signal });
 
 export const createAsset = (companyId: string, input: AssetInput) =>
   inventoryRequest<{ data: Asset }>(companyPath(companyId) + "/assets", {
