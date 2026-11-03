@@ -15,6 +15,8 @@ import BaseStatusPill from "../components/ui/BaseStatusPill.vue";
 import TableSettingsDialog from "../components/ui/TableSettingsDialog.vue";
 import { orderAndFilterColumns,useCompanyTablePreferences } from "../composables/useCompanyTablePreferences";
 import { createResponsiblePerson, getResponsiblePeople, updateResponsiblePerson } from "../api/topology";
+import { listIndustryCatalog } from "../api/industryCatalogs";
+import type { IndustryCatalogItem } from "../api/industryCatalogs";
 import type { ResponsiblePerson, ResponsibleInput } from "../api/topology";
 import { InventoryApiError } from "../api/client";
 import { useUiSettings } from "../stores/uiSettings";
@@ -28,6 +30,7 @@ const preferences=useCompanyTablePreferences(toRef(props,"companyId"),"people",{
 const settingsOpen=ref(false);
 const settingsTitle=computed(()=>ui.locale==="ka"?"ცხრილის პარამეტრები":ui.locale==="en"?"Table settings":"Настройки таблицы");
 const rows=ref<ResponsiblePerson[]>([]);
+const departments=ref<IndustryCatalogItem[]>([]);
 const loading=ref(false),issue=ref(""),notice=ref("");
 const page=ref(1),total=ref(0),lastPage=ref(1);
 const perPage=computed({get:()=>preferences.state.per_page,set:v=>preferences.state.per_page=v});
@@ -37,7 +40,7 @@ const query=ref("");
 const formOpen=ref(false),editing=ref<ResponsiblePerson|null>(null),saving=ref(false),formError=ref("");
 const fieldErrors=ref<Record<string,string[]>>({});
 const fields=reactive<ResponsibleInput>({
-  code:"",name:"",position:"",email:"",is_active:true,
+  code:"",name:"",position:"",email:"",department_id:null,is_active:true,
 });
 const original=ref("");
 const canWrite=computed(()=>["company_admin","inventory_manager"].includes(props.role));
@@ -60,6 +63,10 @@ watch(search,value=>{
 });
 watch(()=>props.companyId,()=>{
   rows.value=[];page.value=1;query.value="";settingsOpen.value=false;
+  departments.value=[];
+  if(props.companyId)void listIndustryCatalog(props.companyId,"department",true)
+    .then(data=>{if(props.companyId===data.data[0]?.company_id||data.data.length===0)departments.value=data.data;})
+    .catch(e=>{issue.value=e instanceof Error?e.message:String(e)});
   notice.value="";issue.value="";formOpen.value=false;void load();
 },{immediate:true});
 watch([page,perPage,query,status],()=>{void load()});
@@ -84,6 +91,7 @@ function openForm(person:ResponsiblePerson|null=null){
   editing.value=person;
   fields.code=person?.code??"";fields.name=person?.name??"";
   fields.position=person?.position??"";fields.email=person?.email??"";
+  fields.department_id=person?.department_id??null;
   fields.is_active=person?.is_active??true;
   original.value=JSON.stringify(fields);
   fieldErrors.value={};formError.value="";formOpen.value=true;
@@ -99,6 +107,7 @@ async function save(){
   const input:ResponsibleInput={
     code:fields.code.trim(),name:fields.name.trim(),
     position:fields.position?.trim()||null,email:fields.email?.trim()||null,
+    department_id:fields.department_id||null,
     is_active:fields.is_active,
   };
   try{
@@ -189,6 +198,15 @@ onUnmounted(()=>{ctrl?.abort();if(timer)clearTimeout(timer)});
         </label>
         <label class="field"><span>{{ ui.t("people.position") }}</span>
           <input v-model="fields.position" maxlength="200" :disabled="saving"/>
+        </label>
+        <label class="field"><span>{{ui.locale==="ru"?"Подразделение":ui.locale==="ka"?"განყოფილება":"Department"}}</span>
+          <BaseSelect v-model="fields.department_id" :disabled="saving"
+            :aria-label="ui.locale==='ru'?'Подразделение':ui.locale==='ka'?'განყოფილება':'Department'">
+            <option value="">{{ui.t("form.none")}}</option>
+            <option v-for="dept in departments.filter(d=>d.is_active||d.id===editing?.department_id)"
+              :key="dept.id" :value="dept.id">{{dept.name}}</option>
+          </BaseSelect>
+          <small v-if="fieldErrors.department_id">{{fieldErrors.department_id[0]}}</small>
         </label>
         <label class="field"><span>{{ ui.t("people.email") }}</span>
           <input v-model="fields.email" type="email" maxlength="255" :disabled="saving"/>
