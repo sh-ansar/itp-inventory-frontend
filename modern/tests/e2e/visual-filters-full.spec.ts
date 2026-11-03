@@ -130,7 +130,7 @@ test("stocktake status/search/pagination and table settings",async({page})=>{
 
 test("facility tree search and view switch, reference catalog three tabs",async({page})=>{
   await openCompany(page,"facilities");
-  const search=page.getByRole("textbox",{name:"Поиск по объектам"});
+  const search=page.getByRole("searchbox",{name:"Поиск по объектам"});
   await search.fill("FP Building");
   await expect(page.locator('.tree-list [role="treeitem"]').first()).toContainText("FP Building");
   await search.fill("");
