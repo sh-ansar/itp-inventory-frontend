@@ -5,13 +5,14 @@ import { computed, onUnmounted, ref, watch } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import {
   Building2, MapPinned, Warehouse, Layers, DoorOpen, Grid2X2, Package, Boxes,
-  Plus, Pencil, ChevronRight, ChevronLeft, Search, ZoomIn, ZoomOut,
+  Plus, Pencil, ChevronRight, ChevronLeft, ZoomIn, ZoomOut,
   Maximize2, RefreshCw, LayoutGrid, Table2, ClipboardList, ArrowUpRight, Users, History, Map as MapIcon,
 } from "lucide-vue-next";
 import BaseButton from "../components/ui/BaseButton.vue";
 import BaseIconButton from "../components/ui/BaseIconButton.vue";
 import BaseCard from "../components/ui/BaseCard.vue";
 import BaseDialog from "../components/ui/BaseDialog.vue";
+import BaseSearchField from "../components/ui/BaseSearchField.vue";
 import BaseDataTable from "../components/ui/BaseDataTable.vue";
 import BasePagination from "../components/ui/BasePagination.vue";
 import EquipmentTypeIcon from "../components/ui/EquipmentTypeIcon.vue";
@@ -240,10 +241,8 @@ onUnmounted(()=>{ctrl?.abort();assetCtrl?.abort();});
       <BaseCard class="facility-nav">
         <div class="nav-heading"><strong>{{ ui.t("topology.objects") }}</strong>
           <span class="muted">{{ nodes.length }}</span></div>
-        <label class="tree-search">
-          <Search :size="16" aria-hidden="true"/>
-          <input v-model="search" :placeholder="ui.t('topology.search')" :aria-label="ui.t('topology.search')"/>
-        </label>
+        <BaseSearchField v-model="search" class="tree-search"
+          :label="ui.t('topology.search')" :placeholder="ui.t('topology.search')"/>
         <div class="tree-list" role="tree" :aria-label="ui.t('topology.objects')">
           <button type="button" class="tree-row" :class="{selected:!selectedId}"
             @click="navigate(null)">
@@ -462,8 +461,7 @@ onUnmounted(()=>{ctrl?.abort();assetCtrl?.abort();});
 .facility-nav{position:sticky;top:12px;min-width:0;max-height:calc(100vh - 135px);display:flex;flex-direction:column}
 .nav-heading{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:14px}
 .nav-heading strong{font-size:14px;font-weight:600}
-.tree-search{display:flex;align-items:center;gap:7px;min-width:0;border:1px solid var(--color-stroke-strong);border-radius:var(--radius-sm);padding:0 10px;margin-bottom:10px}
-.tree-search input{width:100%;min-width:0;border:0;background:transparent;outline:none;box-shadow:none}
+.tree-search{margin-bottom:10px;max-width:none;flex:none}
 .tree-list{overflow:auto;flex:1;min-height:80px;display:grid;align-content:start;gap:2px}
 .tree-row{display:flex;align-items:center;gap:8px;width:100%;min-height:36px;border:1px solid transparent;background:transparent;border-radius:var(--radius-sm);color:var(--color-text);font-size:12px;text-align:left;padding:8px 10px;cursor:pointer}
 .tree-row:hover{background:var(--color-hover)}
