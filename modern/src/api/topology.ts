@@ -32,7 +32,7 @@ export interface EquipmentType {
   icon_url?:string|null;is_base?:boolean;version?:number;
 }
 export interface StockItem {
-  id:string;code:string;name:string;unit:"pcs"|"pack"|"kg"|"m"|"l";
+  id:string;code:string;name:string;unit:string;
   category_id:string|null;minimum_quantity_milli:number;
   is_active:boolean;version:number;balances_sum_quantity_milli?:number|null;
 }
