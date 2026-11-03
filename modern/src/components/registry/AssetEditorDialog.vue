@@ -86,7 +86,7 @@ watch([()=>props.open,()=>fields.category_id,()=>props.companyId],async()=>{
     original.value=JSON.stringify({fields,attributes:attributeInputs});
   }catch(e){if(generation===attributeSerial)error.value=e instanceof Error?e.message:String(e);}
   finally{if(generation===attributeSerial)fieldsLoading.value=false;}
-});
+},{immediate:true});
 const fieldName=(f:AssetFieldDefinition)=>ui.locale==="ka"?(f.label_ka||f.label_ru)
   :ui.locale==="en"?(f.label_en||f.label_ru):f.label_ru;
 const optionsFor=(f:AssetFieldDefinition)=>f.options??[];
