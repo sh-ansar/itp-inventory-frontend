@@ -34,7 +34,7 @@ export interface Page<T> {
   links: { first: string | null; last: string | null; prev: string | null; next: string | null };
 }
 
-export interface RefItem { id: string; code: string; name: string; icon_key?:string; icon_url?:string|null; is_base?:boolean; version?:number }
+export interface RefItem { id: string; code: string; name: string; icon_key?:string; icon_url?:string|null; is_base?:boolean; is_active?:boolean; version?:number }
 export interface ReferenceData {
   categories: RefItem[];
   accounting_locations: RefItem[];
@@ -134,4 +134,14 @@ export const createCategory = (companyId: string, code: string, name: string) =>
 export const createLocation = (companyId: string, kind: "physical" | "accounting", code: string, name: string) =>
   inventoryRequest<RefItem>(companyPath(companyId) + "/locations", {
     method: "POST", body: JSON.stringify({kind,code,name}),
+  });
+
+export const updateLocation = (companyId: string, locationId: string, version: number, name: string) =>
+  inventoryRequest<{ data: RefItem }>(companyPath(companyId) + "/locations/" + locationId, {
+    method: "PUT", body: JSON.stringify({version,name}),
+  });
+export const archiveReference = (companyId: string, kind: "categories"|"accounting_locations"|"physical_locations", itemId: string, version: number) =>
+  inventoryRequest<{ data: RefItem }>(companyPath(companyId)
+    + (kind === "categories" ? "/categories/" : "/locations/") + itemId + "/archive", {
+    method: "POST", body: JSON.stringify({version}),
   });
