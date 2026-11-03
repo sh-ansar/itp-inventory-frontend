@@ -293,7 +293,7 @@ onMounted(boot);
           <h2>{{ ui.t("auth.noCompanies") }}</h2>
         </div>
         <RouterView v-else v-slot="{Component}">
-          <component :is="Component" :company-id="selectedCompany.id"
+          <component :is="Component" :company-id="selectedCompany?.id??''"
             :company-name="selectedCompany?.name??''" :role="selectedCompany?.role_code??''" @updated="updateAccountName"/>
         </RouterView>
       </main>
