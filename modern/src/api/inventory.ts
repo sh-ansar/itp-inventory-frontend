@@ -28,7 +28,7 @@ export interface Asset {
   updated_at: string;
 }
 
-export type AssetInput = Pick<Asset, "inventory_number" | "name"> &
+export type AssetInput = {attributes?:Record<string,string|number|boolean|null>} & Pick<Asset, "inventory_number" | "name"> &
   Partial<Pick<Asset, "serial_number" | "description" | "category_id" | "manufacturer_id" | "model_id" |
     "accounting_location_id" | "physical_location_id" | "facility_node_id" | "responsible_person_id">>;
 
