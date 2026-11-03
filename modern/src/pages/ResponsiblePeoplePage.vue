@@ -64,9 +64,10 @@ watch(search,value=>{
 watch(()=>props.companyId,()=>{
   rows.value=[];page.value=1;query.value="";settingsOpen.value=false;
   departments.value=[];
-  if(props.companyId)void listIndustryCatalog(props.companyId,"department",true)
-    .then(data=>{if(props.companyId===data.data[0]?.company_id||data.data.length===0)departments.value=data.data;})
-    .catch(e=>{issue.value=e instanceof Error?e.message:String(e)});
+  const tenantId=props.companyId;
+  if(tenantId)void listIndustryCatalog(tenantId,"department",true)
+    .then(data=>{if(props.companyId===tenantId)departments.value=data.data;})
+    .catch(e=>{if(props.companyId===tenantId)issue.value=e instanceof Error?e.message:String(e)});
   notice.value="";issue.value="";formOpen.value=false;void load();
 },{immediate:true});
 watch([page,perPage,query,status],()=>{void load()});
