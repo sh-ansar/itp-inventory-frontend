@@ -6,12 +6,13 @@ import { RouterLink, useRoute, useRouter } from "vue-router";
 import {
   ArrowLeft, ArrowUpRight, Boxes, Building2, Check, Clock3,
   Grid2X2, ImagePlus, Maximize, Minus, Move, Plus,
-  RefreshCw, Save, Search, Trash2, Warehouse, X, ZoomIn, ZoomOut,
+  RefreshCw, Save, Trash2, Warehouse, X, ZoomIn, ZoomOut,
 } from "lucide-vue-next";
 import BaseButton from "../components/ui/BaseButton.vue";
 import BaseIconButton from "../components/ui/BaseIconButton.vue";
 import BaseCard from "../components/ui/BaseCard.vue";
 import BaseDialog from "../components/ui/BaseDialog.vue";
+import BaseSearchField from "../components/ui/BaseSearchField.vue";
 import EquipmentTypeIcon from "../components/ui/EquipmentTypeIcon.vue";
 import { InventoryApiError } from "../api/client";
 import {
@@ -400,9 +401,8 @@ onUnmounted(()=>{abort?.abort();drag=null});
           <BaseCard class="catalog-card">
             <div class="catalog-heading"><h3>{{ ui.t("plan.catalog") }}</h3>
               <strong>{{ available.length }}</strong></div>
-            <label class="catalog-search"><Search :size="16" aria-hidden="true"/>
-              <input v-model="query" :placeholder="ui.t('plan.search')"
-                :aria-label="ui.t('plan.search')"/></label>
+            <BaseSearchField v-model="query" class="catalog-search"
+              :label="ui.t('plan.search')" :placeholder="ui.t('plan.search')"/>
             <p v-if="!plan.elements.length" class="muted">{{ ui.t("plan.noItems") }}</p>
             <p v-else-if="!available.length" class="muted">{{ ui.t("plan.emptyCatalog") }}</p>
             <div v-else class="catalog-list">
@@ -536,8 +536,7 @@ onUnmounted(()=>{abort?.abort();drag=null});
 .catalog-heading{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:14px}
 .catalog-heading h3{font-size:13px;line-height:18px;margin:0;min-width:0;overflow-wrap:anywhere;font-weight:600}
 .catalog-heading>strong{font-size:12px;color:var(--color-muted)}
-.catalog-search{display:flex;align-items:center;gap:8px;padding:0 9px;min-width:0;border:1px solid var(--color-stroke-strong);border-radius:var(--radius-sm);margin-bottom:11px}
-.catalog-search input{background:transparent;outline:none;box-shadow:none;border:0;min-width:0;width:100%;font-size:12px}
+.catalog-search{max-width:none;margin-bottom:11px;flex:none}
 .catalog-list{display:grid;gap:6px;max-height:440px;overflow-y:auto}
 .catalog-item{display:flex;align-items:center;gap:9px;min-width:0;padding:10px 8px;background:var(--color-soft);border:1px solid var(--color-stroke);border-radius:var(--radius-sm)}
 .catalog-icon{width:33px;height:33px;flex:none;display:grid;place-items:center;color:var(--color-primary);background:var(--color-surface);border-radius:8px}
