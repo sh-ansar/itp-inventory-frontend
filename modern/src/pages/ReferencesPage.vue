@@ -71,7 +71,7 @@ async function refresh() {
   if (!props.companyId) { busy.value = false; return; }
   busy.value = true;
   try {
-    const data = await referenceData(props.companyId, next.signal);
+    const data = await referenceData(props.companyId, next.signal, true);
     if (serial === mySerial && !next.signal.aborted) dictionary.value = data;
   } catch(e) {
     if (serial === mySerial && !next.signal.aborted)
