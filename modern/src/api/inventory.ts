@@ -9,6 +9,10 @@ export interface Asset {
   description: string | null;
   status: "active" | "written_off" | "disposed";
   category_id: string | null;
+  manufacturer_id?: string | null;
+  manufacturer_name?: string | null;
+  model_id?: string | null;
+  model_name?: string | null;
   category_name?: string | null;
   accounting_location_id: string | null;
   accounting_location_name?: string | null;
@@ -25,7 +29,7 @@ export interface Asset {
 }
 
 export type AssetInput = Pick<Asset, "inventory_number" | "name"> &
-  Partial<Pick<Asset, "serial_number" | "description" | "category_id" |
+  Partial<Pick<Asset, "serial_number" | "description" | "category_id" | "manufacturer_id" | "model_id" |
     "accounting_location_id" | "physical_location_id" | "facility_node_id" | "responsible_person_id">>;
 
 export interface Page<T> {
