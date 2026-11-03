@@ -44,11 +44,11 @@ test("P1-A catalogs are responsive and keep shared forms across themes/locales",
     expect(geometry.theme).toBe(theme);
     expect(geometry.hasSharedTable).toBe(true);
     await page.locator(".industry-actions button").last().click();
-    await expect(page.locator("dialog.base-drawer")).toBeVisible();
+    await expect(page.locator("dialog.base-drawer[open]")).toBeVisible();
     await expect(page.locator("#industry-catalog-form input")).toHaveCount(2);
     await page.screenshot({path:"test-results/p1a-"+lang+"-"+theme+"-"+width+".png",fullPage:true});
     await page.keyboard.press("Escape");
-    await expect(page.locator("dialog.base-drawer")).not.toBeVisible();
+    await expect(page.locator("dialog.base-drawer[open]")).not.toBeVisible();
     expect(errors).toEqual([]);
     await context.close();
    }
