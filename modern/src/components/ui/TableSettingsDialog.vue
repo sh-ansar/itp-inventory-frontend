@@ -86,11 +86,11 @@ function move(key:string,delta:number){
 .settings-intro{display:flex;align-items:center;gap:9px;color:var(--color-muted);font-size:13px;line-height:1.5;margin:0 0 18px}
 .settings-intro svg{flex:none;color:var(--color-primary)}
 .settings-label{font-size:14px;font-weight:600;margin:0 0 10px}
-.settings-list{display:grid;gap:7px}
-.settings-row{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:8px 11px;border:1px solid var(--color-stroke);border-radius:var(--radius-sm);min-width:0}
+.settings-list{display:grid;gap:8px;min-width:0}
+.settings-row{display:flex;align-items:center;justify-content:space-between;gap:10px;min-height:48px;padding:8px 11px;border:1px solid var(--color-stroke);border-radius:var(--radius-sm);background:var(--color-surface-raised);min-width:0}
 .column-toggle{display:flex;align-items:center;gap:10px;cursor:pointer;min-width:0;font-size:13px}
-.column-toggle input{width:17px;height:17px;accent-color:var(--color-primary);flex:none}
+.column-toggle input{width:17px;height:17px;min-height:0;margin:0;padding:0;accent-color:var(--color-primary);flex:none}
 .column-toggle span{overflow-wrap:anywhere}
 .order-actions{display:flex;gap:5px;flex:none}
-@media(max-width:600px){.settings-row{padding:8px}.order-actions{gap:3px}}
+@media(max-width:600px){.settings-row{min-height:52px;padding:8px}.order-actions{gap:3px}.column-toggle{min-height:40px}}
 </style>
