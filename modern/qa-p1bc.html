@@ -15,7 +15,7 @@ const views={
   profile:()=>h(ProfilePage),
   settings:()=>h(CompanySettingsPage,{companyId:"company-qa",companyName:"Example Mining",role:"company_admin"}),
   fields:()=>h(AssetFieldBuilder,{companyId:"company-qa",role:"company_admin"}),
-  asset:()=>h(AssetEditorDialog,{open:true,companyId:"company-qa",asset:null,
+  asset:()=>h(AssetEditorDialog,{open:true,companyId:"company-qa",asset:{id:"asset-qa",public_id:"public-qa",inventory_number:"INV-01",name:"Laptop",serial_number:null,description:null,status:"active",category_id:"cat-qa",accounting_location_id:null,physical_location_id:null,facility_node_id:null,responsible_person_id:null,manufacturer_id:null,model_id:null,version:1},
     references:{categories:[{id:"cat-qa",code:"IT",name:"IT devices"}],accounting_locations:[],physical_locations:[]},
     facilities:[],people:[],manufacturers:[],models:[]}),
 };
