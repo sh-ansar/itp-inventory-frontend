@@ -288,13 +288,13 @@ onMounted(boot);
           </form>
           <p v-if="!browserLoginEnabled" class="muted login-note">{{ ui.t("auth.disabled") }}</p>
         </BaseCard>
-        <div v-else-if="!selectedCompany" class="no-company">
+        <div v-else-if="!selectedCompany && route.name!=='profile'" class="no-company">
           <Package :size="28" aria-hidden="true"/>
           <h2>{{ ui.t("auth.noCompanies") }}</h2>
         </div>
         <RouterView v-else v-slot="{Component}">
           <component :is="Component" :company-id="selectedCompany.id"
-            :company-name="selectedCompany.name" :role="selectedCompany.role_code" @updated="updateAccountName"/>
+            :company-name="selectedCompany?.name??''" :role="selectedCompany?.role_code??''" @updated="updateAccountName"/>
         </RouterView>
       </main>
     </div>
