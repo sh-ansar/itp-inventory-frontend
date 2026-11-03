@@ -1,38 +1,10 @@
-# Pre-production
+# Pre-production — архивная страница шаблона
 
-## SEO
+Этот документ ранее описывал устаревший Vue 2 / Vuestic boilerplate, включая неиспользуемые шаблонные CircleCI/SEO инструкции. Он **не является** инструкцией по развёртыванию текущего ITP Inventory и сохранён только как совместимый адрес старой документации.
 
-We have a boierplate prepared with some analytics ingrained. This includes:
+Актуальные материалы:
+- [Развёртывание, проверка и откат](inventory-deployment.md)
+- [Пользовательские функции](inventory-user-guide.md)
+- [Приёмка и технический план](inventory-acceptance-and-roadmap.md)
 
-* [Yandex Metrica](https://metrica.yandex.com/about)
-* [Drift](https://www.drift.com/mobile-app/)
-
-To get these running - just provide keys to respective apis. You're advised to copy `.env.example` with rename to `.env` then modify it.
-
-Notice, that if you are about to use Google Maps then you also have to provide it with your personal API key. The key must be defined under the `VUE_APP_GOOGLE_MAPS_API_KEY` environment-variable (more on them below) and can be obtained [here](https://developers.google.com/maps/documentation/javascript/get-api-key).
-
-## Deploy
-
-We use [circleci](https://circleci.com) to deploy vuestic version you're able to see on demo.
-
-If you want to save some time and use our config, do notice that circleci will need the following keys, that you have to set in **Build Settings -> Environment Variables**.
-
-* `DEPLOY_PASSWORD` ssh password.
-* `DEPLOY_PATH_PRODUCTION` production build will be loaded to this folder.
-* `DEPLOY_PATH_STAGING` staging build will be loaded to this folder.
-* `DEPLOY_URL` ssh url.
-* `DEPLOY_USER` ssh password.
-
-You can modify [config](../.circleci/config.yml) if our solution doesn't suit your needs exactly.
-
-Couple of things to note:
-* in `.env` file keys should look like this `VUE_APP_DRIFT_KEY`. Which will correspond to circleci key `DRIFT_KEY`. You essentially have two ways to pass config into build process.
-* Circleci will run tests before both staging and production.
-
-## Demos
-
-You can enable demos in build by:
-```
-VUE_APP_INCLUDE_DEMOS=true
-```
-Demos are included in staging build by default. They're not present in production because of significant impact on bundle size.
+Production Frontend сейчас поставляется из `modern/dist` отдельными версионированными релизами в `C:\deploy\inventory\site\releases`. Не используйте старые инструкции из шаблона, ключи деплоя CircleCI или настройки демо.
