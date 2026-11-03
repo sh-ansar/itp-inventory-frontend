@@ -54,7 +54,7 @@ const error = ref("");
 const credentials = reactive({ email:"", password:"" });
 const passwordVisible = ref(false);
 const reportsTitle=computed(()=>ui.locale==="ka"?"ანგარიშები":ui.locale==="en"?"Reports":"Отчёты");
-const currentTitle = computed(() => route.name === "reports" ? reportsTitle.value : ui.t(
+const currentTitle = computed(() => route.name === "profile" ? profileTitle.value : route.name === "reports" ? reportsTitle.value : ui.t(
    route.name === "disposals" ? "disposal.title" :
    route.name === "company-roles" ? "roles.title" :
    route.name === "references" ? "heading.references" :
@@ -65,6 +65,7 @@ const currentTitle = computed(() => route.name === "reports" ? reportsTitle.valu
    route.name === "people" ? "people.title" :
    route.name === "warehouses" ? "stock.warehouseTitle" : "heading.assets"
  ));
+const profileTitle=computed(()=>ui.locale==="en"?"My account":ui.locale==="ka"?"პირადი კაბინეტი":"Личный кабинет");
 const profileInitials=computed(()=>user.value?.name?.trim().split(/\s+/).slice(0,2).map(part=>part.charAt(0).toUpperCase()).join("")||"IT");
 const accountCaption=computed(()=>ui.locale==="en"?"Work account":ui.locale==="ka"?"\u10E1\u10D0\u10DB\u10E3\u10E8\u10D0\u10DD \u10D0\u10DC\u10D2\u10D0\u10E0\u10D8\u10E8\u10D8":"\u0420\u0430\u0431\u043E\u0447\u0430\u044F \u0443\u0447\u0451\u0442\u043D\u0430\u044F \u0437\u0430\u043F\u0438\u0441\u044C");
 const selectedCompany = computed(() =>
@@ -239,10 +240,10 @@ onMounted(boot);
             <Sun v-if="ui.theme==='dark'" :size="18" aria-hidden="true"/>
             <Moon v-else :size="18" aria-hidden="true"/>
           </button>
-                    <div v-if="user" class="profile-summary" :title="user.name">
+                    <RouterLink v-if="user" to="/profile" class="profile-summary profile-account-link" :title="profileTitle" :aria-label="profileTitle">
             <span class="user-avatar" aria-hidden="true">{{ profileInitials }}</span>
             <span class="profile-copy"><strong>{{ user.name }}</strong><small>{{ accountCaption }}</small></span>
-          </div>          <BaseButton v-if="user" variant="secondary" :disabled="signoutBusy" @click="signOut">
+          </RouterLink>          <BaseButton v-if="user" variant="secondary" :disabled="signoutBusy" @click="signOut">
             <LogOut :size="16" aria-hidden="true"/> {{ ui.t("auth.logout") }}
           </BaseButton>
         </div>
@@ -292,3 +293,8 @@ onMounted(boot);
     </div>
   </div>
 </template>
+<style scoped>
+.profile-account-link{text-decoration:none;color:inherit;cursor:pointer;border-radius:var(--radius-sm)}
+.profile-account-link:hover{background:var(--color-hover)}
+.profile-account-link:focus-visible{outline:2px solid var(--color-primary);outline-offset:2px}
+</style>
