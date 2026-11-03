@@ -80,7 +80,7 @@ watch([()=>props.open,()=>fields.category_id,()=>props.companyId],async()=>{
     if(generation!==attributeSerial)return;
     dynamicFields.value=definitions.data;
     for(const def of definitions.data){
-      const value=existing.data[def.id];
+      const value=(existing.data as Record<string,string|number|boolean|null>)[def.id];
       attributeInputs[def.id]=value===null||value===undefined?"":String(value);
     }
     original.value=JSON.stringify({fields,attributes:attributeInputs});
