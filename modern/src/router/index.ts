@@ -12,6 +12,7 @@ import ResponsiblePeoplePage from "../pages/ResponsiblePeoplePage.vue";
 import WarehousesPage from "../pages/WarehousesPage.vue";
 import ReportsPage from "../pages/ReportsPage.vue";
 import ProfilePage from "../pages/ProfilePage.vue";
+import CompanySettingsPage from "../pages/CompanySettingsPage.vue";
 
 export const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -19,6 +20,7 @@ export const router = createRouter({
     { path: "/", redirect: "/registry" },
     { path: "/registry", component: AssetsPage, name: "assets" },
     { path: "/profile", component: ProfilePage, name: "profile" },
+    { path: "/company-settings", component: CompanySettingsPage, name: "company-settings" },
     { path: "/company-roles", component: CompanyRolesPage, name: "company-roles" },
     { path: "/disposals", component: DisposalCasesPage, name: "disposals" },
     { path: "/references", component: ReferencesPage, name: "references" },
