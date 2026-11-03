@@ -19,7 +19,9 @@ test("public Inventory DNS and HTTP endpoints are observed independently",async(
       });
       console.log("INVENTORY_PUBLIC_HTTP",path,response.status,response.url);
     }catch(error){
-      console.log("INVENTORY_PUBLIC_HTTP_FAILED",path,error instanceof Error?error.message:String(error));
+      const diagnostic=error as Error & {cause?:Error & {code?:string}};
+      console.log("INVENTORY_PUBLIC_HTTP_FAILED",path,
+        diagnostic.message,diagnostic.cause?.code??"",diagnostic.cause?.message??"");
     }
   }));
 });
