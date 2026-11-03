@@ -3,7 +3,7 @@ import {
   listIndustryCatalog, createIndustryCatalogItem, archiveIndustryCatalogItem,
 } from "../../src/api/industryCatalogs";
 
-beforeEach(()=>{vi.unstubAllGlobals();});
+beforeEach(()=>{vi.unstubAllGlobals();document.cookie="INVENTORY-XSRF-TOKEN=qa-csrf;path=/";});
 
 describe("P1 company industry catalog API",()=>{
   it("keeps reference list scoped to a single company and only opts into archives on demand",async()=>{
