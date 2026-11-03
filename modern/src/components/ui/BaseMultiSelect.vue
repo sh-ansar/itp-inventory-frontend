@@ -166,7 +166,7 @@ watch(()=>props.disabled,disabled=>{if(disabled)close()});
 .multi-search{display:flex;align-items:center;gap:8px;padding:0 9px;
   border:1px solid var(--color-stroke-strong);border-radius:var(--radius-sm);color:var(--color-muted)}
 .multi-search:focus-within{outline:2px solid var(--color-primary);outline-offset:1px}
-.multi-search input{flex:1;min-width:0;height:38px;border:0;outline:0;color:var(--color-text);
+.multi-search input{flex:1;min-width:0;height:38px;min-height:0;margin:0;padding:0;border:0;border-radius:0;outline:0;color:var(--color-text);
   background:transparent;font:inherit;font-size:13px}
 .multi-actions{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:8px 4px}
 .multi-actions button{display:inline-flex;align-items:center;gap:3px;background:transparent;border:0;
