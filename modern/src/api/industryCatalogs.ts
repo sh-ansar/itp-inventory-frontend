@@ -47,3 +47,18 @@ export const archiveIndustryCatalogItem = (
     method: "POST", body: JSON.stringify({version}),
   }
 );
+
+const systemUnitLabels: Record<string,Record<string,string>> = {
+  pcs:{ru:"Штуки",en:"Pieces",ka:"ცალი"},
+  pack:{ru:"Упаковки",en:"Packages",ka:"შეფუთვა"},
+  kg:{ru:"Килограммы",en:"Kilograms",ka:"კილოგრამი"},
+  m:{ru:"Метры",en:"Meters",ka:"მეტრი"},
+  l:{ru:"Литры",en:"Liters",ka:"ლიტრი"},
+};
+
+export function industryCatalogLabel(item:IndustryCatalogItem,locale:string):string {
+  if (item.kind==="unit" && item.is_system) {
+    return systemUnitLabels[item.code]?.[locale]??item.name;
+  }
+  return item.name;
+}
