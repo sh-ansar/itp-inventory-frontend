@@ -3,7 +3,7 @@ import BaseDropdownSelect from "./components/ui/BaseDropdownSelect.vue";
 import hrmMenuIcon from "./assets/hrm-menu.svg";
 import { computed, nextTick, onMounted, onUnmounted, reactive, ref, watch } from "vue";
 import { RouterLink, RouterView, useRoute, useRouter } from "vue-router";
-import { Boxes, ClipboardList, BookOpen, Package, Building2, Users, Warehouse, LogOut, Sun, Moon, Eye, EyeOff, RefreshCw, FileCheck2, ShieldCheck, BarChart3, Menu, X } from "lucide-vue-next";
+import { Boxes, ClipboardList, BookOpen, Package, Building2, Users, Warehouse, LogOut, Sun, Moon, Eye, EyeOff, RefreshCw, FileCheck2, ShieldCheck, BarChart3, Settings, Menu, X } from "lucide-vue-next";
 import BaseButton from "./components/ui/BaseButton.vue";
 import BaseCard from "./components/ui/BaseCard.vue";
 import BaseLoadingState from "./components/ui/BaseLoadingState.vue";
@@ -53,8 +53,9 @@ const signoutBusy = ref(false);
 const error = ref("");
 const credentials = reactive({ email:"", password:"" });
 const passwordVisible = ref(false);
+const companySettingsTitle=computed(()=>ui.locale==='en'?'Company settings':ui.locale==='ka'?'კომპანიის პარამეტრები':'Настройки компании');
 const reportsTitle=computed(()=>ui.locale==="ka"?"ანგარიშები":ui.locale==="en"?"Reports":"Отчёты");
-const currentTitle = computed(() => route.name === "profile" ? profileTitle.value : route.name === "reports" ? reportsTitle.value : ui.t(
+const currentTitle = computed(() => route.name === "company-settings" ? companySettingsTitle.value : route.name === "profile" ? profileTitle.value : route.name === "reports" ? reportsTitle.value : ui.t(
    route.name === "disposals" ? "disposal.title" :
    route.name === "company-roles" ? "roles.title" :
    route.name === "references" ? "heading.references" :
@@ -80,7 +81,7 @@ const localeOptions=[
   {value:"ka",label:"GE"},
 ];
 watch(()=>[selectedCompany.value?.role_code,route.name],([role,name])=>{
-  if(user.value&&role&&name==="company-roles"&&role!=="company_admin"){
+  if(user.value&&role&&(name==="company-roles"||name==="company-settings")&&role!=="company_admin"){
     void router.replace("/registry");
   }
 });
@@ -202,6 +203,11 @@ onMounted(boot);
         </RouterLink>
         <RouterLink to="/reports" class="nav-item" active-class="nav-item--active" :aria-label="reportsTitle" :title="ui.sidebarCollapsed&&!mobileNavOpen?reportsTitle:undefined" @click="closeMobileNav">
           <BarChart3 :size="19" aria-hidden="true"/><span class="nav-label">{{reportsTitle}}</span>
+        </RouterLink>
+        <RouterLink v-if="selectedCompany?.role_code==='company_admin'" to="/company-settings" class="nav-item"
+          active-class="nav-item--active" :aria-label="companySettingsTitle"
+          :title="ui.sidebarCollapsed&&!mobileNavOpen?companySettingsTitle:undefined" @click="closeMobileNav">
+          <Settings :size="19" aria-hidden="true"/><span class="nav-label">{{companySettingsTitle}}</span>
         </RouterLink>
         <RouterLink v-if="selectedCompany?.role_code==='company_admin'" to="/company-roles" class="nav-item" active-class="nav-item--active" :aria-label="ui.t('roles.title')" :title="ui.sidebarCollapsed&&!mobileNavOpen?ui.t('roles.title'):undefined" @click="closeMobileNav">
           <ShieldCheck :size="19" aria-hidden="true"/><span class="nav-label">{{ ui.t("roles.title") }}</span>
