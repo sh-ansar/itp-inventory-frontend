@@ -45,6 +45,17 @@ const visibleOptions=computed(()=>{
 });
 const remaining=computed(()=>Math.max(0,props.maxSelected-props.modelValue.length));
 const selectableVisible=computed(()=>visibleOptions.value.filter(item=>!item.disabled&&!selected.value.has(item.value)));
+function positionPopup(){
+  if(!opened.value)return;
+  const popup=panelRef.value?.getBoundingClientRect();
+  const anchor=trigger.value?.getBoundingClientRect();
+  if(!popup||!anchor||!panelRef.value)return;
+  // Keep a shared filter popup in the viewport, including edge-aligned mobile controls.
+  const safeLeft=Math.max(8,Math.min(popup.left,window.innerWidth-popup.width-8));
+  panelRef.value.style.left=(safeLeft-anchor.left)+"px";
+  panelRef.value.style.right="auto";
+  opensUp.value=popup.bottom>window.innerHeight-12&&anchor.top>popup.height+8;
+}
 function open(){
   if(props.disabled)return;
   opened.value=!opened.value;
@@ -52,12 +63,7 @@ function open(){
   if(opened.value){
     search.value="";
     void nextTick(()=>{
-      const popup=panelRef.value?.getBoundingClientRect();
-      const anchor=trigger.value?.getBoundingClientRect();
-      // Prefer an upward popup when the control is near the viewport bottom.
-      if(popup&&anchor&&popup.bottom>window.innerHeight-12&&anchor.top>popup.height+8){
-        opensUp.value=true;
-      }
+      positionPopup();
       if(props.options.length>8)searchInput.value?.focus();
     });
   }
@@ -88,8 +94,8 @@ function outside(event:PointerEvent){
   if(!root.value?.contains(event.target as Node))close();
 }
 function escape(event:KeyboardEvent){if(opened.value){event.stopPropagation();event.preventDefault();close(true)}}
-onMounted(()=>document.addEventListener("pointerdown",outside,true));
-onUnmounted(()=>document.removeEventListener("pointerdown",outside,true));
+onMounted(()=>{document.addEventListener("pointerdown",outside,true);window.addEventListener("resize",positionPopup);});
+onUnmounted(()=>{document.removeEventListener("pointerdown",outside,true);window.removeEventListener("resize",positionPopup);});
 watch(()=>props.disabled,disabled=>{if(disabled)close()});
 </script>
 
