@@ -95,5 +95,51 @@ onUnmounted(() => { if (panel.value?.open) panel.value.close() })
   .drawer-header,.drawer-footer{padding:var(--space-3) var(--space-4)}
   .drawer-content{padding:var(--space-4)}
 }
+/* One HRM-style form contract shared by asset, warehouse, personnel,
+   reference, stocktake and movement drawers. Presentation only. */
+.drawer-content :deep(:is(.person-form,.warehouse-form,.reference-form,.bulk-form,.drawer-form,.node-form)){
+  display:grid;align-content:start;gap:16px;min-width:0;
+}
+.drawer-content :deep(:is(.person-form,.warehouse-form,.reference-form,.bulk-form,.drawer-form,.node-form) label:not(.active-check):not(.column-toggle)){
+  display:grid;align-content:start;gap:7px;min-width:0;
+  color:var(--color-text);font-size:var(--font-label-size);font-weight:500;line-height:18px;
+}
+.drawer-content :deep(:is(.person-form,.warehouse-form,.reference-form,.bulk-form,.drawer-form,.node-form) label > span:first-child){
+  font-size:var(--font-label-size);line-height:18px;overflow-wrap:anywhere;
+}
+.drawer-content :deep(:is(.person-form,.warehouse-form,.reference-form,.bulk-form,.drawer-form,.node-form) :is(input:not([type=checkbox]):not([type=radio]),textarea,select)){
+  width:100%;max-width:100%;min-width:0;min-height:var(--control-height);
+  border:1px solid var(--color-stroke-strong);border-radius:var(--radius-sm);
+  padding:9px 12px;background:var(--color-surface);color:var(--color-text);
+  box-shadow:var(--shadow-control);font:inherit;font-size:13px;line-height:20px;
+}
+.drawer-content :deep(:is(.person-form,.warehouse-form,.reference-form,.bulk-form,.drawer-form,.node-form) textarea){
+  min-height:96px;resize:vertical;line-height:1.5;
+}
+.drawer-content :deep(:is(.person-form,.warehouse-form,.reference-form,.bulk-form,.drawer-form,.node-form) :is(input,textarea,select):focus-visible){
+  outline:2px solid var(--color-primary-stroke);outline-offset:1px;border-color:var(--color-primary);
+}
+.drawer-content :deep(:is(.person-form,.warehouse-form,.reference-form,.bulk-form,.drawer-form,.node-form) :is(input,textarea,select):user-invalid){
+  border-color:var(--color-danger);
+}
+.drawer-content :deep(:is(.person-form,.warehouse-form,.reference-form,.bulk-form,.drawer-form,.node-form) label small){
+  font-size:11px;line-height:16px;color:var(--color-danger);overflow-wrap:anywhere;
+}
+.drawer-content :deep(.active-check){
+  display:flex;align-items:center;gap:10px;min-height:40px;
+  font-size:13px;line-height:19px;cursor:pointer;
+}
+.drawer-content :deep(.active-check input[type=checkbox]){
+  width:17px;height:17px;min-height:0;margin:0;accent-color:var(--color-primary);flex:none;
+}
+.drawer-content :deep(.error[role=alert]){
+  margin:0;max-width:100%;overflow-wrap:anywhere;
+}
+.drawer-footer :deep(.base-button){min-height:40px}
+@media(max-width:600px){
+  .drawer-footer{gap:8px}
+  .drawer-footer :deep(.base-button){flex:1 1 130px;min-height:44px;min-width:0}
+  .drawer-content :deep(:is(.person-form,.warehouse-form,.reference-form,.bulk-form,.drawer-form,.node-form) :is(input:not([type=checkbox]):not([type=radio]),textarea,select)){font-size:16px}
+}
 @media(prefers-reduced-motion:reduce){.base-drawer[open] .drawer-sheet,.base-drawer::backdrop{animation:none}}
 </style>
