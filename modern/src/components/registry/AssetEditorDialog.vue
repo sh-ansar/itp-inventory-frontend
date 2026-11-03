@@ -10,6 +10,7 @@ import { InventoryApiError } from "../../api/client";
 import { createAsset, updateAsset } from "../../api/inventory";
 import type { Asset, AssetInput, ReferenceData } from "../../api/inventory";
 import type { FacilityNode, ResponsiblePerson } from "../../api/topology";
+import type { IndustryCatalogItem } from "../../api/industryCatalogs";
 import { useUiSettings } from "../../stores/uiSettings";
 
 const { open: confirmOpen, message: confirmMessage, title: confirmTitle,
@@ -22,12 +23,15 @@ const props = defineProps<{
   references: ReferenceData;
   facilities: FacilityNode[];
   people: ResponsiblePerson[];
+  manufacturers: IndustryCatalogItem[];
+  models: IndustryCatalogItem[];
 }>();
 const emit = defineEmits<{close: []; saved: [asset: Asset]}>();
 const ui = useUiSettings();
 const fields = reactive({
   inventory_number: "", name: "", serial_number: "", description: "",
   category_id: "", accounting_location_id: "", physical_location_id: "",
+  manufacturer_id:"", model_id:"",
   facility_node_id:"", responsible_person_id:"",
 });
 const busy = ref(false);
@@ -42,6 +46,8 @@ function normalize() {
   fields.serial_number = asset?.serial_number ?? "";
   fields.description = asset?.description ?? "";
   fields.category_id = asset?.category_id ?? "";
+  fields.manufacturer_id=asset?.manufacturer_id??"";
+  fields.model_id=asset?.model_id??"";
   fields.accounting_location_id = asset?.accounting_location_id ?? "";
   fields.physical_location_id = asset?.physical_location_id ?? "";
   fields.facility_node_id=asset?.facility_node_id??"";
@@ -66,6 +72,8 @@ function inputData(): AssetInput {
     serial_number: fields.serial_number.trim() || null,
     description: fields.description.trim() || null,
     category_id: fields.category_id || null,
+    manufacturer_id: fields.manufacturer_id || null,
+    model_id: fields.model_id || null,
     accounting_location_id: fields.accounting_location_id || null,
     physical_location_id: fields.physical_location_id || null,
     facility_node_id: fields.facility_node_id || null,
@@ -119,6 +127,25 @@ async function save() {
             <option v-for="item in references.categories" :key="item.id" :value="item.id">{{ item.name }}</option>
           </BaseSelect>
           <small v-if="validation.category_id" role="alert">{{ validation.category_id[0] }}</small>
+        </label>
+        <label class="field">
+          <span>{{ui.locale==="ru"?"Производитель":ui.locale==="ka"?"მწარმოებელი":"Manufacturer"}}</span>
+          <BaseSelect v-model="fields.manufacturer_id" :disabled="busy"
+            @change="fields.model_id=''">
+            <option value="">{{ui.t("form.none")}}</option>
+            <option v-for="manufacturer in manufacturers.filter(m=>m.is_active||m.id===asset?.manufacturer_id)"
+              :key="manufacturer.id" :value="manufacturer.id">{{manufacturer.name}}</option>
+          </BaseSelect>
+          <small v-if="validation.manufacturer_id" role="alert">{{validation.manufacturer_id[0]}}</small>
+        </label>
+        <label class="field">
+          <span>{{ui.locale==="ru"?"Модель":ui.locale==="ka"?"მოდელი":"Model"}}</span>
+          <BaseSelect v-model="fields.model_id" :disabled="busy||!fields.manufacturer_id">
+            <option value="">{{ui.t("form.none")}}</option>
+            <option v-for="model in models.filter(m=>m.parent_id===fields.manufacturer_id&&(m.is_active||m.id===asset?.model_id))"
+              :key="model.id" :value="model.id">{{model.name}}</option>
+          </BaseSelect>
+          <small v-if="validation.model_id" role="alert">{{validation.model_id[0]}}</small>
         </label>
         <label class="field">
           <span>{{ ui.t("asset.facilityNode") }}</span>
