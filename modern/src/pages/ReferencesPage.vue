@@ -44,7 +44,7 @@ const rows = computed<RefItem[]>(() => dictionary.value[current.value].filter(it
 const dictionaryGroups = computed(() => ([
   {key:"property",label:ui.locale === "ru" ? "Имущество и номенклатура" : ui.locale === "ka" ? "ქონება და ნომენკლატურა" : "Assets and catalog",items:[{path:"/warehouses",label:ui.t("nav.warehouses"),icon:Warehouse}]},
   {key:"places",label:ui.locale === "ru" ? "Объекты и расположение" : ui.locale === "ka" ? "ობიექტები და მდებარეობა" : "Facilities and locations",items:[{path:"/facilities",label:ui.t("nav.facilities"),icon:Building2}]},
-  {key:"people",label:ui.locale === "ru" ? "Ответственные и доступ" : ui.locale === "ka" ? "პასუხისმგებელი პირები და წვდომა" : "People and access",items:[{path:"/people",label:ui.t("nav.people"),icon:Users},{path:"/company-roles",label:ui.t("nav.companyRoles"),icon:Settings2}]},
+  {key:"people",label:ui.locale === "ru" ? "Ответственные и доступ" : ui.locale === "ka" ? "პასუხისმგებელი პირები და წვდომა" : "People and access",items:[{path:"/people",label:ui.t("nav.people"),icon:Users},{path:"/company-roles",label:ui.t("roles.title"),icon:Settings2}]},
 ]));
 const columns = computed(() => [
   ...(current.value==="categories"?[{key:"icon_key",label:ui.t("types.icon"),minWidth:85}]:[]),
