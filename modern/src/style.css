@@ -197,3 +197,26 @@ body.inventory-mobile-nav-open{overflow:hidden}
 @media(prefers-reduced-motion:reduce){
   :where(.view-content) :is(input,select,textarea,.icon-action,.text-action){transition:none}
 }
+
+/* Inventory top bar follows HRM spacing, account controls and brand navigation. */
+.sidebar-head{min-height:64px;flex-basis:64px;padding:0 12px}
+.sidebar-collapse{width:36px;height:36px;display:grid;place-items:center;border-radius:var(--radius-sm);margin-left:auto}
+.sidebar-collapse img{display:block;width:21px;height:21px;object-fit:contain}
+.brand{gap:10px}
+.brand-text{display:flex;align-items:center}
+.topbar{min-height:64px;padding:0 24px;gap:12px;flex-wrap:nowrap}
+.topbar-trailing{gap:10px;flex-wrap:nowrap}
+.topbar-trailing .base-button{min-height:37px}
+.profile-summary{display:flex;align-items:center;gap:8px;min-width:0;max-width:220px;padding:2px 11px 2px 0;border-right:1px solid var(--color-stroke)}
+.user-avatar{display:grid;place-items:center;flex:0 0 35px;width:35px;height:35px;border:1px solid var(--color-primary-stroke);border-radius:50%;background:var(--color-accent-soft);color:var(--color-primary);font-size:12px;font-weight:800}
+.profile-copy{display:grid;gap:2px;min-width:0;line-height:1.2}
+.profile-copy strong{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:12px;font-weight:700}
+.profile-copy small{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:10px;color:var(--color-muted)}
+/* Do not let the global form-input design draw a second field inside SearchField. */
+.view-content .registry-search input[type="search"]{display:block;min-height:0;height:100%;width:100%;min-width:0;margin:0;padding:0;border:0;border-radius:0;outline:0;background:transparent;box-shadow:none;appearance:none}
+.view-content .registry-search input[type="search"]:focus,
+.view-content .registry-search input[type="search"]:focus-visible{border:0;outline:0;box-shadow:none;background:transparent}
+@media(max-width:1200px) and (min-width:861px){.topbar{padding:0 14px;gap:8px}.topbar-trailing{gap:7px}.company-switcher .company-picker{width:min(240px,23vw)}.profile-summary{max-width:170px}.profile-copy strong{max-width:105px}}
+@media(max-width:1020px) and (min-width:861px){.profile-copy{display:none}.profile-summary{padding-right:8px}}
+@media(max-width:860px){.topbar{padding:10px 14px;min-height:64px;flex-wrap:wrap}.topbar-trailing{flex-wrap:wrap}.profile-summary{display:none}.sidebar-head{min-height:68px;flex-basis:68px}.sidebar-collapse{display:none}}
+@media(max-width:500px){.topbar{padding:10px}.topbar-trailing .base-button{padding:8px}}

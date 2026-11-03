@@ -1,8 +1,9 @@
 <script setup lang="ts">
 import BaseDropdownSelect from "./components/ui/BaseDropdownSelect.vue";
+import hrmMenuIcon from "./assets/hrm-menu.svg";
 import { computed, nextTick, onMounted, onUnmounted, reactive, ref, watch } from "vue";
 import { RouterLink, RouterView, useRoute, useRouter } from "vue-router";
-import { Boxes, ClipboardList, BookOpen, Package, Building2, Users, Warehouse, LogOut, Sun, Moon, Eye, EyeOff, RefreshCw, FileCheck2, ShieldCheck, BarChart3, PanelLeftClose, PanelLeftOpen, Menu, X } from "lucide-vue-next";
+import { Boxes, ClipboardList, BookOpen, Package, Building2, Users, Warehouse, LogOut, Sun, Moon, Eye, EyeOff, RefreshCw, FileCheck2, ShieldCheck, BarChart3, Menu, X } from "lucide-vue-next";
 import BaseButton from "./components/ui/BaseButton.vue";
 import BaseCard from "./components/ui/BaseCard.vue";
 import BaseLoadingState from "./components/ui/BaseLoadingState.vue";
@@ -64,6 +65,8 @@ const currentTitle = computed(() => route.name === "reports" ? reportsTitle.valu
    route.name === "people" ? "people.title" :
    route.name === "warehouses" ? "stock.warehouseTitle" : "heading.assets"
  ));
+const profileInitials=computed(()=>user.value?.name?.trim().split(/\s+/).slice(0,2).map(part=>part.charAt(0).toUpperCase()).join("")||"IT");
+const accountCaption=computed(()=>ui.locale==="en"?"Work account":ui.locale==="ka"?"\u10E1\u10D0\u10DB\u10E3\u10E8\u10D0\u10DD \u10D0\u10DC\u10D2\u10D0\u10E0\u10D8\u10E8\u10D8":"\u0420\u0430\u0431\u043E\u0447\u0430\u044F \u0443\u0447\u0451\u0442\u043D\u0430\u044F \u0437\u0430\u043F\u0438\u0441\u044C");
 const selectedCompany = computed(() =>
   availableCompanies.value.find(c => c.id === companyId.value) ?? null
 );
@@ -148,7 +151,7 @@ function switchLocale(next:string) {
   if (["ru","en","ka"].includes(next)) ui.locale = next as InventoryLocale;
 }
 watch(() => [route.name,ui.locale,!!user.value], () => {
-  document.title = (user.value ? currentTitle.value : ui.t("heading.login")) + " · ITP Inventory";
+  document.title = "ITP Inventory";
 },{immediate:true});
 onMounted(boot);
 </script>
@@ -161,14 +164,13 @@ onMounted(boot);
       <div class="sidebar-head">
         <div class="brand">
           <div class="brand-mark"><Boxes :size="24" aria-hidden="true"/></div>
-          <div class="brand-text"><strong>ITP Inventory</strong><span>{{ ui.t("brand.subtitle") }}</span></div>
+          <div class="brand-text"><strong>ITP Inventory</strong></div>
         </div>
         <button v-if="user" type="button" class="sidebar-collapse icon-control"
           :title="ui.sidebarCollapsed?menuLabels.expand:menuLabels.collapse"
           :aria-label="ui.sidebarCollapsed?menuLabels.expand:menuLabels.collapse"
           :aria-expanded="!ui.sidebarCollapsed" @click="ui.toggleSidebar()">
-          <PanelLeftOpen v-if="ui.sidebarCollapsed" :size="20" aria-hidden="true"/>
-          <PanelLeftClose v-else :size="20" aria-hidden="true"/>
+          <img  :src="hrmMenuIcon" alt="" aria-hidden="true" width="20" height="20"/>
         </button>
         <button v-if="user" type="button" class="mobile-nav-close icon-control"
           :title="menuLabels.close" :aria-label="menuLabels.close" @click="closeMobileNav">
@@ -237,7 +239,10 @@ onMounted(boot);
             <Sun v-if="ui.theme==='dark'" :size="18" aria-hidden="true"/>
             <Moon v-else :size="18" aria-hidden="true"/>
           </button>
-          <BaseButton v-if="user" variant="secondary" :disabled="signoutBusy" @click="signOut">
+                    <div v-if="user" class="profile-summary" :title="user.name">
+            <span class="user-avatar" aria-hidden="true">{{ profileInitials }}</span>
+            <span class="profile-copy"><strong>{{ user.name }}</strong><small>{{ accountCaption }}</small></span>
+          </div>          <BaseButton v-if="user" variant="secondary" :disabled="signoutBusy" @click="signOut">
             <LogOut :size="16" aria-hidden="true"/> {{ ui.t("auth.logout") }}
           </BaseButton>
         </div>

@@ -77,7 +77,14 @@ test("mobile, tablet, desktop: no document overflow and accessible navigation", 
   await openInventory(page);
   for (const width of [360,390,768,1440]) {
     await page.setViewportSize({width,height:900});
-    await expect(page.getByRole("link",{name:"Основные средства"})).toBeVisible();
+    if (width <= 860) {
+      await page.locator(".mobile-nav-trigger").click();
+      await expect(page.locator(".sidebar.sidebar--open .nav-item").first()).toBeVisible();
+      await page.keyboard.press("Escape");
+      await expect(page.locator(".sidebar")).not.toHaveClass(/sidebar--open/);
+    } else {
+      await expect(page.locator(".main-navigation .nav-item").first()).toBeVisible();
+    }
     await expect(page.getByRole("searchbox",{name:"Поиск по всему реестру"})).toBeVisible();
     const geometry = await page.evaluate(() => ({
       scrollWidth: document.documentElement.scrollWidth,

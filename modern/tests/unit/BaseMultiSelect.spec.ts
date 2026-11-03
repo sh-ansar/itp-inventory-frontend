@@ -1,4 +1,4 @@
-import {describe,it,expect,afterEach} from "vitest";
+import {describe,it,expect,afterEach,vi} from "vitest";
 import {mount} from "@vue/test-utils";
 import BaseMultiSelect from "../../src/components/ui/BaseMultiSelect.vue";
 
@@ -67,6 +67,33 @@ describe("shared Inventory multi-select",()=>{
     expect(wrapper.text()).toContain("ყველა");
     await wrapper.get("button").trigger("click");
     expect(wrapper.find(".multi-panel").exists()).toBe(false);
+  });
+  it("clamps the popup to the viewport when a mobile filter starts at the left edge",async()=>{
+    const original=Element.prototype.getBoundingClientRect;
+    const previousWidth=window.innerWidth;
+    Object.defineProperty(window,"innerWidth",{configurable:true,value:320});
+    const rect=(left:number,width:number,top=80,height=40)=>({
+      x:left,y:top,left,right:left+width,top,bottom:top+height,width,height,toJSON:()=>({})
+    } as DOMRect);
+    Element.prototype.getBoundingClientRect=function(){
+      if((this as HTMLElement).classList?.contains("multi-panel"))return rect(-30,296,125,260);
+      if((this as HTMLElement).classList?.contains("multi-trigger"))return rect(10,130);
+      return original.call(this);
+    };
+    let wrapper:ReturnType<typeof mount>|undefined;
+    try{
+      wrapper=mount(BaseMultiSelect,{attachTo:document.body,props:{
+        label:"Status",modelValue:[],options,locale:"en"
+      }});
+      await wrapper.get(".multi-trigger").trigger("click");
+      await new Promise(resolve=>setTimeout(resolve,0));
+      expect(wrapper.get(".multi-panel").attributes("style")).toContain("left: -2px");
+      expect(wrapper.get(".multi-panel").attributes("style")).toContain("right: auto");
+    }finally{
+      wrapper?.unmount();
+      Element.prototype.getBoundingClientRect=original;
+      Object.defineProperty(window,"innerWidth",{configurable:true,value:previousWidth});
+    }
   });
   it("does not lose chosen values when options are refreshed and labels are repeated",async()=>{
     const wrapper=mount(BaseMultiSelect,{attachTo:document.body,props:{
