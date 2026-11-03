@@ -16,7 +16,7 @@ import TableSettingsDialog from "../components/ui/TableSettingsDialog.vue";
 import { orderAndFilterColumns,useCompanyTablePreferences } from "../composables/useCompanyTablePreferences";
 import { InventoryApiError } from "../api/client";
 import { referenceData } from "../api/inventory";
-import { listIndustryCatalog } from "../api/industryCatalogs";
+import { listIndustryCatalog, industryCatalogLabel } from "../api/industryCatalogs";
 import type { IndustryCatalogItem } from "../api/industryCatalogs";
 import type { ReferenceData } from "../api/inventory";
 import {
@@ -331,7 +331,7 @@ onUnmounted(()=>{ctrl?.abort();if(timer)clearTimeout(timer)});
           <input v-model="itemFields.name" required minlength="2" maxlength="255" :disabled="saving"/></label>
         <label><span>{{ ui.t("stock.unit") }} *</span>
           <BaseSelect v-model="itemFields.unit" :disabled="saving">
-            <option v-for="unit in unitCatalog" :key="unit.code" :value="unit.code">{{ unit.name }} ({{unit.code}})</option>
+            <option v-for="unit in unitCatalog" :key="unit.code" :value="unit.code">{{ industryCatalogLabel(unit,ui.locale) }} ({{unit.code}})</option>
           </BaseSelect></label>
         <label><span>{{ ui.t("types.title") }}</span>
           <BaseSelect v-model="itemFields.category_id" :disabled="saving">
