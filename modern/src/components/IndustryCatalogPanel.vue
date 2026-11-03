@@ -15,6 +15,7 @@ import {
   listIndustryCatalog, createIndustryCatalogItem, updateIndustryCatalogItem, archiveIndustryCatalogItem,
 } from "../api/industryCatalogs";
 import type { IndustryKind, IndustryCatalogItem } from "../api/industryCatalogs";
+import { industryCatalogLabel } from "../api/industryCatalogs";
 
 const props = defineProps<{companyId:string;role:string}>();
 const ui = useUiSettings();
@@ -165,6 +166,7 @@ async function archive(row:IndustryCatalogItem){
     <BaseCard>
       <BaseDataTable :rows="displayed" row-key="id" :columns="columns" :loading="busy"
         :caption="titleFor(kind)" :min-table-width="kind==='model'?780:620">
+        <template #cell-name="{row}">{{industryCatalogLabel(row,ui.locale)}}</template>
         <template #cell-parent_id="{row}">{{manufacturerName(row.parent_id)}}</template>
         <template #cell-precision="{row}">{{row.precision??"—"}}</template>
         <template #cell-is_active="{row}">
