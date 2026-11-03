@@ -23,6 +23,8 @@ import BulkQrDialog from "../components/registry/BulkQrDialog.vue";
 import MoveAssetDialog from "../components/registry/MoveAssetDialog.vue";
 import AssetMovementHistoryDialog from "../components/registry/AssetMovementHistoryDialog.vue";
 import { companyAssets, referenceData } from "../api/inventory";
+import { listIndustryCatalog } from "../api/industryCatalogs";
+import type { IndustryCatalogItem } from "../api/industryCatalogs";
 import { bulkAssignCustodian, bulkMoveAssets, registryExportHref } from "../api/parity";
 import type { Asset, ReferenceData } from "../api/inventory";
 import { getFacilityNodes, getAllActiveResponsiblePeople } from "../api/topology";
@@ -54,6 +56,8 @@ const facilityFilters=computed({get:()=>preferences.state.facility_node_ids,set:
 const personFilters=computed({get:()=>preferences.state.responsible_person_ids,set:value=>preferences.state.responsible_person_ids=value});
 const facilities=ref<FacilityNode[]>([]);
 const people=ref<ResponsiblePerson[]>([]);
+const manufacturers=ref<IndustryCatalogItem[]>([]);
+const models=ref<IndustryCatalogItem[]>([]);
 const allOptions=computed(()=>ui.locale==="ka"?"ყველა":ui.locale==="en"?"All":"Все");
 const statusOptions=computed(()=>[
   {value:"active",label:ui.t("status.active")},
@@ -141,7 +145,7 @@ watch(() => props.companyId, id => {
   history.value = null; archiving.value = null; disposing.value = null;
   qrAsset.value = null; bulkQrOpen.value = false; moving.value = null; movementHistory.value = null;
   references.value = { categories: [], accounting_locations: [], physical_locations: [] };
-  facilities.value=[];people.value=[];
+  facilities.value=[];people.value=[];manufacturers.value=[];models.value=[];
   referenceController?.abort();
   const controller = new AbortController();
   referenceController = controller;
@@ -149,9 +153,11 @@ watch(() => props.companyId, id => {
   if (id) void Promise.all([
     referenceData(id,controller.signal),getFacilityNodes(id,controller.signal),
     getAllActiveResponsiblePeople(id,controller.signal),
-  ]).then(([data,map,persons])=>{
+    listIndustryCatalog(id,"manufacturer",true,controller.signal),
+    listIndustryCatalog(id,"model",true,controller.signal),
+  ]).then(([data,map,persons,mfrs,productModels])=>{
     if (current === referenceSerial && !controller.signal.aborted){
-      references.value=data;facilities.value=map.data;people.value=persons;
+      references.value=data;facilities.value=map.data;people.value=persons;manufacturers.value=mfrs.data;models.value=productModels.data;
     }
   }).catch(error => {
     if (current === referenceSerial && !controller.signal.aborted) {
@@ -353,7 +359,7 @@ onUnmounted(() => {
       </form>
       <template #footer><BaseButton variant="secondary" :disabled="bulkBusy" @click="bulkOpen=false">{{ui.t("actions.cancel")}}</BaseButton><BaseButton type="submit" form="bulk-person-form" :disabled="bulkBusy||bulkReason.trim().length<5||(bulkMode==='move'&&!bulkLocation)">{{bulkMode==='move'?bulkText.move:bulkText.save}}</BaseButton></template>
     </BaseDialog>
-    <AssetEditorDialog :open="showForm" :asset="editing" :company-id="companyId"
+    <AssetEditorDialog :manufacturers="manufacturers" :models="models" :open="showForm" :asset="editing" :company-id="companyId"
       :references="references" :facilities="facilities" :people="people" @close="showForm=false" @saved="afterSave" />
     <AssetDisposalDialog :asset-id="disposing?.id??null" :company-id="companyId" :role="role"
       :asset-name="disposing?.name" :inventory-number="disposing?.inventory_number"

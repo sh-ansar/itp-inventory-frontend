@@ -3,7 +3,7 @@ import BaseDropdownSelect from "./components/ui/BaseDropdownSelect.vue";
 import hrmMenuIcon from "./assets/hrm-menu.svg";
 import { computed, nextTick, onMounted, onUnmounted, reactive, ref, watch } from "vue";
 import { RouterLink, RouterView, useRoute, useRouter } from "vue-router";
-import { Boxes, ClipboardList, BookOpen, Package, Building2, Users, Warehouse, LogOut, Sun, Moon, Eye, EyeOff, RefreshCw, FileCheck2, ShieldCheck, BarChart3, Menu, X } from "lucide-vue-next";
+import { Boxes, ClipboardList, BookOpen, Package, Building2, Users, Warehouse, LogOut, Sun, Moon, Eye, EyeOff, RefreshCw, FileCheck2, ShieldCheck, BarChart3, Settings, Menu, X } from "lucide-vue-next";
 import BaseButton from "./components/ui/BaseButton.vue";
 import BaseCard from "./components/ui/BaseCard.vue";
 import BaseLoadingState from "./components/ui/BaseLoadingState.vue";
@@ -43,6 +43,7 @@ onUnmounted(()=>{
   document.body.classList.remove("inventory-mobile-nav-open");
 });
 const user = ref<InventoryUser | null>(null);
+function updateAccountName(name:string){if(user.value)user.value={...user.value,name};}
 const availableCompanies = ref<CompanyAccess[]>([]);
 const companyId = ref("");
 const connected = ref(false);
@@ -53,8 +54,9 @@ const signoutBusy = ref(false);
 const error = ref("");
 const credentials = reactive({ email:"", password:"" });
 const passwordVisible = ref(false);
+const companySettingsTitle=computed(()=>ui.locale==='en'?'Company settings':ui.locale==='ka'?'კომპანიის პარამეტრები':'Настройки компании');
 const reportsTitle=computed(()=>ui.locale==="ka"?"ანგარიშები":ui.locale==="en"?"Reports":"Отчёты");
-const currentTitle = computed(() => route.name === "reports" ? reportsTitle.value : ui.t(
+const currentTitle = computed(() => route.name === "company-settings" ? companySettingsTitle.value : route.name === "profile" ? profileTitle.value : route.name === "reports" ? reportsTitle.value : ui.t(
    route.name === "disposals" ? "disposal.title" :
    route.name === "company-roles" ? "roles.title" :
    route.name === "references" ? "heading.references" :
@@ -65,6 +67,7 @@ const currentTitle = computed(() => route.name === "reports" ? reportsTitle.valu
    route.name === "people" ? "people.title" :
    route.name === "warehouses" ? "stock.warehouseTitle" : "heading.assets"
  ));
+const profileTitle=computed(()=>ui.locale==="en"?"My account":ui.locale==="ka"?"პირადი კაბინეტი":"Личный кабинет");
 const profileInitials=computed(()=>user.value?.name?.trim().split(/\s+/).slice(0,2).map(part=>part.charAt(0).toUpperCase()).join("")||"IT");
 const accountCaption=computed(()=>ui.locale==="en"?"Work account":ui.locale==="ka"?"\u10E1\u10D0\u10DB\u10E3\u10E8\u10D0\u10DD \u10D0\u10DC\u10D2\u10D0\u10E0\u10D8\u10E8\u10D8":"\u0420\u0430\u0431\u043E\u0447\u0430\u044F \u0443\u0447\u0451\u0442\u043D\u0430\u044F \u0437\u0430\u043F\u0438\u0441\u044C");
 const selectedCompany = computed(() =>
@@ -79,7 +82,7 @@ const localeOptions=[
   {value:"ka",label:"GE"},
 ];
 watch(()=>[selectedCompany.value?.role_code,route.name],([role,name])=>{
-  if(user.value&&role&&name==="company-roles"&&role!=="company_admin"){
+  if(user.value&&role&&(name==="company-roles"||name==="company-settings")&&role!=="company_admin"){
     void router.replace("/registry");
   }
 });
@@ -202,6 +205,11 @@ onMounted(boot);
         <RouterLink to="/reports" class="nav-item" active-class="nav-item--active" :aria-label="reportsTitle" :title="ui.sidebarCollapsed&&!mobileNavOpen?reportsTitle:undefined" @click="closeMobileNav">
           <BarChart3 :size="19" aria-hidden="true"/><span class="nav-label">{{reportsTitle}}</span>
         </RouterLink>
+        <RouterLink v-if="selectedCompany?.role_code==='company_admin'" to="/company-settings" class="nav-item"
+          active-class="nav-item--active" :aria-label="companySettingsTitle"
+          :title="ui.sidebarCollapsed&&!mobileNavOpen?companySettingsTitle:undefined" @click="closeMobileNav">
+          <Settings :size="19" aria-hidden="true"/><span class="nav-label">{{companySettingsTitle}}</span>
+        </RouterLink>
         <RouterLink v-if="selectedCompany?.role_code==='company_admin'" to="/company-roles" class="nav-item" active-class="nav-item--active" :aria-label="ui.t('roles.title')" :title="ui.sidebarCollapsed&&!mobileNavOpen?ui.t('roles.title'):undefined" @click="closeMobileNav">
           <ShieldCheck :size="19" aria-hidden="true"/><span class="nav-label">{{ ui.t("roles.title") }}</span>
         </RouterLink>
@@ -239,10 +247,10 @@ onMounted(boot);
             <Sun v-if="ui.theme==='dark'" :size="18" aria-hidden="true"/>
             <Moon v-else :size="18" aria-hidden="true"/>
           </button>
-                    <div v-if="user" class="profile-summary" :title="user.name">
+                    <RouterLink v-if="user" to="/profile" class="profile-summary profile-account-link" :title="profileTitle" :aria-label="profileTitle">
             <span class="user-avatar" aria-hidden="true">{{ profileInitials }}</span>
             <span class="profile-copy"><strong>{{ user.name }}</strong><small>{{ accountCaption }}</small></span>
-          </div>          <BaseButton v-if="user" variant="secondary" :disabled="signoutBusy" @click="signOut">
+          </RouterLink>          <BaseButton v-if="user" variant="secondary" :disabled="signoutBusy" @click="signOut">
             <LogOut :size="16" aria-hidden="true"/> {{ ui.t("auth.logout") }}
           </BaseButton>
         </div>
@@ -280,15 +288,20 @@ onMounted(boot);
           </form>
           <p v-if="!browserLoginEnabled" class="muted login-note">{{ ui.t("auth.disabled") }}</p>
         </BaseCard>
-        <div v-else-if="!selectedCompany" class="no-company">
+        <div v-else-if="!selectedCompany && route.name!=='profile'" class="no-company">
           <Package :size="28" aria-hidden="true"/>
           <h2>{{ ui.t("auth.noCompanies") }}</h2>
         </div>
         <RouterView v-else v-slot="{Component}">
-          <component :is="Component" :company-id="selectedCompany.id"
-            :company-name="selectedCompany.name" :role="selectedCompany.role_code"/>
+          <component :is="Component" :company-id="selectedCompany?.id??''"
+            :company-name="selectedCompany?.name??''" :role="selectedCompany?.role_code??''" v-on="route.name==='profile'?{updated:updateAccountName}:{}"/>
         </RouterView>
       </main>
     </div>
   </div>
 </template>
+<style scoped>
+.profile-account-link{text-decoration:none;color:inherit;cursor:pointer;border-radius:var(--radius-sm)}
+.profile-account-link:hover{background:var(--color-hover)}
+.profile-account-link:focus-visible{outline:2px solid var(--color-primary);outline-offset:2px}
+</style>

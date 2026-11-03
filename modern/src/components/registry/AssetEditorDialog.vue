@@ -8,8 +8,11 @@ import BaseDialog from "../ui/BaseDialog.vue";
 import BaseButton from "../ui/BaseButton.vue";
 import { InventoryApiError } from "../../api/client";
 import { createAsset, updateAsset } from "../../api/inventory";
+import { listAssetFields, getAssetAttributes } from "../../api/assetFields";
+import type { AssetFieldDefinition } from "../../api/assetFields";
 import type { Asset, AssetInput, ReferenceData } from "../../api/inventory";
 import type { FacilityNode, ResponsiblePerson } from "../../api/topology";
+import type { IndustryCatalogItem } from "../../api/industryCatalogs";
 import { useUiSettings } from "../../stores/uiSettings";
 
 const { open: confirmOpen, message: confirmMessage, title: confirmTitle,
@@ -22,14 +25,21 @@ const props = defineProps<{
   references: ReferenceData;
   facilities: FacilityNode[];
   people: ResponsiblePerson[];
+  manufacturers: IndustryCatalogItem[];
+  models: IndustryCatalogItem[];
 }>();
 const emit = defineEmits<{close: []; saved: [asset: Asset]}>();
 const ui = useUiSettings();
 const fields = reactive({
   inventory_number: "", name: "", serial_number: "", description: "",
   category_id: "", accounting_location_id: "", physical_location_id: "",
+  manufacturer_id:"", model_id:"",
   facility_node_id:"", responsible_person_id:"",
 });
+const dynamicFields=ref<AssetFieldDefinition[]>([]);
+const attributeInputs=reactive<Record<string,string>>({});
+const fieldsLoading=ref(false);
+let attributeSerial=0;
 const busy = ref(false);
 const error = ref("");
 const validation = ref<Record<string,string[]>>({});
@@ -42,16 +52,54 @@ function normalize() {
   fields.serial_number = asset?.serial_number ?? "";
   fields.description = asset?.description ?? "";
   fields.category_id = asset?.category_id ?? "";
+  fields.manufacturer_id=asset?.manufacturer_id??"";
+  fields.model_id=asset?.model_id??"";
   fields.accounting_location_id = asset?.accounting_location_id ?? "";
   fields.physical_location_id = asset?.physical_location_id ?? "";
   fields.facility_node_id=asset?.facility_node_id??"";
   fields.responsible_person_id=asset?.responsible_person_id??"";
-  original.value = JSON.stringify(fields);
+  for(const id of Object.keys(attributeInputs))delete attributeInputs[id];
+  dynamicFields.value=[];
+  original.value = JSON.stringify({fields,attributes:attributeInputs});
   error.value = "";
   validation.value = {};
 }
 watch(() => [props.open,props.asset?.id,props.companyId], normalize, { immediate:true });
-const dirty = computed(() => JSON.stringify(fields) !== original.value);
+const dirty = computed(() => JSON.stringify({fields,attributes:attributeInputs}) !== original.value);
+watch([()=>props.open,()=>fields.category_id,()=>props.companyId],async()=>{
+  const generation=++attributeSerial;
+  dynamicFields.value=[];
+  for(const id of Object.keys(attributeInputs))delete attributeInputs[id];
+  if(!props.open||!props.companyId||!fields.category_id){return;}
+  fieldsLoading.value=true;
+  try{
+    const [definitions,existing]=await Promise.all([
+      listAssetFields(props.companyId,fields.category_id),
+      props.asset?getAssetAttributes(props.companyId,props.asset.id):Promise.resolve({data:{}}),
+    ]);
+    if(generation!==attributeSerial)return;
+    dynamicFields.value=definitions.data;
+    for(const def of definitions.data){
+      const value=(existing.data as Record<string,string|number|boolean|null>)[def.id];
+      attributeInputs[def.id]=value===null||value===undefined?"":String(value);
+    }
+    original.value=JSON.stringify({fields,attributes:attributeInputs});
+  }catch(e){if(generation===attributeSerial)error.value=e instanceof Error?e.message:String(e);}
+  finally{if(generation===attributeSerial)fieldsLoading.value=false;}
+},{immediate:true});
+const fieldName=(f:AssetFieldDefinition)=>ui.locale==="ka"?(f.label_ka||f.label_ru)
+  :ui.locale==="en"?(f.label_en||f.label_ru):f.label_ru;
+const optionsFor=(f:AssetFieldDefinition)=>f.options??[];
+function attributePayload(){
+  const result:Record<string,string|number|boolean|null>={};
+  for(const field of dynamicFields.value){
+    const value=attributeInputs[field.id]??"";
+    if(value===""){result[field.id]=null;continue;}
+    result[field.id]=field.field_type==="number"?Number(value)
+      :field.field_type==="boolean"?value==="true":value;
+  }
+  return result;
+}
 const formTitle = computed(() => props.asset ? ui.t("form.editTitle") : ui.t("form.createTitle"));
 
 async function close() {
@@ -66,14 +114,17 @@ function inputData(): AssetInput {
     serial_number: fields.serial_number.trim() || null,
     description: fields.description.trim() || null,
     category_id: fields.category_id || null,
+    manufacturer_id: fields.manufacturer_id || null,
+    model_id: fields.model_id || null,
     accounting_location_id: fields.accounting_location_id || null,
     physical_location_id: fields.physical_location_id || null,
     facility_node_id: fields.facility_node_id || null,
     responsible_person_id: fields.responsible_person_id || null,
+    attributes:attributePayload(),
   };
 }
 async function save() {
-  if (busy.value) return;
+  if (busy.value||fieldsLoading.value) return;
   busy.value = true;
   error.value = "";
   validation.value = {};
@@ -81,7 +132,7 @@ async function save() {
     const response = props.asset
       ? await updateAsset(props.companyId, props.asset.id, props.asset.version, inputData())
       : await createAsset(props.companyId, inputData());
-    original.value = JSON.stringify(fields);
+    original.value = JSON.stringify({fields,attributes:attributeInputs});
     emit("saved", response.data);
   } catch (e) {
     if (e instanceof InventoryApiError) {
@@ -121,6 +172,25 @@ async function save() {
           <small v-if="validation.category_id" role="alert">{{ validation.category_id[0] }}</small>
         </label>
         <label class="field">
+          <span>{{ui.locale==="ru"?"Производитель":ui.locale==="ka"?"მწარმოებელი":"Manufacturer"}}</span>
+          <BaseSelect v-model="fields.manufacturer_id" :disabled="busy"
+            @change="fields.model_id=''">
+            <option value="">{{ui.t("form.none")}}</option>
+            <option v-for="manufacturer in manufacturers.filter(m=>m.is_active||m.id===asset?.manufacturer_id)"
+              :key="manufacturer.id" :value="manufacturer.id">{{manufacturer.name}}</option>
+          </BaseSelect>
+          <small v-if="validation.manufacturer_id" role="alert">{{validation.manufacturer_id[0]}}</small>
+        </label>
+        <label class="field">
+          <span>{{ui.locale==="ru"?"Модель":ui.locale==="ka"?"მოდელი":"Model"}}</span>
+          <BaseSelect v-model="fields.model_id" :disabled="busy||!fields.manufacturer_id">
+            <option value="">{{ui.t("form.none")}}</option>
+            <option v-for="model in models.filter(m=>m.parent_id===fields.manufacturer_id&&(m.is_active||m.id===asset?.model_id))"
+              :key="model.id" :value="model.id">{{model.name}}</option>
+          </BaseSelect>
+          <small v-if="validation.model_id" role="alert">{{validation.model_id[0]}}</small>
+        </label>
+        <label class="field">
           <span>{{ ui.t("asset.facilityNode") }}</span>
           <BaseSelect v-model="fields.facility_node_id" :disabled="busy">
             <option value="">{{ ui.t("form.none") }}</option>
@@ -157,6 +227,30 @@ async function save() {
           <small v-if="validation.physical_location_id" role="alert">{{ validation.physical_location_id[0] }}</small>
         </label>
       </div>
+      <div v-if="fieldsLoading" class="dynamic-status">{{ui.t("generic.loading")}}</div>
+      <section v-if="dynamicFields.length" class="custom-attributes">
+        <h3>{{ui.locale==="ru"?"Характеристики":ui.locale==="ka"?"მახასიათებლები":"Specifications"}}</h3>
+        <div class="form-grid">
+          <label v-for="definition in dynamicFields" :key="definition.id" class="field">
+            <span>{{fieldName(definition)}} {{definition.required?"*":""}}</span>
+            <BaseSelect v-if="definition.field_type==='boolean'" v-model="attributeInputs[definition.id]" :disabled="busy">
+              <option value="">{{ui.t("form.none")}}</option>
+              <option value="true">{{ui.locale==="ru"?"Да":ui.locale==="ka"?"დიახ":"Yes"}}</option>
+              <option value="false">{{ui.locale==="ru"?"Нет":ui.locale==="ka"?"არა":"No"}}</option>
+            </BaseSelect>
+            <BaseSelect v-else-if="definition.field_type==='select'" v-model="attributeInputs[definition.id]" :disabled="busy">
+              <option value="">{{ui.t("form.none")}}</option>
+              <option v-for="value in optionsFor(definition)" :key="value" :value="value">{{value}}</option>
+            </BaseSelect>
+            <input v-else v-model="attributeInputs[definition.id]"
+              :type="definition.field_type==='number'?'number':definition.field_type==='date'?'date':'text'"
+              :step="definition.field_type==='number'?'any':undefined"
+              :maxlength="definition.field_type==='text'?1000:undefined"
+              :required="definition.required" :disabled="busy||fieldsLoading"/>
+            <small v-if="validation['attributes.'+definition.id]" role="alert">{{validation['attributes.'+definition.id][0]}}</small>
+          </label>
+        </div>
+      </section>
       <label class="field">
         <span>{{ ui.t("form.description") }}</span>
         <textarea v-model="fields.description" maxlength="3000" rows="4" :disabled="busy"></textarea>
@@ -165,7 +259,7 @@ async function save() {
     </form>
     <template #footer>
       <BaseButton variant="secondary" :disabled="busy" @click="close">{{ ui.t("actions.cancel") }}</BaseButton>
-      <BaseButton form="asset-editor-form" type="submit" :disabled="busy || !fields.name.trim() || !fields.inventory_number.trim()">
+      <BaseButton form="asset-editor-form" type="submit" :disabled="busy || fieldsLoading || !fields.name.trim() || !fields.inventory_number.trim()">
         <Save :size="16" aria-hidden="true" /> {{ busy ? ui.t("generic.loading") : ui.t("actions.save") }}
       </BaseButton>
     </template>
@@ -177,6 +271,9 @@ async function save() {
 
 <style scoped>
 .asset-form{display:grid;gap:20px}
+.custom-attributes{display:grid;gap:14px;padding:16px;border:1px solid var(--color-stroke);border-radius:var(--radius-md)}
+.custom-attributes h3{font-size:14px;margin:0}
+.dynamic-status{font-size:12px;color:var(--color-muted)}
 .form-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:15px}
 .field{display:grid;gap:7px;min-width:0;color:var(--color-text);font-size:var(--font-label-size);font-weight:500}
 .field input,.field select,.field textarea{min-width:0;width:100%;background:var(--color-surface-raised);border:1px solid var(--color-stroke-strong);border-radius:var(--radius-sm);min-height:40px;padding:9px 12px;color:var(--color-text);font-weight:400}

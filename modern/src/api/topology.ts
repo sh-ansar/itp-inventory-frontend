@@ -16,13 +16,13 @@ export interface FacilityInput {
 }
 export interface ResponsiblePerson {
   id:string;company_id:string;code:string;name:string;
-  position:string|null;email:string|null;
+  position:string|null;email:string|null;department_id?:string|null;
   source:"manual"|"hrm";external_employee_id:string|null;
   is_active:boolean;version:number;assets_count?:number;
 }
 export interface ResponsibleInput {
   code:string;name:string;position:string|null;
-  email:string|null;is_active:boolean;
+  email:string|null;department_id?:string|null;is_active:boolean;
 }
 export interface EquipmentPreset {
   base_key:string;code:string;name:string;icon_key:string;
@@ -32,7 +32,7 @@ export interface EquipmentType {
   icon_url?:string|null;is_base?:boolean;version?:number;
 }
 export interface StockItem {
-  id:string;code:string;name:string;unit:"pcs"|"pack"|"kg"|"m"|"l";
+  id:string;code:string;name:string;unit:string;
   category_id:string|null;minimum_quantity_milli:number;
   is_active:boolean;version:number;balances_sum_quantity_milli?:number|null;
 }

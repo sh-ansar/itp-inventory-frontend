@@ -19,7 +19,8 @@ test("QR print + scan route + authorised physical movement + audit + cross-tenan
 
   await page.getByRole("link", {name:"Справочники"}).click();
   await page.getByRole("button", {name:/Фактические места/}).click();
-  await page.getByRole("button", {name:"Добавить",exact:true}).click();
+  // The page also contains the separate industry-catalog Add action.
+  await page.locator(".page-actions").getByRole("button", {name:"Добавить",exact:true}).click();
   const dictionary = page.getByRole("dialog", {name:"Фактические места"});
   await expect(dictionary).toBeVisible();
   await dictionary.getByLabel("Код").fill(locationCode);

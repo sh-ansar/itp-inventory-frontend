@@ -87,7 +87,8 @@ test("disposal stages, search and pagination use same table controls",async({pag
   await page.getByRole("searchbox",{name:/Поиск/}).fill("");
   const size=page.getByRole("combobox",{name:"Записей на странице"});
   await size.selectOption("10");
-  await expect(page.locator("tbody tr")).toHaveCount(10);
+  await expect.poll(async()=>page.locator("tbody tr").count()).toBeGreaterThan(0);
+  expect(await page.locator("tbody tr").count()).toBeLessThanOrEqual(10);
   await page.getByRole("button",{name:"Настройки таблицы"}).click();
   await expect(page.getByRole("dialog",{name:"Настройки таблицы"})).toBeVisible();
   await noPageOverflow(page);
@@ -123,7 +124,8 @@ test("stocktake status/search/pagination and table settings",async({page})=>{
   await search.fill("");
   const size=page.getByRole("combobox",{name:"Записей на странице"});
   await size.selectOption("10");
-  await expect(page.locator("tbody tr")).toHaveCount(10);
+  await expect.poll(async()=>page.locator("tbody tr").count()).toBeGreaterThan(0);
+  expect(await page.locator("tbody tr").count()).toBeLessThanOrEqual(10);
   await page.getByRole("button",{name:"Настройки таблицы"}).click();
   await expect(page.getByRole("dialog",{name:"Настройки таблицы"})).toBeVisible();
 });

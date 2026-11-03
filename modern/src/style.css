@@ -220,3 +220,13 @@ body.inventory-mobile-nav-open{overflow:hidden}
 @media(max-width:1020px) and (min-width:861px){.profile-copy{display:none}.profile-summary{padding-right:8px}}
 @media(max-width:860px){.topbar{padding:10px 14px;min-height:64px;flex-wrap:wrap}.topbar-trailing{flex-wrap:wrap}.profile-summary{display:none}.sidebar-head{min-height:68px;flex-basis:68px}.sidebar-collapse{display:none}}
 @media(max-width:500px){.topbar{padding:10px}.topbar-trailing .base-button{padding:8px}}
+/* Keep the selected company inside the right-aligned account control cluster.
+   Locale/theme precede it on desktop; the existing mobile full-width selector
+   keeps its own order and layout. */
+@media(min-width:861px){
+  .topbar-trailing .locale-select{order:0}
+  .topbar-trailing .theme-toggle{order:1}
+  .topbar-trailing .company-switcher{order:3}
+  .topbar-trailing .profile-summary{order:2}
+  .topbar-trailing > .base-button{order:4}
+}
