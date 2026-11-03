@@ -16,13 +16,13 @@ export interface FacilityInput {
 }
 export interface ResponsiblePerson {
   id:string;company_id:string;code:string;name:string;
-  position:string|null;email:string|null;
+  position:string|null;email:string|null;department_id?:string|null;
   source:"manual"|"hrm";external_employee_id:string|null;
   is_active:boolean;version:number;assets_count?:number;
 }
 export interface ResponsibleInput {
   code:string;name:string;position:string|null;
-  email:string|null;is_active:boolean;
+  email:string|null;department_id?:string|null;is_active:boolean;
 }
 export interface EquipmentPreset {
   base_key:string;code:string;name:string;icon_key:string;
