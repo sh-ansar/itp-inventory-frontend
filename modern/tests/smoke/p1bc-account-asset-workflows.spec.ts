@@ -113,3 +113,35 @@ test("P1BC asset editor saves typed dynamic fields together with base asset",asy
   expect(saved).toMatchObject({name:"Laptop",category_id:"cat-qa",attributes:{"field-qa":32}});
   expect(calls.some(x=>x.includes("/asset-fields?category_id=cat-qa"))).toBe(true);
 });
+
+test("P1BC field builder creates a category-specific definition",async({page})=>{
+  await prepare(page);
+  let rows:Array<Record<string,unknown>>=[];
+  const created:Array<Record<string,unknown>>=[];
+  await page.route(api,async route=>{
+    const req=route.request(),url=req.url();
+    if(url.includes("/reference-data")){
+      await route.fulfill({status:200,contentType:"application/json",body:JSON.stringify({
+        categories:[{id:"cat-qa",code:"IT",name:"IT devices",is_active:true,version:1}],
+        accounting_locations:[],physical_locations:[],
+      })});return;
+    }
+    if(url.includes("/asset-fields")){
+      if(req.method()==="POST"){
+        const input=req.postDataJSON() as Record<string,unknown>;
+        created.push(input);
+        rows=[{id:"field-new",version:1,is_active:true,sort_order:0,options:[],...input}];
+      }
+      await route.fulfill({status:req.method()==="POST"?201:200,contentType:"application/json",
+        body:JSON.stringify({data:req.method()==="POST"?rows[0]:rows})});return;
+    }
+    await route.fulfill({status:404,contentType:"application/json",body:"{}"});
+  });
+  await page.goto(qaURL+"?view=fields",{waitUntil:"networkidle"});
+  await page.getByRole("button",{name:"Добавить поле"}).click();
+  await page.locator("#field-builder-form input[pattern]").fill("cpu_cores");
+  await page.locator("#field-builder-form input[maxlength='160']").first().fill("Количество ядер");
+  await page.locator('button[form="field-builder-form"]').click();
+  await expect(page.locator(".fields-panel tbody")).toContainText("cpu_cores");
+  expect(created[0]).toMatchObject({category_id:"cat-qa",code:"cpu_cores",field_type:"text"});
+});
