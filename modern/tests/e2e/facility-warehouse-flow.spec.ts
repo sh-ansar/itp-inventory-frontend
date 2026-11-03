@@ -55,7 +55,7 @@ test("facility tree, room assignment and a stocktake of nested assets",async({pa
   await expect(dialog).toBeHidden();
 
   await go(page,"Карта объектов");
-  await page.getByRole("textbox",{name:"Поиск по объектам"}).fill("QA Room "+suffix);
+  await page.getByRole("searchbox",{name:"Поиск по объектам"}).fill("QA Room "+suffix);
   await page.getByRole("treeitem",{name:new RegExp("QA Room "+suffix)}).click();
   await expect(page.getByText("QA Computer "+suffix)).toBeVisible();
   await page.getByRole("button",{name:"Инвентаризация объекта"}).click();
