@@ -43,6 +43,7 @@ onUnmounted(()=>{
   document.body.classList.remove("inventory-mobile-nav-open");
 });
 const user = ref<InventoryUser | null>(null);
+function updateAccountName(name:string){if(user.value)user.value={...user.value,name};}
 const availableCompanies = ref<CompanyAccess[]>([]);
 const companyId = ref("");
 const connected = ref(false);
@@ -293,7 +294,7 @@ onMounted(boot);
         </div>
         <RouterView v-else v-slot="{Component}">
           <component :is="Component" :company-id="selectedCompany.id"
-            :company-name="selectedCompany.name" :role="selectedCompany.role_code"/>
+            :company-name="selectedCompany.name" :role="selectedCompany.role_code" @updated="updateAccountName"/>
         </RouterView>
       </main>
     </div>
