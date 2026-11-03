@@ -16,6 +16,8 @@ import TableSettingsDialog from "../components/ui/TableSettingsDialog.vue";
 import { orderAndFilterColumns,useCompanyTablePreferences } from "../composables/useCompanyTablePreferences";
 import { InventoryApiError } from "../api/client";
 import { referenceData } from "../api/inventory";
+import { listIndustryCatalog } from "../api/industryCatalogs";
+import type { IndustryCatalogItem } from "../api/industryCatalogs";
 import type { ReferenceData } from "../api/inventory";
 import {
   createStockItem,getFacilityNodes,getStockBalances,getStockItems,
@@ -43,6 +45,7 @@ const perPage=computed({get:()=>activePreferences.value.state.per_page,set:v=>ac
 const search=computed({get:()=>activePreferences.value.state.search,set:v=>activePreferences.value.state.search=v});
 const debouncedSearch=ref("");
 const allItems=ref<StockItem[]>([]);
+const unitCatalog=ref<IndustryCatalogItem[]>([]);
 const itemOpen=ref(false),movementOpen=ref(false),saving=ref(false),formError=ref("");
 const fieldErrors=ref<Record<string,string[]>>({});
 const itemFields=reactive({code:"",name:"",unit:"pcs" as StockItem["unit"],category_id:"",minimum_quantity:"0"});
@@ -94,7 +97,7 @@ watch(search,value=>{
   timer=setTimeout(()=>{page.value=1;debouncedSearch.value=value.trim();},300);
 });
 watch(()=>props.companyId,()=>{
-  warehouses.value=[];items.value=[];history.value=[];
+  warehouses.value=[];items.value=[];history.value=[];unitCatalog.value=[];
   tab.value="balances";page.value=1;settingsOpen.value=false;debouncedSearch.value="";
   issue.value="";notice.value="";itemOpen.value=false;movementOpen.value=false;
   void bootstrap();
@@ -106,13 +109,15 @@ async function bootstrap(){
   const current=++bootstrapGeneration;
   bootstrapping.value=true;
   try{
-    const [facility,reference,skus]=await Promise.all([
+    const [facility,reference,skus,units]=await Promise.all([
       getFacilityNodes(companyId),referenceData(companyId),
       getStockItems(companyId,{page:1,per_page:100}),
+      listIndustryCatalog(companyId,"unit"),
     ]);
     // A slower response for the previous company must never replace this tenant's data.
     if(current!==bootstrapGeneration||props.companyId!==companyId)return;
     warehouses.value=facility.data.filter(n=>n.node_type==="warehouse");
+      unitCatalog.value=units.data;
     refs.value=reference;allItems.value=skus.data;
     if(!warehouses.value.some(w=>w.id===warehouseId.value))
       warehouseId.value=warehouses.value[0]?.id??"";
@@ -326,7 +331,7 @@ onUnmounted(()=>{ctrl?.abort();if(timer)clearTimeout(timer)});
           <input v-model="itemFields.name" required minlength="2" maxlength="255" :disabled="saving"/></label>
         <label><span>{{ ui.t("stock.unit") }} *</span>
           <BaseSelect v-model="itemFields.unit" :disabled="saving">
-            <option v-for="unit in ['pcs','pack','kg','m','l']" :key="unit" :value="unit">{{ unit }}</option>
+            <option v-for="unit in unitCatalog" :key="unit.code" :value="unit.code">{{ unit.name }} ({{unit.code}})</option>
           </BaseSelect></label>
         <label><span>{{ ui.t("types.title") }}</span>
           <BaseSelect v-model="itemFields.category_id" :disabled="saving">
