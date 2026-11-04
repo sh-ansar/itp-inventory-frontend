@@ -1,5 +1,7 @@
 # ITP Inventory — P1-B/C QA acceptance, 2026-11-04
 
+> **Исторический протокол до релиза.** Пункты ниже о том, что r21/r10 оставались активны, что сертификат не исправлен и что P1-B/C не опубликован, относятся к моменту первоначального QA. Позднее 04.11.2026 P1-B/C опубликован как r22/r11, HTTPS исправлен и проведена отдельная полная изолированная QA-проверка. Актуальное состояние и ограничения: [QA-HANDOFF.md](QA-HANDOFF.md), [inventory-acceptance-and-roadmap.md](inventory-acceptance-and-roadmap.md), [inventory-deployment.md](inventory-deployment.md). Исторические результаты не удалять и не считать текущим release gate.
+
 ## Scope and environment
 - Frontend PR #38 and Backend PR #20; production confirmed at Frontend r21 / Backend r10 before this exercise.
 - Synthetic accounts, isolated QA SQLite only: Frontend 127.0.0.1:5236, Backend 127.0.0.1:18191.
