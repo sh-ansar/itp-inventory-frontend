@@ -1,9 +1,9 @@
 name: Inventory Vue 3 foundation
 on:
   push:
-    paths: ["modern/**", ".github/workflows/modern-inventory-ci.yml"]
+    paths: ["modern/**", "docs/**", "README.md", ".github/workflows/modern-inventory-ci.yml"]
   pull_request:
-    paths: ["modern/**", ".github/workflows/modern-inventory-ci.yml"]
+    paths: ["modern/**", "docs/**", "README.md", ".github/workflows/modern-inventory-ci.yml"]
 jobs:
   frontend:
     runs-on: ubuntu-latest

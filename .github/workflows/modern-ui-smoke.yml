@@ -1,7 +1,7 @@
 name: Inventory browser smoke
 on:
   push:
-    branches: ["main", "feat/**"]
+    branches: ["main", "feat/**", "feature/**"]
     paths: ["modern/**", ".github/workflows/modern-ui-smoke.yml"]
   pull_request:
     paths: ["modern/**", ".github/workflows/modern-ui-smoke.yml"]
