@@ -15,6 +15,11 @@ const value=reactive({
  code:before?.code||"",
  names:{ru:names.ru||"",en:names.en||"",ge:names.ge||""},
  description:before?.terms.description||"",
+ descriptions:{
+  ru:before?.terms.descriptions?.ru||before?.terms.description||"",
+  en:before?.terms.descriptions?.en||before?.terms.description||"",
+  ge:before?.terms.descriptions?.ge||before?.terms.description||"",
+ },
  price_minor:before?.terms.price_minor||0,
  currency:before?.terms.currency||"KZT",
  period_months:before?.terms.period_months||1,
@@ -43,7 +48,7 @@ function save(){
  const m=/^(\d{1,10})(?:[.,](\d{1,2}))?$/.exec(price.value);
  if(!m)return;
  value.price_minor=Number(m[1])*100+Number((m[2]||"").padEnd(2,"0"));
- emit("save",{...value,names:{...value.names},limits:{...value.limits},modules:{...value.modules}});
+ emit("save",{...value,names:{...value.names},descriptions:{...value.descriptions},limits:{...value.limits},modules:{...value.modules}});
 }
 </script>
 <template><form class="inv-admin-form" @submit.prevent="save">
@@ -53,7 +58,11 @@ function save(){
    <input v-model.trim="value.names[lang]" maxlength="120" required />
   </label>
  </div>
- <label>{{t("description")}}<textarea v-model="value.description" rows="3" maxlength="4000"/></label>
+ <div class="inv-admin-grid-3">
+  <label v-for="lang in ['ru','en','ge'] as const" :key="'desc-'+lang">{{t("description")}} ({{lang.toUpperCase()}})
+   <textarea v-model="value.descriptions[lang]" rows="3" maxlength="4000"/>
+  </label>
+ </div>
  <div class="inv-admin-grid-3">
   <label>{{t("price")}}<input v-model="price" type="text" inputmode="decimal" required pattern="[0-9]+([.,][0-9]{1,2})?" /></label>
   <label>{{t("currency")}}<select v-model="value.currency"><option v-for="c in ['KZT','GEL','USD','EUR']" :key="c">{{c}}</option></select></label>

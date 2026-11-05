@@ -15,6 +15,9 @@ const loading=ref(true);
 const error=ref(false);
 function language():string {return ui.locale==="ka"?"ge":ui.locale;}
 function name(plan:Plan):string {return plan.terms.names?.[language()]||plan.terms.names?.en||plan.code;}
+function description(plan:Plan):string {
+ return plan.terms.descriptions?.[language()] || plan.terms.description || "";
+}
 function money(plan:Plan):string {
  return new Intl.NumberFormat(ui.locale==="ka"?"ka-GE":ui.locale==="en"?"en-US":"ru-RU",{
   style:"currency",currency:plan.terms.currency,maximumFractionDigits:0,
@@ -46,9 +49,9 @@ onMounted(load);
       <article v-for="plan in plans" :key="plan.id" class="inv-tariff-card" :data-plan="plan.code">
         <div class="inv-tariff-eyebrow">{{plan.code.toUpperCase()}}</div>
         <h3>{{name(plan)}}</h3>
-        <p class="inv-tariff-price">{{money(plan)}}</p>
+        <p class="inv-tariff-price">{{Number(plan.terms.price_minor)===0?t("priceOnRequest"):money(plan)}}</p>
         <p class="inv-tariff-note">{{t("perMonth")}} · {{plan.terms.period_months}}</p>
-        <p v-if="plan.terms.description" class="inv-tariff-description">{{plan.terms.description}}</p>
+        <p v-if="description(plan)" class="inv-tariff-description">{{description(plan)}}</p>
         <dl class="inv-tariff-limits">
           <div><dt>{{t("users")}}</dt><dd>{{limit(plan.terms.limits?.users)}}</dd></div>
           <div><dt>{{t("companies")}}</dt><dd>{{limit(plan.terms.limits?.companies)}}</dd></div>

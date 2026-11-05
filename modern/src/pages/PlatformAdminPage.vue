@@ -2,7 +2,7 @@
 import {computed,onMounted,onBeforeUnmount,ref,watch} from "vue";
 import {useRoute,useRouter} from "vue-router";
 import {Boxes,Building2,CreditCard,FileText,ShieldCheck,ClipboardCheck,ArrowLeft,
-  RefreshCw,Search,X,ChevronRight,Download} from "lucide-vue-next";
+  RefreshCw,Search,X,ChevronRight,Download,Globe2} from "lucide-vue-next";
 import {useUiSettings} from "../stores/uiSettings";
 import {commercialT} from "../commercialTranslations";
 import {commercialApi,commercialBlob,previewPdf} from "../api/commercial";
@@ -12,8 +12,9 @@ import PlanEditor from "../components/commercial/PlanEditor.vue";
 import BillingEditor from "../components/commercial/BillingEditor.vue";
 import InvoiceEditor from "../components/commercial/InvoiceEditor.vue";
 import LegalEditor from "../components/commercial/LegalEditor.vue";
+import SiteContentEditor from "../components/commercial/SiteContentEditor.vue";
 
-type Section="companies"|"plans"|"payments"|"documents"|"consents"|"access";
+type Section="companies"|"plans"|"payments"|"documents"|"consents"|"access"|"site";
 type Editor={kind:"plan"|"supplier"|"buyer"|"invoice"|"legal";data:any};
 type Decision={text:string;action:()=>Promise<unknown>};
 const ui=useUiSettings(),route=useRoute(),router=useRouter();
@@ -27,6 +28,7 @@ const sections=[
  {id:"documents",permission:"legal.read",title:"adminDocuments",icon:FileText},
  {id:"consents",permission:"legal.read",title:"adminConsents",icon:ClipboardCheck},
  {id:"access",permission:"platform.manage",title:"adminAccess",icon:ShieldCheck},
+ {id:"site",permission:"site.read",title:"adminSite",icon:Globe2},
 ] as const;
 const overview=ref<AdminOverview|null>(null);
 const loading=ref(true),busy=ref(false),error=ref(""),notice=ref("");
@@ -40,6 +42,7 @@ const columns:Record<Section,string[]>={
  documents:["planName","documentType","language","version","status","effectiveAt"],
  consents:["email","planName","version","acceptance","createdAt"],
  access:["email","permission","createdAt"],
+ site:[],
 };
 const data=ref<any[]>([]);
 const page=ref(1),lastPage=ref(1),total=ref(0),query=ref(""),sort=ref("created_at");
@@ -54,7 +57,7 @@ const proofs=ref<{invoice:Invoice;items:any[]}|null>(null);
 const reviewNote=ref("");
 const userId=ref<number|undefined>(),grantPermission=ref("companies.read");
 const permissions=["platform.manage","companies.read","users.write","plans.read","plans.write",
- "subscriptions.write","billing.read","billing.write","legal.read","legal.write","legal.approve","legal.publish"];
+ "subscriptions.write","billing.read","billing.write","site.read","site.write","legal.read","legal.write","legal.approve","legal.publish"];
 let revision=0,debounce:ReturnType<typeof setTimeout>|undefined;
 function shortDate(text:string|null|undefined){
  if(!text)return "—";
@@ -109,6 +112,7 @@ async function load(){
   if(!permitted(sections.find(s=>s.id===section.value)?.permission||"companies.read")){
    data.value=[];error.value=t("forbidden");return;
   }
+  if(section.value==="site"){data.value=[];lastPage.value=1;total.value=0;return;}
   const result=section.value==="companies"?await commercialApi.companies(page.value,query.value,sort.value)
    :section.value==="plans"?await commercialApi.adminPlans()
    :section.value==="payments"?await commercialApi.invoices(page.value)
@@ -265,7 +269,8 @@ onMounted(()=>document.title="ITP Inventory · "+t("adminTitle"));
   </p>
   <p v-if="error" role="alert" class="inv-error">{{error}}</p>
   <p v-if="notice" role="status" class="inv-success">{{notice}}</p>
-  <div class="inv-admin-toolbar">
+  <SiteContentEditor v-if="section==='site'&&permitted('site.read')" />
+  <div v-if="section!=='site'" class="inv-admin-toolbar">
    <input v-if="['companies','consents'].includes(section)" v-model="query" :placeholder="t('searchCompany')" :aria-label="t('search')"/>
    <select v-if="section==='companies'" v-model="sort" :aria-label="t('filter')">
     <option value="created_at">{{t("createdAt")}}</option><option value="name">{{t("planName")}}</option>
@@ -279,7 +284,7 @@ onMounted(()=>document.title="ITP Inventory · "+t("adminTitle"));
    <select v-model="grantPermission" :aria-label="t('permission')"><option v-for="p in permissions" :key="p" :value="p">{{p}}</option></select>
    <button type="submit" class="inv-btn inv-btn-primary" :disabled="busy">{{t("grant")}}</button>
   </form>
-  <div class="inv-admin-card">
+  <div v-if="section!=='site'" class="inv-admin-card">
    <div class="inv-admin-scroll"><table class="inv-admin-table">
     <thead><tr><th v-for="col in columns[section]" :key="col">{{t(col)}}</th><th>{{t("actions")}}</th></tr></thead>
     <tbody>

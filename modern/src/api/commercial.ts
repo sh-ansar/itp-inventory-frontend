@@ -3,6 +3,7 @@ import { initializeCsrf, inventoryRequest } from "./client";
 export type Terms = {
   names:Record<string,string>;
   description?:string;
+  descriptions?:Record<string,string>;
   price_minor:number;
   currency:string;
   period_months:number;
@@ -62,6 +63,12 @@ export const commercialApi = {
   register:(values:unknown)=>inventoryRequest<{message:string}>("/auth/register",json(values)),
   verify:(token:string)=>inventoryRequest<{ok:boolean;user_id:number}>("/auth/verify-email",json({token})),
   resend:(email:string)=>inventoryRequest<{message:string}>("/auth/resend-verification",json({email})),
+  siteContent:(locale:"ru"|"en"|"ge")=>
+    inventoryRequest<{data:Record<string,string>}>(commercial+"/site-content"+query({locale})),
+  adminSiteContent:(locale:"ru"|"en"|"ge")=>
+    inventoryRequest<{data:Record<string,string>}>(admin+"/site-content"+query({locale})),
+  saveSiteContent:(locale:"ru"|"en"|"ge",values:Record<string,string>)=>
+    inventoryRequest<{data:Record<string,string>}>(admin+"/site-content",json({locale,values},"PUT")),
   overview:()=>inventoryRequest<AdminOverview>(admin+"/overview"),
   companies:(page=1,search="",sort="created_at")=>inventoryRequest<Page<Organization>>(
     admin+"/organizations"+query({page,search,sort})),

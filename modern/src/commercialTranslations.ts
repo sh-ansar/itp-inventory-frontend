@@ -1,4 +1,5 @@
 import type { InventoryLocale } from "./i18n";
+import {reactive} from "vue";
 
 type Messages = Record<string,string>;
 const strings: Record<InventoryLocale,Messages> = {
@@ -29,7 +30,7 @@ const strings: Record<InventoryLocale,Messages> = {
     step3:"Добавьте компанию и имущество",step4:"Работайте с инвентаризациями",
     planTitle:"Выберите подходящий тариф",planText:"Управляйте пользователями, объектами и доступными модулями. Условия публикуются администратором Inventory.",
     planChoose:"Выбрать тариф",planEmpty:"Опубликованных тарифов пока нет",planError:"Не удалось загрузить тарифы",retry:"Повторить",
-    perMonth:"за период · с учётом НДС согласно условиям",unlimited:"Без ограничения",
+    perMonth:"за период · с учётом НДС согласно условиям",priceOnRequest:"По запросу",unlimited:"Без ограничения",
     users:"Пользователи",companies:"Компании",storage:"Хранилище",fileLimit:"Размер файла",
     create:"Начать работу",cta:"Переведите учёт имущества в цифровой формат",
     noCommercial:"Оплата и выставление счетов доступны после включения коммерческого режима.",
@@ -53,7 +54,7 @@ const strings: Record<InventoryLocale,Messages> = {
     forbidden:"Доступ запрещён",adminTitle:"Супер-администрирование Inventory",
     adminLink:"Супер-админка",adminCompanies:"Компании",adminPlans:"Тарифы",
     adminPayments:"Оплаты и счета",adminDocuments:"Юридические документы",adminConsents:"Согласия",
-    adminAccess:"Права доступа",adminDashboard:"Перейти в Inventory",
+    adminAccess:"Права доступа",adminSite:"Сайт",adminDashboard:"Перейти в Inventory",
     createPlan:"Новый тариф",createInvoice:"Новый счёт",createDocument:"Новый документ",
     planCode:"Код тарифа",planName:"Наименование",description:"Описание",price:"Цена",
     currency:"Валюта",period:"Срок, мес.",publicPlan:"Показывать на сайте",
@@ -109,7 +110,7 @@ const strings: Record<InventoryLocale,Messages> = {
     step3:"Add a company and assets",step4:"Run stocktakes",
     planTitle:"Choose the right plan",planText:"Manage users, facilities and available modules. Plans are published by Inventory administrators.",
     planChoose:"Select plan",planEmpty:"No plans have been published yet",planError:"Unable to load plans",retry:"Try again",
-    perMonth:"per period · taxes subject to plan terms",unlimited:"Unlimited",
+    perMonth:"per period · taxes subject to plan terms",priceOnRequest:"On request",unlimited:"Unlimited",
     users:"Users",companies:"Companies",storage:"Storage",fileLimit:"File limit",
     create:"Get started",cta:"Bring your asset management online",
     noCommercial:"Payments and invoice issuing are available after commercial activation.",
@@ -133,7 +134,7 @@ const strings: Record<InventoryLocale,Messages> = {
     forbidden:"Access denied",adminTitle:"Inventory platform administration",
     adminLink:"Super admin",adminCompanies:"Companies",adminPlans:"Plans",
     adminPayments:"Billing & invoices",adminDocuments:"Legal documents",adminConsents:"Consents",
-    adminAccess:"Access grants",adminDashboard:"Back to Inventory",
+    adminAccess:"Access grants",adminSite:"Website",adminDashboard:"Back to Inventory",
     createPlan:"New plan",createInvoice:"New invoice",createDocument:"New document",
     planCode:"Plan code",planName:"Name",description:"Description",price:"Price",
     currency:"Currency",period:"Term, months",publicPlan:"Show on website",
@@ -189,7 +190,7 @@ const strings: Record<InventoryLocale,Messages> = {
     step3:"დაამატეთ კომპანია და აქტივები",step4:"ჩაატარეთ ინვენტარიზაცია",
     planTitle:"აირჩიეთ ტარიფი",planText:"მართეთ მომხმარებლები, ობიექტები და მოდულები. ტარიფებს აქვეყნებს Inventory-ის ადმინისტრატორი.",
     planChoose:"ტარიფის არჩევა",planEmpty:"გამოქვეყნებული ტარიფები ჯერ არ არის",planError:"ტარიფები ვერ ჩაიტვირთა",retry:"ხელახლა",
-    perMonth:"პერიოდისთვის · გადასახადები პირობების შესაბამისად",unlimited:"შეუზღუდავი",
+    perMonth:"პერიოდისთვის · გადასახადები პირობების შესაბამისად",priceOnRequest:"შეთანხმებით",unlimited:"შეუზღუდავი",
     users:"მომხმარებლები",companies:"კომპანიები",storage:"საცავი",fileLimit:"ფაილის ლიმიტი",
     create:"დაწყება",cta:"გადაიყვანეთ აქტივების აღრიცხვა ციფრულ ფორმატში",
     noCommercial:"გადახდები და ინვოისები გააქტიურების შემდეგ იქნება ხელმისაწვდომი.",
@@ -213,7 +214,7 @@ const strings: Record<InventoryLocale,Messages> = {
     forbidden:"წვდომა აკრძალულია",adminTitle:"Inventory-ის სუპერადმინისტრირება",
     adminLink:"სუპერადმინი",adminCompanies:"კომპანიები",adminPlans:"ტარიფები",
     adminPayments:"გადახდები და ინვოისები",adminDocuments:"იურიდიული დოკუმენტები",adminConsents:"თანხმობები",
-    adminAccess:"წვდომის უფლებები",adminDashboard:"Inventory-ში დაბრუნება",
+    adminAccess:"წვდომის უფლებები",adminSite:"საიტი",adminDashboard:"Inventory-ში დაბრუნება",
     createPlan:"ახალი ტარიფი",createInvoice:"ახალი ინვოისი",createDocument:"ახალი დოკუმენტი",
     planCode:"ტარიფის კოდი",planName:"დასახელება",description:"აღწერა",price:"ფასი",
     currency:"ვალუტა",period:"პერიოდი, თვე",publicPlan:"საიტზე ჩვენება",
@@ -244,7 +245,14 @@ const strings: Record<InventoryLocale,Messages> = {
   }
 };
 
+const publicSiteOverrides=reactive<Record<InventoryLocale,Record<string,string>>>({
+  ru:{},en:{},ka:{},
+});
+export function setCommercialSiteText(locale:InventoryLocale,values:Record<string,string>):void {
+  // Replace the entire locale snapshot; never allow one locale to leak into another.
+  publicSiteOverrides[locale]={...values};
+}
 export function commercialT(locale:InventoryLocale,key:string):string {
-  return strings[locale]?.[key] ?? strings.ru[key] ?? key;
+  return publicSiteOverrides[locale]?.[key] || strings[locale]?.[key] || strings.ru[key] || key;
 }
 export const commercialKeys = (locale:InventoryLocale):string[] => Object.keys(strings[locale]);

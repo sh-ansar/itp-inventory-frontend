@@ -53,3 +53,8 @@ npm run dev -- --host 127.0.0.1 --port 5174
 Проверки: npm run build, npm run test:unit, npm run test:e2e -- tests/e2e/commercial-public.spec.ts с INVENTORY_E2E_BASE_URL=http://127.0.0.1:5177/inventory/. E2E с мокированными ответами проверяют UI и роли, но не заменяют интеграционные Laravel/PostgreSQL тесты.
 
 Публикация осуществляется только одновременно с соответствующим Inventory Backend (миграция 2026_11_05_000017_commercial_platform), потому что лендинг использует публичные /commercial/plans и /commercial/legal. Не включать коммерческие флаги в prod до подтверждения действующих тарифов, юридических текстов, SMTP, PHP 8.4 и tenant/role QA. Подробные матрица, ограничения и шаги: Backend docs/commercial/README.md.
+
+## Site CMS and localized plan descriptions — 2026-11-05
+The Inventory-only super-admin has an editable Site section at /inventory/admin/site. Authorized users can edit 20 plain-text landing and pricing labels separately for ru/en/ge. PublicLayout loads current locale values from commercial/site-content; built-in translations remain the fallback. Site edits become visible without rebuilding the application. The public landing does not access the admin endpoint.
+PlanEditor supports localized names and descriptions per ru/en/ge, modules, price, company/user/storage/file limits. Public zero-price prototype plans display "On request", not "Free"; actual pricing can be changed by publishing new plan versions. Paid onboarding, legal publication and invoice issuance remain feature-gated until their separate approvals.
+QA: npm run build; npm run test:unit; npm run test:e2e -- tests/e2e/commercial-site-content.spec.ts. Browser mocks do not replace a real authenticated PostgreSQL environment test.
