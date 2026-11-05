@@ -36,3 +36,20 @@ npm run dev -- --host 127.0.0.1 --port 5174
 Не переносить JWT, токены или общие session cookies из Portal. Вся запись в Inventory идет через same-origin /inventory-api; mutating запросы требуют INVENTORY-XSRF-TOKEN. User input, HTML документов, вложения и QR проверяются на Backend. Тесты с реальными данными и production API запрещены.
 
 См. ../docs/ARCHITECTURE.md, ../docs/inventory-deployment.md и ../docs/QA-HANDOFF.md.
+
+
+## Публичная зона, тарифы и супер-админка (05.11.2026)
+
+- src/Root.vue разделяет оболочки: публичные страницы (лендинг, тарифы, юридические документы, вход/регистрация), защищённый супер-администратор и прежний приватный Inventory.
+- /inventory/ — публичная главная страница в стиле Portal; /inventory/registry — существующий реестр имущества. Прочие прежние маршруты не удалены.
+- src/pages/public/ — страницы главной, тарифов, юридических документов, входа и продуктовых модулей.
+- src/pages/PlatformAdminPage.vue — UI супер-админки; src/components/commercial/AdminGate.vue — проверка сессии и полномочий до показа интерфейса; API выполняет независимую проверку прав.
+- src/pages/CompanyBillingPage.vue — подписка, счета, доказательства оплаты и согласия текущей компании.
+- src/components/commercial — общий публичный хедер/футер, редакторы тарифов/счетов/документов и диалоги; src/styles/commercial.css задаёт отдельный визуальный слой без изменений tokens.css.
+- src/commercialTranslations.ts хранит RU, EN и GE тексты; в UI используется locale ka, в коммерческом API тарифы и юридические документы используют ge. Согласованное преобразование делается только на границе.
+- API-клиент src/api/commercial.ts обращается исключительно к /inventory-api того же происхождения, не читает Portal cookies или секреты.
+- Юридический документ загружается по ID опубликованной версии отдельно от публичного списка, который намеренно не выдаёт body.
+
+Проверки: npm run build, npm run test:unit, npm run test:e2e -- tests/e2e/commercial-public.spec.ts с INVENTORY_E2E_BASE_URL=http://127.0.0.1:5177/inventory/. E2E с мокированными ответами проверяют UI и роли, но не заменяют интеграционные Laravel/PostgreSQL тесты.
+
+Публикация осуществляется только одновременно с соответствующим Inventory Backend (миграция 2026_11_05_000017_commercial_platform), потому что лендинг использует публичные /commercial/plans и /commercial/legal. Не включать коммерческие флаги в prod до подтверждения действующих тарифов, юридических текстов, SMTP, PHP 8.4 и tenant/role QA. Подробные матрица, ограничения и шаги: Backend docs/commercial/README.md.

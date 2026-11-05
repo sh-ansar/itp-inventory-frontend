@@ -34,6 +34,8 @@ npm run build
 - **docs/PORTAL-COMPARISON.md** — сравнение с реальной архитектурой корпоративного Portal.
 - **docs/inventory-deployment.md** — выпуск, маршрутизация Apache/Windows, откат и health.
 - **docs/QA-HANDOFF.md** — результаты проверок, ограничения, воспроизводимый чеклист.
+- **docs/MAINTENANCE-REVIEW-20261104.md** — техлид-ревью, P0/P1 статус и остаточные release gates.
+- **docs/SHARED-UI-COMPATIBILITY.md** — совместимость компонентов HRM/Portal и блокеры UI-kit v0.9.0.
 - **docs/inventory-user-guide.md** — пользовательские сценарии; проверяйте соответствие релизу.
 - **Backend README и docs/** — API, роли, схема данных, миграции, поддержка, восстановление.
 

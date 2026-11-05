@@ -12,17 +12,19 @@ import BaseButton from "../components/ui/BaseButton.vue";
 import BaseIconButton from "../components/ui/BaseIconButton.vue";
 import BaseCard from "../components/ui/BaseCard.vue";
 import BaseDialog from "../components/ui/BaseDialog.vue";
-import BaseSearchField from "../components/ui/BaseSearchField.vue";
+
 import BaseDataTable from "../components/ui/BaseDataTable.vue";
 import BasePagination from "../components/ui/BasePagination.vue";
 import EquipmentTypeIcon from "../components/ui/EquipmentTypeIcon.vue";
 import FacilityEditorDialog from "../components/facilities/FacilityEditorDialog.vue";
+import FacilityNavigation from "../components/facilities/FacilityNavigation.vue";
 import { companyAssets, referenceData } from "../api/inventory";
 import type { Asset, ReferenceData } from "../api/inventory";
 import { getFacilityNodes, getAllActiveResponsiblePeople, getFacilityHistory, updateFacilityNode } from "../api/topology";
 import type { FacilityNode, FacilityType, ResponsiblePerson } from "../api/topology";
 import { useUiSettings } from "../stores/uiSettings";
 import type { Component } from "vue";
+import { createFacilityHierarchy } from "../utils/facilityHierarchy";
 
 const { open: confirmOpen, message: confirmMessage, title: confirmTitle,
   confirmLabel: confirmLabel, danger: confirmDanger, ask: askConfirmation,
@@ -51,9 +53,9 @@ const selectedId=computed(()=>{
   return typeof id==="string"&&nodes.value.some(n=>n.id===id)?id:null;
 });
 const currentNode=computed(()=>nodes.value.find(n=>n.id===selectedId.value)??null);
-const lookup=computed(()=>new Map(nodes.value.map(n=>[n.id,n])));
-const children=computed(()=>nodes.value.filter(n=>n.parent_id===selectedId.value)
-  .sort((a,b)=>a.sort_order-b.sort_order||a.name.localeCompare(b.name)));
+const hierarchy=computed(()=>createFacilityHierarchy(nodes.value));
+const lookup=computed(()=>hierarchy.value.byId);
+const children=computed(()=>hierarchy.value.byParent.get(selectedId.value)??[]);
 const lineage=computed(()=>{
   const path:FacilityNode[]=[];
   let node=currentNode.value;
@@ -64,20 +66,7 @@ const lineage=computed(()=>{
   }
   return path;
 });
-const flatNodes=computed(()=>{
-  const rows:{node:FacilityNode;depth:number}[]=[];
-  const walk=(parent:string|null,depth:number,visited:Set<string>)=>{
-    if(depth>9)return;
-    for(const n of nodes.value.filter(n=>n.parent_id===parent)
-      .sort((a,b)=>a.sort_order-b.sort_order||a.name.localeCompare(b.name))){
-      if(visited.has(n.id))continue;
-      rows.push({node:n,depth});
-      walk(n.id,depth+1,new Set([...visited,n.id]));
-    }
-  };
-  walk(null,0,new Set());
-  return rows;
-});
+const flatNodes=computed(()=>hierarchy.value.flat);
 const filteredNodes=computed(()=>{
   const needle=search.value.trim().toLowerCase();
   if(!needle)return flatNodes.value;
@@ -210,16 +199,7 @@ async function showHistory(node:FacilityNode){
   }catch(e){error.value=e instanceof Error?e.message:ui.t("generic.unknownError");}
   finally{historyLoading.value=false;}
 }
-function countNodes(id:string){
-  const visited=new Set<string>([id]);const queue=[id];
-  while(queue.length&&visited.size<3001){
-    const parent=queue.shift()!;
-    for(const n of nodes.value.filter(n=>n.parent_id===parent)){
-      if(!visited.has(n.id)){visited.add(n.id);queue.push(n.id);}
-    }
-  }
-  return visited.size-1;
-}
+function countNodes(id:string){return hierarchy.value.countDescendants(id);}
 onUnmounted(()=>{ctrl?.abort();assetCtrl?.abort();});
 </script>
 
@@ -238,27 +218,9 @@ onUnmounted(()=>{ctrl?.abort();assetCtrl?.abort();});
     <p v-if="error" role="alert" class="error">{{ error }}</p>
     <p v-if="notice" role="status" class="notice">{{ notice }}</p>
     <div class="map-layout">
-      <BaseCard class="facility-nav">
-        <div class="nav-heading"><strong>{{ ui.t("topology.objects") }}</strong>
-          <span class="muted">{{ nodes.length }}</span></div>
-        <BaseSearchField v-model="search" class="tree-search"
-          :label="ui.t('topology.search')" :placeholder="ui.t('topology.search')"/>
-        <div class="tree-list" role="tree" :aria-label="ui.t('topology.objects')">
-          <button type="button" class="tree-row" :class="{selected:!selectedId}"
-            @click="navigate(null)">
-            <MapPinned :size="17" aria-hidden="true"/>{{ ui.t("topology.allObjects") }}
-          </button>
-          <button v-for="{node,depth} in filteredNodes" :key="node.id" type="button"
-            class="tree-row" role="treeitem" :aria-selected="selectedId===node.id"
-            :class="{selected:selectedId===node.id}"
-            :style="{paddingLeft:(12+Math.min(depth,5)*16)+'px'}"
-            @click="navigate(node.id)">
-            <component :is="mapIcons[node.node_type]" :size="16" aria-hidden="true"/>
-            <span class="tree-text" :title="node.name">{{ node.name }}</span>
-            <span v-if="node.direct_asset_count" class="tree-count">{{ node.direct_asset_count }}</span>
-          </button>
-        </div>
-      </BaseCard>
+      <FacilityNavigation :node-count="nodes.length" :rows="filteredNodes"
+        :selected-id="selectedId" v-model:search="search" :map-icons="mapIcons"
+        @navigate="navigate"/>
 
       <div class="map-main">
         <BaseCard class="map-canvas-card">
@@ -458,18 +420,6 @@ onUnmounted(()=>{ctrl?.abort();assetCtrl?.abort();});
 .page-heading h2{margin:0}.page-heading p{margin:5px 0 0}
 .heading-actions{display:flex;gap:9px;flex-wrap:wrap}
 .map-layout{display:grid;grid-template-columns:minmax(220px,265px) minmax(0,1fr);gap:17px;min-width:0;align-items:start}
-.facility-nav{position:sticky;top:12px;min-width:0;max-height:calc(100vh - 135px);display:flex;flex-direction:column}
-.nav-heading{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:14px}
-.nav-heading strong{font-size:14px;font-weight:600}
-.tree-search{margin-bottom:10px;max-width:none;flex:none}
-.tree-list{overflow:auto;flex:1;min-height:80px;display:grid;align-content:start;gap:2px}
-.tree-row{display:flex;align-items:center;gap:8px;width:100%;min-height:36px;border:1px solid transparent;background:transparent;border-radius:var(--radius-sm);color:var(--color-text);font-size:12px;text-align:left;padding:8px 10px;cursor:pointer}
-.tree-row:hover{background:var(--color-hover)}
-.tree-row.selected{background:var(--color-accent-soft);border-color:var(--color-primary-stroke);font-weight:600}
-.tree-row svg{flex:none;color:var(--color-muted)}
-.tree-text{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.tree-count{margin-left:auto;color:var(--color-muted);font-size:11px}
-.tree-hint{font-size:11px;line-height:16px;padding-top:8px;margin:8px 0 0;border-top:1px solid var(--color-stroke)}
 .map-main{display:grid;gap:17px;min-width:0}
 .map-canvas-card{min-width:0}
 .map-toolbar{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;padding-bottom:14px;border-bottom:1px solid var(--color-stroke)}
@@ -542,7 +492,7 @@ onUnmounted(()=>{ctrl?.abort();assetCtrl?.abort();});
 .history-list strong{font-weight:600}
 .history-list span{color:var(--color-muted)}
 @media(max-width:1240px){.map-layout{grid-template-columns:minmax(190px,225px) minmax(0,1fr)}.detail-fields{grid-template-columns:repeat(2,minmax(0,1fr))}}
-@media(max-width:900px){.map-layout{grid-template-columns:1fr}.facility-nav{position:static;max-height:270px}.tree-list{max-height:170px}.diagram-scroll{max-height:470px}}
+@media(max-width:900px){.map-layout{grid-template-columns:1fr}.diagram-scroll{max-height:470px}}
 @media(max-width:610px){
  .heading-actions{width:100%}.heading-actions :deep(.base-button){flex:1}
  .map-toolbar{align-items:flex-start}

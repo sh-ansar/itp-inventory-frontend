@@ -3,7 +3,7 @@ import BaseDropdownSelect from "./components/ui/BaseDropdownSelect.vue";
 import hrmMenuIcon from "./assets/hrm-menu.svg";
 import { computed, nextTick, onMounted, onUnmounted, reactive, ref, watch } from "vue";
 import { RouterLink, RouterView, useRoute, useRouter } from "vue-router";
-import { Boxes, ClipboardList, BookOpen, Package, Building2, Users, Warehouse, LogOut, Sun, Moon, Eye, EyeOff, RefreshCw, FileCheck2, ShieldCheck, BarChart3, Settings, Menu, X } from "lucide-vue-next";
+import { Boxes, ClipboardList, BookOpen, Package, Building2, Users, Warehouse, LogOut, Sun, Moon, Eye, EyeOff, RefreshCw, FileCheck2, ShieldCheck, BarChart3, CreditCard, Settings, Menu, X } from "lucide-vue-next";
 import BaseButton from "./components/ui/BaseButton.vue";
 import BaseCard from "./components/ui/BaseCard.vue";
 import BaseLoadingState from "./components/ui/BaseLoadingState.vue";
@@ -12,6 +12,8 @@ import PortalHomeLink from "./components/ui/PortalHomeLink.vue";
 import { health, login, currentUser, logout, companies } from "./api/session";
 import type { InventoryUser, CompanyAccess } from "./api/session";
 import { InventoryApiError } from "./api/client";
+import { commercialApi } from "./api/commercial";
+import { commercialT } from "./commercialTranslations";
 import { useUiSettings } from "./stores/uiSettings";
 import type { InventoryLocale } from "./i18n";
 
@@ -43,6 +45,8 @@ onUnmounted(()=>{
   document.body.classList.remove("inventory-mobile-nav-open");
 });
 const user = ref<InventoryUser | null>(null);
+const canOpenPlatformAdmin = ref(false);
+const platformAdminTitle = computed(()=>commercialT(ui.locale,"adminLink"));
 function updateAccountName(name:string){if(user.value)user.value={...user.value,name};}
 const availableCompanies = ref<CompanyAccess[]>([]);
 const companyId = ref("");
@@ -56,7 +60,8 @@ const credentials = reactive({ email:"", password:"" });
 const passwordVisible = ref(false);
 const companySettingsTitle=computed(()=>ui.locale==='en'?'Company settings':ui.locale==='ka'?'კომპანიის პარამეტრები':'Настройки компании');
 const reportsTitle=computed(()=>ui.locale==="ka"?"ანგარიშები":ui.locale==="en"?"Reports":"Отчёты");
-const currentTitle = computed(() => route.name === "company-settings" ? companySettingsTitle.value : route.name === "profile" ? profileTitle.value : route.name === "reports" ? reportsTitle.value : ui.t(
+const billingTitle=computed(()=>commercialT(ui.locale,"adminPayments"));
+const currentTitle = computed(() => route.name === "platform-admin" ? platformAdminTitle.value : route.name === "billing" ? billingTitle.value : route.name === "company-settings" ? companySettingsTitle.value : route.name === "profile" ? profileTitle.value : route.name === "reports" ? reportsTitle.value : ui.t(
    route.name === "disposals" ? "disposal.title" :
    route.name === "company-roles" ? "roles.title" :
    route.name === "references" ? "heading.references" :
@@ -97,6 +102,13 @@ async function loadIdentity(): Promise<void> {
   const [identity, memberships] = await Promise.all([currentUser(), companies()]);
   user.value = identity;
   availableCompanies.value = memberships;
+  try {
+    const overview = await commercialApi.overview();
+    canOpenPlatformAdmin.value = overview.permissions.length>0;
+  } catch {
+    // 403 is expected for regular Inventory users. Keep platform UI hidden.
+    canOpenPlatformAdmin.value = false;
+  }
   const saved = typeof localStorage !== "undefined" ? localStorage.getItem("inventory.companyId") : null;
   const regular=memberships.find(c=>!c.name.startsWith("[DEMO]"));
   companyId.value = memberships.some(c => c.id === companyId.value)
@@ -116,6 +128,7 @@ async function boot() {
         error.value = e instanceof Error ? e.message : ui.t("generic.unknownError");
       }
       user.value = null;
+      canOpenPlatformAdmin.value = false;
       availableCompanies.value = []; companyId.value = "";
     }
   } catch(e) {
@@ -142,6 +155,7 @@ async function signOut() {
   try {
     await logout();
     user.value = null;
+    canOpenPlatformAdmin.value = false;
     availableCompanies.value = [];
     companyId.value = "";
     credentials.password = "";
@@ -204,6 +218,16 @@ onMounted(boot);
         </RouterLink>
         <RouterLink to="/reports" class="nav-item" active-class="nav-item--active" :aria-label="reportsTitle" :title="ui.sidebarCollapsed&&!mobileNavOpen?reportsTitle:undefined" @click="closeMobileNav">
           <BarChart3 :size="19" aria-hidden="true"/><span class="nav-label">{{reportsTitle}}</span>
+        </RouterLink>
+        <RouterLink v-if="selectedCompany" to="/billing" class="nav-item"
+          active-class="nav-item--active" :aria-label="billingTitle"
+          :title="ui.sidebarCollapsed&&!mobileNavOpen?billingTitle:undefined" @click="closeMobileNav">
+          <CreditCard :size="19" aria-hidden="true"/><span class="nav-label">{{billingTitle}}</span>
+        </RouterLink>
+        <RouterLink v-if="canOpenPlatformAdmin" to="/admin/companies" class="nav-item"
+          active-class="nav-item--active" :aria-label="platformAdminTitle"
+          :title="ui.sidebarCollapsed&&!mobileNavOpen?platformAdminTitle:undefined" @click="closeMobileNav">
+          <ShieldCheck :size="19" aria-hidden="true"/><span class="nav-label">{{platformAdminTitle}}</span>
         </RouterLink>
         <RouterLink v-if="selectedCompany?.role_code==='company_admin'" to="/company-settings" class="nav-item"
           active-class="nav-item--active" :aria-label="companySettingsTitle"
@@ -288,7 +312,7 @@ onMounted(boot);
           </form>
           <p v-if="!browserLoginEnabled" class="muted login-note">{{ ui.t("auth.disabled") }}</p>
         </BaseCard>
-        <div v-else-if="!selectedCompany && route.name!=='profile'" class="no-company">
+        <div v-else-if="!selectedCompany && route.name!=='profile' && route.name!=='platform-admin'" class="no-company">
           <Package :size="28" aria-hidden="true"/>
           <h2>{{ ui.t("auth.noCompanies") }}</h2>
         </div>
