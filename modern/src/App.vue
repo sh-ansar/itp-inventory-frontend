@@ -1,17 +1,18 @@
 <script setup lang="ts">
 import BaseDropdownSelect from "./components/ui/BaseDropdownSelect.vue";
 import hrmMenuIcon from "./assets/hrm-menu.svg";
-import { computed, nextTick, onMounted, onUnmounted, reactive, ref, watch } from "vue";
+import { computed, nextTick, onMounted, onUnmounted, ref, watch } from "vue";
 import { RouterLink, RouterView, useRoute, useRouter } from "vue-router";
-import { Boxes, ClipboardList, BookOpen, Package, Building2, Users, Warehouse, LogOut, Sun, Moon, Eye, EyeOff, RefreshCw, FileCheck2, ShieldCheck, BarChart3, Settings, Menu, X } from "lucide-vue-next";
+import { Boxes, ClipboardList, BookOpen, Package, Building2, Users, Warehouse, LogOut, Sun, Moon, RefreshCw, FileCheck2, ShieldCheck, BarChart3, CreditCard, Settings, Menu, X } from "lucide-vue-next";
 import BaseButton from "./components/ui/BaseButton.vue";
-import BaseCard from "./components/ui/BaseCard.vue";
 import BaseLoadingState from "./components/ui/BaseLoadingState.vue";
 import PortalHomeLink from "./components/ui/PortalHomeLink.vue";
 
-import { health, login, currentUser, logout, companies } from "./api/session";
+import { health, currentUser, logout, companies } from "./api/session";
 import type { InventoryUser, CompanyAccess } from "./api/session";
 import { InventoryApiError } from "./api/client";
+import { commercialApi } from "./api/commercial";
+import { commercialT } from "./commercialTranslations";
 import { useUiSettings } from "./stores/uiSettings";
 import type { InventoryLocale } from "./i18n";
 
@@ -43,20 +44,19 @@ onUnmounted(()=>{
   document.body.classList.remove("inventory-mobile-nav-open");
 });
 const user = ref<InventoryUser | null>(null);
+const canOpenPlatformAdmin = ref(false);
+const platformAdminTitle = computed(()=>commercialT(ui.locale,"adminLink"));
 function updateAccountName(name:string){if(user.value)user.value={...user.value,name};}
 const availableCompanies = ref<CompanyAccess[]>([]);
 const companyId = ref("");
 const connected = ref(false);
-const browserLoginEnabled = ref(false);
 const booting = ref(true);
-const loginBusy = ref(false);
 const signoutBusy = ref(false);
 const error = ref("");
-const credentials = reactive({ email:"", password:"" });
-const passwordVisible = ref(false);
 const companySettingsTitle=computed(()=>ui.locale==='en'?'Company settings':ui.locale==='ka'?'კომპანიის პარამეტრები':'Настройки компании');
 const reportsTitle=computed(()=>ui.locale==="ka"?"ანგარიშები":ui.locale==="en"?"Reports":"Отчёты");
-const currentTitle = computed(() => route.name === "company-settings" ? companySettingsTitle.value : route.name === "profile" ? profileTitle.value : route.name === "reports" ? reportsTitle.value : ui.t(
+const billingTitle=computed(()=>commercialT(ui.locale,"adminPayments"));
+const currentTitle = computed(() => route.name === "platform-admin" ? platformAdminTitle.value : route.name === "billing" ? billingTitle.value : route.name === "company-settings" ? companySettingsTitle.value : route.name === "profile" ? profileTitle.value : route.name === "reports" ? reportsTitle.value : ui.t(
    route.name === "disposals" ? "disposal.title" :
    route.name === "company-roles" ? "roles.title" :
    route.name === "references" ? "heading.references" :
@@ -97,6 +97,13 @@ async function loadIdentity(): Promise<void> {
   const [identity, memberships] = await Promise.all([currentUser(), companies()]);
   user.value = identity;
   availableCompanies.value = memberships;
+  try {
+    const overview = await commercialApi.overview();
+    canOpenPlatformAdmin.value = overview.permissions.length>0;
+  } catch {
+    // 403 is expected for regular Inventory users. Keep platform UI hidden.
+    canOpenPlatformAdmin.value = false;
+  }
   const saved = typeof localStorage !== "undefined" ? localStorage.getItem("inventory.companyId") : null;
   const regular=memberships.find(c=>!c.name.startsWith("[DEMO]"));
   companyId.value = memberships.some(c => c.id === companyId.value)
@@ -109,13 +116,13 @@ async function boot() {
   try {
     const status = await health();
     connected.value = status.status === "ok";
-    browserLoginEnabled.value = status.browser_login === true;
     try { await loadIdentity(); }
     catch (e) {
       if (!(e instanceof InventoryApiError && e.status === 401)) {
         error.value = e instanceof Error ? e.message : ui.t("generic.unknownError");
       }
       user.value = null;
+      canOpenPlatformAdmin.value = false;
       availableCompanies.value = []; companyId.value = "";
     }
   } catch(e) {
@@ -124,28 +131,18 @@ async function boot() {
   } finally { booting.value = false; }
 }
 
-async function signIn() {
-  if (loginBusy.value || !browserLoginEnabled.value) return;
-  loginBusy.value = true; error.value = "";
-  try {
-    await login(credentials.email.trim(), credentials.password);
-    credentials.password = "";
-    await loadIdentity();
-  } catch(e) {
-    error.value = e instanceof Error ? e.message : ui.t("generic.unknownError");
-  } finally { loginBusy.value = false; }
-}
-
 async function signOut() {
   if (signoutBusy.value) return;
   signoutBusy.value = true; error.value = "";
   try {
     await logout();
     user.value = null;
+    canOpenPlatformAdmin.value = false;
     availableCompanies.value = [];
     companyId.value = "";
-    credentials.password = "";
     closeMobileNav();
+    // Unmount the private workspace. The public login page is the ONLY login form.
+    await router.replace("/auth/login");
   } catch(e) { error.value = e instanceof Error ? e.message : ui.t("generic.unknownError"); }
   finally { signoutBusy.value = false; }
 }
@@ -156,11 +153,18 @@ function switchLocale(next:string) {
 watch(() => [route.name,ui.locale,!!user.value], () => {
   document.title = "ITP Inventory";
 },{immediate:true});
-onMounted(boot);
+onMounted(async () => {
+  await boot();
+  // Direct private links with no session must never show a second, inline login.
+  if (!user.value) {
+    await router.replace({path:"/auth/login",query:{next:route.fullPath}});
+  }
+});
 </script>
 
 <template>
-  <div class="shell" :class="{'shell--guest':!user&&!booting,'shell--collapsed':ui.sidebarCollapsed}">
+  <BaseLoadingState v-if="booting && !user" :label="ui.t('generic.loading')" />
+  <div v-else-if="user" class="shell" :class="{'shell--collapsed':ui.sidebarCollapsed}">
     <button v-if="user&&mobileNavOpen" class="nav-backdrop" type="button"
       :aria-label="menuLabels.close" @click="closeMobileNav"/>
     <aside class="sidebar" :class="{'sidebar--open':mobileNavOpen}" aria-label="Inventory">
@@ -205,6 +209,16 @@ onMounted(boot);
         <RouterLink to="/reports" class="nav-item" active-class="nav-item--active" :aria-label="reportsTitle" :title="ui.sidebarCollapsed&&!mobileNavOpen?reportsTitle:undefined" @click="closeMobileNav">
           <BarChart3 :size="19" aria-hidden="true"/><span class="nav-label">{{reportsTitle}}</span>
         </RouterLink>
+        <RouterLink v-if="selectedCompany" to="/billing" class="nav-item"
+          active-class="nav-item--active" :aria-label="billingTitle"
+          :title="ui.sidebarCollapsed&&!mobileNavOpen?billingTitle:undefined" @click="closeMobileNav">
+          <CreditCard :size="19" aria-hidden="true"/><span class="nav-label">{{billingTitle}}</span>
+        </RouterLink>
+        <RouterLink v-if="canOpenPlatformAdmin" to="/admin/companies" class="nav-item"
+          active-class="nav-item--active" :aria-label="platformAdminTitle"
+          :title="ui.sidebarCollapsed&&!mobileNavOpen?platformAdminTitle:undefined" @click="closeMobileNav">
+          <ShieldCheck :size="19" aria-hidden="true"/><span class="nav-label">{{platformAdminTitle}}</span>
+        </RouterLink>
         <RouterLink v-if="selectedCompany?.role_code==='company_admin'" to="/company-settings" class="nav-item"
           active-class="nav-item--active" :aria-label="companySettingsTitle"
           :title="ui.sidebarCollapsed&&!mobileNavOpen?companySettingsTitle:undefined" @click="closeMobileNav">
@@ -224,11 +238,6 @@ onMounted(boot);
           :aria-label="menuLabels.open" :title="menuLabels.open" @click="openMobileNav">
           <Menu :size="21" aria-hidden="true"/>
         </button>
-        <div v-if="!user" class="topbar-leading">
-          <div class="guest-brand"><div class="brand-mark"><Boxes :size="22" aria-hidden="true"/></div>
-            <strong>ITP Inventory</strong>
-          </div>
-        </div>
         <div class="topbar-trailing">
           <PortalHomeLink compact class="portal-link--mobile" />
           <div v-if="user && availableCompanies.length > 0" class="company-switcher">
@@ -260,35 +269,7 @@ onMounted(boot);
           <BaseButton v-if="!connected" variant="secondary" @click="boot"><RefreshCw :size="16"/>{{ ui.t("actions.retry") }}</BaseButton>
         </div>
         <BaseLoadingState v-if="booting" :label="ui.t('generic.loading')" />
-        <BaseCard v-else-if="!user" class="login-card">
-          <div class="login-heading"><div class="login-icon"><Boxes :size="25" aria-hidden="true"/></div>
-            <div><h2>{{ ui.t("heading.login") }}</h2></div>
-          </div>
-          <form class="login-form" @submit.prevent="signIn">
-            <label>{{ ui.t("auth.email") }}
-              <input v-model="credentials.email" type="email" autocomplete="username"
-                :disabled="!browserLoginEnabled || loginBusy || !connected" required/>
-            </label>
-            <div class="password-field">
-              <label for="inventory-password">{{ ui.t("auth.password") }}</label>
-              <div class="password-control">
-                <input id="inventory-password" v-model="credentials.password" :type="passwordVisible?'text':'password'"
-                  autocomplete="current-password" minlength="8"
-                  :disabled="!browserLoginEnabled || loginBusy || !connected" required/>
-                <button type="button" :aria-label="ui.t(passwordVisible?'actions.hidePassword':'actions.showPassword')"
-                  :disabled="loginBusy" @click="passwordVisible=!passwordVisible">
-                  <EyeOff v-if="passwordVisible" :size="18" aria-hidden="true"/>
-                  <Eye v-else :size="18" aria-hidden="true"/>
-                </button>
-              </div>
-            </div>
-            <BaseButton type="submit" :disabled="!browserLoginEnabled || loginBusy || !connected">
-              {{ loginBusy ? ui.t("auth.signing") : ui.t("auth.login") }}
-            </BaseButton>
-          </form>
-          <p v-if="!browserLoginEnabled" class="muted login-note">{{ ui.t("auth.disabled") }}</p>
-        </BaseCard>
-        <div v-else-if="!selectedCompany && route.name!=='profile'" class="no-company">
+        <div v-else-if="!selectedCompany && route.name!=='profile' && route.name!=='platform-admin'" class="no-company">
           <Package :size="28" aria-hidden="true"/>
           <h2>{{ ui.t("auth.noCompanies") }}</h2>
         </div>

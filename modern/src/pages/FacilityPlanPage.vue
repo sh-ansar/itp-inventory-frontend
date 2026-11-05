@@ -5,15 +5,16 @@ import { computed, onUnmounted, ref, watch } from "vue";
 import { RouterLink, useRoute, useRouter } from "vue-router";
 import {
   ArrowLeft, ArrowUpRight, Boxes, Building2, Check, Clock3,
-  Grid2X2, ImagePlus, Maximize, Minus, Move, Plus,
+  Grid2X2, ImagePlus, Maximize, Minus, Move,
   RefreshCw, Save, Trash2, Warehouse, X, ZoomIn, ZoomOut,
 } from "lucide-vue-next";
 import BaseButton from "../components/ui/BaseButton.vue";
 import BaseIconButton from "../components/ui/BaseIconButton.vue";
 import BaseCard from "../components/ui/BaseCard.vue";
 import BaseDialog from "../components/ui/BaseDialog.vue";
-import BaseSearchField from "../components/ui/BaseSearchField.vue";
+
 import EquipmentTypeIcon from "../components/ui/EquipmentTypeIcon.vue";
+import FacilityPlanCatalog from "../components/facilities/FacilityPlanCatalog.vue";
 import { InventoryApiError } from "../api/client";
 import {
   clearFacilityPlanBackground, getFacilityPlan, getFacilityPlanEvents,
@@ -22,6 +23,7 @@ import {
 } from "../api/facilityPlans";
 import type { FacilityPlan, PlanElement, PlanEvent, PlanRect } from "../api/facilityPlans";
 import { useUiSettings } from "../stores/uiSettings";
+import { snapshot, bound, rectStyle, freePosition as findPlanFreePosition } from "../utils/planGeometry";
 
 const { open: confirmOpen, message: confirmMessage, title: confirmTitle,
   confirmLabel: confirmLabel, danger: confirmDanger, ask: askConfirmation,
@@ -83,19 +85,6 @@ async function load(){
 function message(e:unknown){
   if(e instanceof InventoryApiError&&e.status===409)return ui.t("plan.conflict");
   return e instanceof Error?e.message:ui.t("generic.unknownError");
-}
-function snapshot(el:PlanElement):PlanRect{
-  return {x:el.x??0,y:el.y??0,width:el.width??100,height:el.height??80};
-}
-function bound(value:number,max:number,snap=true):number{
-  const clamped=Math.max(0,Math.min(Math.floor(value),max));
-  return snap?Math.min(Math.round(clamped/10)*10,max):clamped;
-}
-function rectStyle(el:PlanElement):Record<string,string>{
-  return {
-    left:(el.x??0)+"px",top:(el.y??0)+"px",
-    width:(el.width??100)+"px",height:(el.height??80)+"px",
-  };
 }
 function focus(el:PlanElement){selectedId.value=el.id;}
 function openChild(el:PlanElement){if(el.kind==="node")
@@ -171,18 +160,7 @@ async function keyboardMove(event:KeyboardEvent,el:PlanElement){
   if(el.x!==initial.x||el.y!==initial.y)await savePosition(el,initial);
 }
 function freePosition(width:number,height:number):{x:number;y:number}|null{
-  if(!plan.value)return null;
-  const others=placed.value;
-  for(let y=30;y+height<=plan.value.canvas_height;y+=100){
-    for(let x=30;x+width<=plan.value.canvas_width;x+=120){
-      if(others.every(other=>{
-        const r=snapshot(other);
-        return x+width+10<=r.x||r.x+r.width+10<=x||
-          y+height+10<=r.y||r.y+r.height+10<=y;
-      }))return {x,y};
-    }
-  }
-  return null;
+  return findPlanFreePosition(plan.value,placed.value,width,height);
 }
 async function add(el:PlanElement){
   if(!canEdit.value||saving.value||!plan.value)return;
@@ -398,32 +376,9 @@ onUnmounted(()=>{abort?.abort();drag=null});
         </div>
 
         <aside class="plan-side">
-          <BaseCard class="catalog-card">
-            <div class="catalog-heading"><h3>{{ ui.t("plan.catalog") }}</h3>
-              <strong>{{ available.length }}</strong></div>
-            <BaseSearchField v-model="query" class="catalog-search"
-              :label="ui.t('plan.search')" :placeholder="ui.t('plan.search')"/>
-            <p v-if="!plan.elements.length" class="muted">{{ ui.t("plan.noItems") }}</p>
-            <p v-else-if="!available.length" class="muted">{{ ui.t("plan.emptyCatalog") }}</p>
-            <div v-else class="catalog-list">
-              <div v-for="el in available" :key="el.kind+el.id" class="catalog-item">
-                <div class="catalog-icon">
-                  <EquipmentTypeIcon v-if="el.kind==='asset'" :icon-key="el.icon_key" :icon-url="el.icon_url" :size="21"/>
-                  <Building2 v-else :size="21" aria-hidden="true"/>
-                </div>
-                <div class="catalog-description">
-                  <strong :title="el.name">{{ el.name }}</strong>
-                  <span>{{ el.code }}</span>
-                  <small>{{ ui.t(el.kind==='node'?'plan.children':'plan.assets') }}</small>
-                </div>
-                <button v-if="canEdit" type="button" class="catalog-add"
-                  :disabled="saving" :aria-label="ui.t('plan.place')+': '+el.name"
-                  :title="ui.t('plan.place')" @click="add(el)">
-                  <Plus :size="18" aria-hidden="true"/>
-                </button>
-              </div>
-            </div>
-          </BaseCard>
+          <FacilityPlanCatalog v-model:query="query" :available="available"
+            :total-count="plan.elements.length" :can-edit="canEdit" :saving="saving"
+            @add="add"/>
           <BaseCard v-if="selected" class="selection-card">
             <div class="catalog-heading"><h3>{{ selected.name }}</h3>
               <BaseIconButton type="button" :title="ui.t('actions.cancel')" :aria-label="ui.t('actions.cancel')"
@@ -536,16 +491,6 @@ onUnmounted(()=>{abort?.abort();drag=null});
 .catalog-heading{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:14px}
 .catalog-heading h3{font-size:13px;line-height:18px;margin:0;min-width:0;overflow-wrap:anywhere;font-weight:600}
 .catalog-heading>strong{font-size:12px;color:var(--color-muted)}
-.catalog-search{max-width:none;margin-bottom:11px;flex:none}
-.catalog-list{display:grid;gap:6px;max-height:440px;overflow-y:auto}
-.catalog-item{display:flex;align-items:center;gap:9px;min-width:0;padding:10px 8px;background:var(--color-soft);border:1px solid var(--color-stroke);border-radius:var(--radius-sm)}
-.catalog-icon{width:33px;height:33px;flex:none;display:grid;place-items:center;color:var(--color-primary);background:var(--color-surface);border-radius:8px}
-.catalog-description{display:grid;gap:3px;min-width:0;flex:1}
-.catalog-description strong{min-width:0;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;font-size:11px;font-weight:600}
-.catalog-description span,.catalog-description small{font-size:10px;color:var(--color-muted)}
-.catalog-add{width:30px;height:30px;flex:none;border:1px solid var(--color-stroke-strong);color:var(--color-primary);border-radius:var(--radius-sm);background:var(--color-surface);display:grid;place-items:center;cursor:pointer}
-.catalog-add:hover{background:var(--color-accent-soft)}
-.catalog-card>.muted{font-size:12px}
 .selection-card>.muted{font-size:11px;margin:0 0 10px}
 .selected-stats{display:grid;grid-template-columns:1fr 1fr;gap:9px}
 .selected-stats>div{display:grid;gap:5px;padding:10px;background:var(--color-soft);border-radius:var(--radius-sm)}
