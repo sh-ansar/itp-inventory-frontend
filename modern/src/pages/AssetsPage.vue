@@ -2,7 +2,7 @@
 import BaseSelect from "../components/ui/BaseSelect.vue";
 import BaseMultiSelect from "../components/ui/BaseMultiSelect.vue";
 import { computed, onUnmounted, ref, toRef, watch } from "vue";
-import { useRouter } from "vue-router";
+import { useRouter, useRoute } from "vue-router";
 import { Archive, History, Pencil, Plus, RefreshCw, PackageOpen, ClipboardList, QrCode, ArrowRightLeft, Route, FileCheck2, Download, Printer, SlidersHorizontal, UserRoundCheck } from "lucide-vue-next";
 import BaseButton from "../components/ui/BaseButton.vue";
 import BaseIconButton from "../components/ui/BaseIconButton.vue";
@@ -34,6 +34,7 @@ import { useUiSettings } from "../stores/uiSettings";
 const props = defineProps<{companyId: string; companyName: string; role: string}>();
 const ui = useUiSettings();
 const router = useRouter();
+const route = useRoute();
 const preferences=useCompanyTablePreferences(toRef(props,"companyId"),"assets",{
   sort_key:"inventory_number",sort_direction:"asc",per_page:25,
 });
@@ -51,6 +52,7 @@ const total = ref(0);
 const lastPage = ref(1);
 const search = computed({get:()=>preferences.state.search,set:value=>preferences.state.search=value});
 const debouncedSearch = ref("");
+watch(()=>route.query.search, query=>{if(typeof query==="string")search.value=query;else if(route.name==="assets")search.value="";},{immediate:true});
 const statuses = computed({get:()=>preferences.state.statuses,set:value=>preferences.state.statuses=value});
 const facilityFilters=computed({get:()=>preferences.state.facility_node_ids,set:value=>preferences.state.facility_node_ids=value});
 const personFilters=computed({get:()=>preferences.state.responsible_person_ids,set:value=>preferences.state.responsible_person_ids=value});

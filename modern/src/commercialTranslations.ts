@@ -4,7 +4,7 @@ import {reactive} from "vue";
 type Messages = Record<string,string>;
 const strings: Record<InventoryLocale,Messages> = {
   ru: {
-    brand:"ITP Inventory",home:"Главная",product:"Продукт",features:"Возможности",resources:"Ресурсы",
+    brand:"ITP Инвентаризация",home:"Главная",product:"Продукт",features:"Возможности",resources:"Ресурсы",
     plans:"Тарифы",pricing:"Тарифные планы",signIn:"Войти",signUp:"Создать аккаунт",
     workspace:"В рабочую область",openRegistry:"Перейти к учёту",back:"Назад",
     heroTitle:"Всё имущество компании — под контролем",

@@ -1,10 +1,10 @@
 <script setup lang="ts">
-import BaseDropdownSelect from "./components/ui/BaseDropdownSelect.vue";
 import hrmMenuIcon from "./assets/hrm-menu.svg";
 import { computed, nextTick, onMounted, onUnmounted, ref, watch } from "vue";
 import { RouterLink, RouterView, useRoute, useRouter } from "vue-router";
-import { Boxes, ClipboardList, BookOpen, Package, Building2, Users, Warehouse, LogOut, Sun, Moon, RefreshCw, FileCheck2, ShieldCheck, BarChart3, CreditCard, Settings, Menu, X } from "lucide-vue-next";
+import { Boxes, ClipboardList, BookOpen, Package, Building2, Users, Warehouse, Bell, Search, Sun, Moon, RefreshCw, FileCheck2, ShieldCheck, BarChart3, CreditCard, Settings, Menu, X } from "lucide-vue-next";
 import BaseButton from "./components/ui/BaseButton.vue";
+import InventoryAccountMenu from "./components/InventoryAccountMenu.vue";
 import BaseLoadingState from "./components/ui/BaseLoadingState.vue";
 import PortalHomeLink from "./components/ui/PortalHomeLink.vue";
 
@@ -14,7 +14,6 @@ import { InventoryApiError } from "./api/client";
 import { commercialApi } from "./api/commercial";
 import { commercialT } from "./commercialTranslations";
 import { useUiSettings } from "./stores/uiSettings";
-import type { InventoryLocale } from "./i18n";
 
 const ui = useUiSettings();
 const route = useRoute();
@@ -52,6 +51,13 @@ const companyId = ref("");
 const connected = ref(false);
 const booting = ref(true);
 const signoutBusy = ref(false);
+const headerSearch=ref("");
+const notificationOpen=ref(false);
+const headerInput=ref<HTMLInputElement|null>(null);
+const inventoryBrand=computed(()=>ui.locale==="ru"?"ITP Инвентаризация":ui.locale==="ka"?"ITP ინვენტარიზაცია":"ITP Inventory");
+const headerCopy=computed(()=>ui.locale==="en"?{search:"Search assets",notifications:"Notifications",empty:"No notifications yet"}:ui.locale==="ka"?{search:"აქტივების ძიება",notifications:"შეტყობინებები",empty:"შეტყობინებები ჯერ არ არის"}:{search:"Поиск по имуществу",notifications:"Уведомления",empty:"Пока нет уведомлений"});
+function searchRegistry(){const q=headerSearch.value.trim();notificationOpen.value=false;void router.push({name:"assets",query:q?{search:q}:{}});}
+watch(()=>route.query.search, q=>{if(route.name==="assets")headerSearch.value=typeof q==="string"?q:"";},{immediate:true});
 const error = ref("");
 const companySettingsTitle=computed(()=>ui.locale==='en'?'Company settings':ui.locale==='ka'?'კომპანიის პარამეტრები':'Настройки компании');
 const reportsTitle=computed(()=>ui.locale==="ka"?"ანგარიშები":ui.locale==="en"?"Reports":"Отчёты");
@@ -73,14 +79,6 @@ const accountCaption=computed(()=>ui.locale==="en"?"Work account":ui.locale==="k
 const selectedCompany = computed(() =>
   availableCompanies.value.find(c => c.id === companyId.value) ?? null
 );
-const companyOptions=computed(()=>availableCompanies.value.map(company=>({
-  value:company.id,label:company.name,
-})));
-const localeOptions=[
-  {value:"ru",label:"RU"},
-  {value:"en",label:"EN"},
-  {value:"ka",label:"GE"},
-];
 watch(()=>[selectedCompany.value?.role_code,route.name],([role,name])=>{
   if(user.value&&role&&(name==="company-roles"||name==="company-settings")&&role!=="company_admin"){
     void router.replace("/registry");
@@ -147,11 +145,8 @@ async function signOut() {
   finally { signoutBusy.value = false; }
 }
 
-function switchLocale(next:string) {
-  if (["ru","en","ka"].includes(next)) ui.locale = next as InventoryLocale;
-}
 watch(() => [route.name,ui.locale,!!user.value], () => {
-  document.title = "ITP Inventory";
+  document.title = inventoryBrand.value;
 },{immediate:true});
 onMounted(async () => {
   await boot();
@@ -171,7 +166,7 @@ onMounted(async () => {
       <div class="sidebar-head">
         <div class="brand">
           <div class="brand-mark"><Boxes :size="24" aria-hidden="true"/></div>
-          <div class="brand-text"><strong>ITP Inventory</strong></div>
+          <div class="brand-text"><strong>{{ inventoryBrand }}</strong></div>
         </div>
         <button v-if="user" type="button" class="sidebar-collapse icon-control"
           :title="ui.sidebarCollapsed?menuLabels.expand:menuLabels.collapse"
@@ -233,35 +228,45 @@ onMounted(async () => {
       </div>
     </aside>
     <div class="app-main">
-      <header class="topbar">
+      <header class="topbar unified-inventory-topbar">
         <button v-if="user" type="button" class="mobile-nav-trigger icon-control"
           :aria-label="menuLabels.open" :title="menuLabels.open" @click="openMobileNav">
           <Menu :size="21" aria-hidden="true"/>
         </button>
-        <div class="topbar-trailing">
-          <PortalHomeLink compact class="portal-link--mobile" />
-          <div v-if="user && availableCompanies.length > 0" class="company-switcher">
-            <span>{{ ui.t("auth.company") }}</span>
-            <BaseDropdownSelect v-model="companyId" class="company-picker"
-              :label="ui.t('auth.company')" :options="companyOptions" :locale="ui.locale"
-              :searchable="availableCompanies.length>7"/>
+        <form class="inventory-header-search" role="search" @submit.prevent="searchRegistry">
+          <div class="inventory-header-search-field">
+            <Search :size="17" aria-hidden="true"/>
+            <input ref="headerInput" v-model="headerSearch" type="search"
+              :aria-label="headerCopy.search" :placeholder="headerCopy.search" autocomplete="off"/>
           </div>
-          <BaseDropdownSelect :model-value="ui.locale" @update:modelValue="switchLocale"
-            class="locale-select" label="Язык / Language"
-            :options="localeOptions" :locale="ui.locale"/>
-          <button type="button" class="theme-toggle"
-            :title="ui.t(ui.theme === 'dark' ? 'generic.light' : 'generic.dark')"
-            :aria-label="ui.t(ui.theme === 'dark' ? 'generic.light' : 'generic.dark')"
-            @click="ui.toggleTheme">
-            <Sun v-if="ui.theme==='dark'" :size="18" aria-hidden="true"/>
-            <Moon v-else :size="18" aria-hidden="true"/>
+          <button type="submit" class="inventory-header-search-submit" :aria-label="headerCopy.search">
+            <Search :size="18" aria-hidden="true"/>
           </button>
-                    <RouterLink v-if="user" to="/profile" class="profile-summary profile-account-link" :title="profileTitle" :aria-label="profileTitle">
-            <span class="user-avatar" aria-hidden="true">{{ profileInitials }}</span>
-            <span class="profile-copy"><strong>{{ user.name }}</strong><small>{{ accountCaption }}</small></span>
-          </RouterLink>          <BaseButton v-if="user" variant="secondary" :disabled="signoutBusy" @click="signOut">
-            <LogOut :size="16" aria-hidden="true"/> {{ ui.t("auth.logout") }}
-          </BaseButton>
+        </form>
+        <div class="topbar-trailing inventory-unified-actions">
+          <div class="inventory-notifications-anchor">
+            <button class="inventory-unified-icon" type="button" :title="headerCopy.notifications"
+              :aria-label="headerCopy.notifications" :aria-expanded="notificationOpen"
+              @click="notificationOpen=!notificationOpen">
+              <Bell :size="20" aria-hidden="true"/>
+            </button>
+            <div v-if="notificationOpen" class="inventory-notifications-popover" role="dialog"
+              :aria-label="headerCopy.notifications">
+              <strong>{{ headerCopy.notifications }}</strong>
+              <p>{{ headerCopy.empty }}</p>
+            </div>
+          </div>
+          <button class="inventory-unified-icon" type="button"
+            :title="ui.t(ui.theme==='dark'?'generic.light':'generic.dark')"
+            :aria-label="ui.t(ui.theme==='dark'?'generic.light':'generic.dark')"
+            :aria-pressed="ui.theme==='dark'" @click="ui.toggleTheme">
+            <Sun v-if="ui.theme==='dark'" :size="20" aria-hidden="true"/>
+            <Moon v-else :size="20" aria-hidden="true"/>
+          </button>
+          <InventoryAccountMenu v-if="user" :user="user" :locale="ui.locale"
+            :companies="availableCompanies" :company-id="companyId"
+            :admin="canOpenPlatformAdmin" :signout-busy="signoutBusy"
+            @update:companyId="companyId=$event" @logout="signOut"/>
         </div>
       </header>
       <main class="view-content">
@@ -282,6 +287,36 @@ onMounted(async () => {
   </div>
 </template>
 <style scoped>
+.unified-inventory-topbar{display:flex;align-items:center;flex-wrap:nowrap!important;gap:18px;
+ background:transparent!important;min-height:64px;padding:0 24px;position:relative;z-index:28}
+.inventory-header-search{display:flex;align-items:center;gap:8px;width:100%;flex:0 1 455px;min-width:0;margin-right:auto}
+.inventory-header-search-field{display:flex;align-items:center;gap:9px;flex:1;min-width:0;height:38px;padding:0 11px;
+ background:var(--color-surface);border:1px solid var(--color-stroke);border-radius:8px;box-shadow:var(--shadow-control);color:var(--color-muted)}
+.inventory-header-search-field:focus-within{border-color:var(--color-primary-stroke)}
+.inventory-header-search-field input{width:100%;min-width:0;height:100%;border:0;outline:0;background:transparent;
+ color:var(--color-text);font:inherit;font-size:13px;box-shadow:none;padding:0}
+.inventory-header-search-submit{display:grid;place-items:center;width:38px;height:38px;flex:none;
+ border:1px solid var(--color-primary);border-radius:7px;background:var(--color-primary);color:var(--color-on-primary);cursor:pointer}
+.inventory-unified-actions{display:flex;align-items:center;justify-content:flex-end;gap:8px;flex:none;margin-left:auto}
+.inventory-unified-icon{display:grid;place-items:center;width:38px;height:38px;background:transparent;border:1px solid transparent;
+ border-radius:8px;color:var(--color-muted);cursor:pointer}
+.inventory-unified-icon:hover{background:var(--color-hover);color:var(--color-primary)}
+.inventory-notifications-anchor{position:relative}
+.inventory-notifications-popover{position:absolute;z-index:120;right:-76px;top:calc(100% + 12px);
+ width:min(320px,calc(100vw - 24px));padding:20px;border:1px solid var(--color-stroke);
+ border-radius:12px;background:color-mix(in srgb,var(--color-surface-raised) 85%,transparent);
+ -webkit-backdrop-filter:blur(16px);backdrop-filter:blur(16px);box-shadow:0 14px 36px rgba(13,40,56,.16)}
+.inventory-notifications-popover strong{font-size:14px}
+.inventory-notifications-popover p{font-size:12px;color:var(--color-muted);margin:25px 0}
+@media(max-width:860px){.unified-inventory-topbar{gap:8px;padding:0 14px}
+ .inventory-header-search{flex:1 1 0;width:auto;margin-right:0}
+ .inventory-unified-actions{gap:3px}}
+@media(max-width:520px){.unified-inventory-topbar{gap:5px;padding:0 10px}
+ .inventory-header-search{gap:5px}
+ .inventory-header-search-field{height:36px;padding:0 7px}
+ .inventory-header-search-submit{width:36px;height:36px}
+ .inventory-unified-actions{gap:0}
+ .inventory-unified-icon{width:32px;height:34px}}
 .profile-account-link{text-decoration:none;color:inherit;cursor:pointer;border-radius:var(--radius-sm)}
 .profile-account-link:hover{background:var(--color-hover)}
 .profile-account-link:focus-visible{outline:2px solid var(--color-primary);outline-offset:2px}
