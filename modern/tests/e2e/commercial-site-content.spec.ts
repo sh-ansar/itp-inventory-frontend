@@ -1,5 +1,11 @@
 import {test,expect} from "@playwright/test";
 
+test.beforeEach(async({page})=>{
+ await page.addInitScript(()=>{
+  document.cookie="INVENTORY-XSRF-TOKEN=playwright-mock; Path=/; SameSite=Lax";
+ });
+});
+
 test("super-admin edits Inventory website copy and live landing reads localized text",async({page})=>{
  let saved:Record<string,string>={};
  await page.route("**/inventory-api/api/v1/me",route=>route.fulfill({
@@ -45,6 +51,7 @@ test("anonymous user cannot edit site content through admin",async({page})=>{
   status:401,contentType:"application/json",body:"{}",
  }));
  await page.goto("admin/site");
- await expect(page.getByRole("heading",{name:"Вход в Inventory"})).toBeVisible();
+ await expect(page).toHaveURL(/\/inventory\/auth\/login\?next=/);
+ await expect(page.locator(".inv-auth-form")).toHaveCount(1);
  await expect(page.locator("input[aria-label='Заголовок первого экрана']")).toHaveCount(0);
 });

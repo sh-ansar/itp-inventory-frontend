@@ -2,9 +2,10 @@
 import {computed,onMounted,onBeforeUnmount,ref,watch} from "vue";
 import {useRoute,useRouter} from "vue-router";
 import {Boxes,Building2,CreditCard,FileText,ShieldCheck,ClipboardCheck,ArrowLeft,
-  RefreshCw,Search,X,ChevronRight,Download,Globe2} from "lucide-vue-next";
+  RefreshCw,Search,X,ChevronRight,Download,Globe2,LogOut} from "lucide-vue-next";
 import {useUiSettings} from "../stores/uiSettings";
 import {commercialT} from "../commercialTranslations";
+import {logout} from "../api/session";
 import {commercialApi,commercialBlob,previewPdf} from "../api/commercial";
 import type {AdminOverview,Plan,Organization,Invoice,LegalRecord} from "../api/commercial";
 import AdminDialog from "../components/commercial/AdminDialog.vue";
@@ -32,6 +33,17 @@ const sections=[
 ] as const;
 const overview=ref<AdminOverview|null>(null);
 const loading=ref(true),busy=ref(false),error=ref(""),notice=ref("");
+const signoutBusy=ref(false);
+async function signOut(){
+ if(signoutBusy.value)return;
+ signoutBusy.value=true;error.value="";
+ try {
+  await logout();
+  await router.replace("/auth/login");
+ } catch(e) {
+  error.value=e instanceof Error?e.message:t("errors");
+ } finally {signoutBusy.value=false;}
+}
 const section=computed<Section>(()=>sections.find(s=>s.id===route.params.section)?.id as Section||"companies");
 const permitted=(permission:string)=>!!overview.value?.permissions.some(p=>p==="platform.manage"||p===permission);
 const availableSections=computed(()=>sections.filter(s=>permitted(s.permission)));
@@ -249,6 +261,9 @@ onMounted(()=>document.title="ITP Inventory · "+t("adminTitle"));
    <div><p>{{t("adminTitle")}}</p>
     <h1>{{t(sections.find(s=>s.id===section)?.title||"adminCompanies")}}</h1></div>
    <div class="inv-admin-top-actions">
+    <button type="button" class="inv-btn inv-btn-secondary" :disabled="signoutBusy" @click="signOut">
+     <LogOut :size="16" aria-hidden="true" />{{ui.t("auth.logout")}}
+    </button>
     <button type="button" class="inv-btn inv-btn-secondary" :aria-label="t('refresh')" @click="load"><RefreshCw :size="16"/></button>
     <button v-if="section==='plans'&&permitted('plans.write')" class="inv-btn inv-btn-primary" @click="create('plan')">{{t("createPlan")}}</button>
     <button v-if="section==='payments'&&permitted('billing.write')" class="inv-btn inv-btn-primary" @click="create('invoice')">{{t("createInvoice")}}</button>

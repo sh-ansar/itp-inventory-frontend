@@ -58,3 +58,12 @@ npm run dev -- --host 127.0.0.1 --port 5174
 The Inventory-only super-admin has an editable Site section at /inventory/admin/site. Authorized users can edit 20 plain-text landing and pricing labels separately for ru/en/ge. PublicLayout loads current locale values from commercial/site-content; built-in translations remain the fallback. Site edits become visible without rebuilding the application. The public landing does not access the admin endpoint.
 PlanEditor supports localized names and descriptions per ru/en/ge, modules, price, company/user/storage/file limits. Public zero-price prototype plans display "On request", not "Free"; actual pricing can be changed by publishing new plan versions. Paid onboarding, legal publication and invoice issuance remain feature-gated until their separate approvals.
 QA: npm run build; npm run test:unit; npm run test:e2e -- tests/e2e/commercial-site-content.spec.ts. Browser mocks do not replace a real authenticated PostgreSQL environment test.
+
+## Single sign-in and sign-out flow (2026-11-05)
+
+- The only sign-in form is /inventory/auth/login (pages/public/AuthPage.vue). The retired in-workspace form has been removed from App.vue.
+- The workspace and super-admin Sign out buttons submit POST /inventory-api/auth/logout. On success, they redirect to /inventory/auth/login (never /inventory/registry).
+- A guest opening private workspace routes is redirected to /inventory/auth/login?next=<original path>; the admin gate redirects 401 but preserves the 403 access-denied state.
+- Login redirects to /registry or the explicitly requested admin route. Sign-out intentionally removes next.
+- Regression coverage: tests/e2e/auth-logout.spec.ts, tests/e2e/commercial-public.spec.ts and tests/smoke/parity-responsive.spec.ts.
+- Backend session security and CSRF protection are unchanged.

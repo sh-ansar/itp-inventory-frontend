@@ -75,7 +75,8 @@ test("unauthenticated /admin is not a public admin page",async({page})=>{
  await page.route("**/inventory-api/api/v1/me",route=>
   route.fulfill({status:401,contentType:"application/json",body:"{}"}));
  await page.goto("admin/plans");
- await expect(page.getByRole("heading",{name:"Вход в Inventory"})).toBeVisible();
+ await expect(page).toHaveURL(/\/inventory\/auth\/login\?next=/);
+ await expect(page.locator(".inv-auth-form")).toHaveCount(1);
  await expect(page.locator(".inventory-platform-admin")).toHaveCount(0);
 });
 
@@ -134,10 +135,10 @@ test("authorized admin can browse companies, published plans, and supplier billi
  await page.goto("admin/companies");
  await expect(page.getByRole("heading",{name:"Компании"})).toBeVisible();
  await expect(page.getByText("Company QA").first()).toBeVisible();
- await page.getByRole("link",{name:"Тарифы"}).click();
+ await page.locator(".inv-admin-sidebar").getByRole("link",{name:"Тарифы"}).click();
  await expect(page.getByRole("heading",{name:"Тарифы"})).toBeVisible();
  await expect(page.getByText("starter",{exact:true}).first()).toBeVisible();
- await page.getByRole("link",{name:"Оплаты и счета"}).click();
+ await page.locator(".inv-admin-sidebar").getByRole("link",{name:"Оплаты и счета"}).click();
  await page.getByRole("button",{name:"Реквизиты поставщика"}).click();
  await expect(page.getByRole("dialog",{name:"Реквизиты поставщика"})).toBeVisible();
 });
