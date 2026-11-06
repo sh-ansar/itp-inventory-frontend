@@ -1,0 +1,6 @@
+{
+  "sourceCommit": "ede6a491441b243bfb0c543b2cf514bbb14106b0",
+  "requested": "/inventory/",
+  "actual": "http://127.0.0.1:6175/inventory/auth/login?next=/",
+  "screenshot": "screenshots/before-home-375.png"
+}

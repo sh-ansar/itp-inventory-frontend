@@ -1,73 +1,88 @@
-# ITP Inventory — развёртывание и восстановление
+# ITP Inventory — Runbook выпуска Frontend/Backend (Windows + Apache)
 
-**Актуальная зафиксированная версия:** Frontend r21, Backend r10 (03.11.2026). Это описание фактического окружения; перепроверяйте активные junction перед каждым выпуском. **PR #30 закрыт как дубликат: финальное изменение включено в r20 через PR #33.**
+**Контрольный снимок:** на 04.11.2026 опубликованы FE r22 / BE r11. Это НЕ цель будущих релизов и не подставляется автоматически в команды. Источник правды о текущей версии: фактические Windows junction + manifest релиза + SHA объединенного main.
 
-## 1. Архитектура
-- Frontend: Vue 3 + TypeScript + Vite + Pinia + Vue Router.
-- Backend: Laravel/PHP; корпоративная многокомпанейская модель, авторизация в сессии и защищённый API.
-- Публичный адрес: https://platform.itpmining.kz/inventory/
-- API: https://platform.itpmining.kz/inventory-api/
-- URL приложения: /inventory/; сборка Vite обязана учитывать base /inventory/.
-- Ключевые каталоги сервера:
-  - Frontend: C:\deploy\inventory\site\releases\
-  - Активный Frontend: C:\deploy\inventory\site\current (junction)
-  - Backend: C:\deploy\inventory\backend\releases\
-  - Активный Backend: C:\deploy\inventory\backend\current (junction)
-  - Скрипты/отчёты: C:\deploy\inventory\deployment-state\
-- Windows-службы: ITP-INVENTORY-HTTP и ITP-INVENTORY-FastCGI.
-- Веб-сайт HRM и корпоративный Portal нельзя менять при релизе Inventory.
+## 1. Схема поставки
 
-## 2. Репозитории и принцип поставки
-- Frontend: `sh-ansar/itp-inventory-frontend`, основной пакет в `modern/`.
-- Backend ведётся отдельным репозиторием и поставляется отдельным процессом.
-- Создавать ветку от актуального main, не пушить в main напрямую. Для UI — отдельный PR.
-- Релиз в production выполняется **только после** независимого review, тестов и готового отката.
+HTTPS https://platform.itpmining.kz
+→ /inventory/ → C:\deploy\inventory\site\current (immutable FE release)
+→ /inventory-api/ → отдельная HTTP/FastCGI служба Laravel → C:\deploy\inventory\backend\current → независимая Inventory PostgreSQL база
 
-## 3. Локальный Frontend
-```powershell
-cd <frontend-repo>\modern
+Директории:
+- C:\deploy\inventory\site\releases\ — отдельные неизменяемые frontend releases.
+- C:\deploy\inventory\backend\releases\ — отдельные неизменяемые backend releases.
+- C:\deploy\inventory\site\current и backend\current — junction на активный release.
+- C:\deploy\inventory\shared\storage — постоянное приватное storage Laravel.
+- C:\deploy\inventory\deployment-state\ — manifest/sha/операционные логи; хранить с ограниченными ACL.
+- C:\deploy\inventory\httpd-isolated\ — маршрутизация Inventory для общего Apache.
+
+Windows службы: ITP-INVENTORY-HTTP, ITP-INVENTORY-FastCGI. Apache является общим frontend для других продуктов; никогда не перезаписывайте общий конфиг, сертификаты или маршруты без согласованного change.
+
+## 2. Разработка / локальный QA
+
+Минимум: Node 24, npm, PHP 8.4 (Laravel 12), Composer 2, расширения pdo_pgsql/pdo_sqlite/mbstring/xml/fileinfo/gd, PostgreSQL 16 или отдельный SQLite для автоматизированного QA. Отдельная Inventory база и .env. Запуск на 127.0.0.1, не связывать с prod.
+
+Backend:
+~~~powershell
+cd <inventory-backend>
+composer install
+Copy-Item .env.example .env
+# Для локального QA: APP_ENV=local, DB_CONNECTION=sqlite, DB_DATABASE=<isolated-local-file>,
+# SESSION_SECURE_COOKIE=false, MAIL_MAILER=log; отдельный новый APP_KEY.
+php artisan key:generate
+php artisan migrate --force
+php artisan db:seed --class=LocalDevelopmentSeeder
+php artisan serve --host=127.0.0.1 --port=18090
+~~~
+
+LocalDevelopmentSeeder **принудительно отказывает** вне APP_ENV=local + SQLite; пароль QA сохраняет в приватном gitignored-файле storage/app/private/local-inventory-qa.secret. Никогда не запускайте его в production.
+
+Frontend:
+~~~powershell
+cd <inventory-frontend>\modern
 npm ci
 npm run typecheck
 npm run test:unit
-npm run build
-npx playwright test
-```
-Результат сборки: `modern/dist`. На тестовом окружении конфигурацию `INVENTORY_LOCAL_API_TARGET` и адрес сервера задавать отдельно. Не копировать конфигурационные файлы реального производства и секреты в репозиторий.
+$env:INVENTORY_LOCAL_API_TARGET="http://127.0.0.1:18090"
+npm run dev -- --host 127.0.0.1 --port 5174
+~~~
 
-## 4. Контроль перед релизом
-1. Зафиксировать SHA слияния в main и SHA исходной PR-ветки; проверить совпадение деревьев Git.
-2. Проверить Vue typecheck, unit, Playwright по ролям, RU/EN/GE, обеим темам и мобильным ширинам.
-3. Проверить авторизацию через /api/v1/me и компании **после входа**, а не только HTTP 200 на /auth/login.
-4. Создать новый **неизменяемый** каталог releases (не переписывать старую сборку).
-5. Перенести только artefacts dist, проверенный .htaccess и брендовые ассеты из предыдущего релиза.
-6. Проверить SHA256 JS/CSS, наличие файлов, ссылки на asset names внутри index.html.
-7. Проверить текущие junction и службы; сделать резервные копии данных перед любыми Backend/DB миграциями.
-8. Проверить GET Inventory, Inventory API health, HRM и корень Portal до переключения.
-9. Переключить **только** Frontend junction, проверить фактическую выдачу нового index.html и файлов.
-10. Выполнить повторный Playwright smoke, проверить JS errors, HTTP 5xx и соседние проекты.
+В отдельном терминале выполнить npm run build; результаты modern/dist. Не используйте корневое legacy Vue 2 приложение.
 
-## 5. Безопасный выпуск на сервере
-Использовать проверенную модель `deployment-state/deploy-ui-r19-20261103.ps1` как **образец**, но создавать новый скрипт/метаданные для каждого релиза. Старый скрипт r19 содержит фиксированные SHA и пути и не может быть повторно применён для новых выпусков.
-- Запрещено запускать старый release-script без пересмотра всех путей и expected SHA.
-- Не удалять текущую и предыдущую версии до завершения полного QA.
-- Проверки файлов должны выполняться **до** переключения junction.
-- При любой ошибке пост-проверки переключить ссылку обратно на прежний release.
-- После переключения повторно проверить Backend junction: его адрес не должен измениться.
+## 3. Preflight промышленного релиза
 
-## 6. Откат
-1. Запретить дальнейшее изменение production до выяснения причины.
-2. Сверить активный `site/current` с ожидаемым текущим релизом.
-3. Переключить junction на предыдущий проверенный релиз; **не удалять целевой каталог до восстановления**.
-4. Проверить Inventory, API, HRM, Portal и тест входа. Внести запись в журнал release.
-5. При Backend/DB изменениях — пользоваться отдельным протестированным планом восстановления данных; откат Frontend сам по себе не откатывает БД.
+1. Только reviewed PR и зафиксированные FE/BE merge SHA в GitHub main. Никаких прямых коммитов в main и изменений working directory production.
+2. CI green: FE typecheck/unit/build + Playwright smoke; BE PHPUnit + PostgreSQL 16 checks. Для прав/данных выполнить авторизованный Playwright на изолированном QA.
+3. Согласовать миграции (DDL, data impact, индексы, locks), ограничить доступ по времени change. Сделать проверяемый PostgreSQL backup + отдельный restore rehearsal. Документировать проверку контрольной суммы backup.
+4. Новые backend и frontend releases собирать в staging, **без** замены current. Production .env/APP_KEY и private storage не копировать в repo, QA и пользовательские скриншоты.
+5. Проверить Apache rewrite для /inventory/ deep-link, API proxy, валидную TLS цепочку, session cookie/XSRF и точные пути. Проверить, что отсутствуют конфликты с /hrm/, /mro/ и корнем Portal.
+6. Сверить SHA256 frontend index/assets и backend composer.lock, содержимое bootstrap/cache, доступность vendor/autoload, права NTFS к storage, ожидаемые активные junction.
+7. На backend кандидате выполнить php artisan migrate:status и php artisan migrate --pretend. Изменения схемы применять **один раз** лишь после preflight и backup/restore gate.
+8. Использовать проверенный per-release скрипт с явными expected-old и expected-new target, SHA и rollback path. Никакой повторной команды старого r19/r22 с зашитыми путями.
+9. Переключить только Inventory службы и junction; другие приложения и их Apache vhosts не трогать. Валидация index фактически ссылается на новые JS/CSS, а не только HTTP 200.
 
-## 7. Эксплуатация и безопасность
-- Не публиковать `.env`, ключи, пароли, базы, cookie и тестовые storage-state в GitHub или сборке.
-- Не перемешивать cookie/sessions и CSRF-маркеры с HRM или Portal.
-- Тестовые данные хранить в изолированной QA БД, регулярно обновлять из безопасных обезличенных фикстур.
-- Сохранять технические журналы, миграционный журнал, SHA релизов и контрольные суммы.
-- Для `/auth/login` HTTP 200 **недостаточно**: обязательна проверка `/api/v1/me` и `/api/v1/companies`.
-- Хранить rollback-ready предыдущую версию и резервные копии согласно утверждённой политике.
+## 4. После выпуска
 
-## 8. Состояние последней приёмки
-Frontend r21 и Backend r10 опубликованы после Frontend 80/80 unit, Backend 82/82 feature (1267 assertions), production smoke 51/51. Миграции справочников были добавочными и предварялись PostgreSQL backup и проверкой на дубли. Полная авторизованная матрица RU/EN/GE и всех ролей **не подтверждена** из-за 401 защищённого API в изолированном QA. PR #30 закрыт как дубликат выпуска через PR #33.
+Прогнать:
+- GET /inventory/ и его CSS/JS с фактическим SHA из manifest;
+- GET /inventory-api/api/v1/health → 200; GET /inventory-api/api/v1/me без сессии → 401;
+- авторизованный login + /api/v1/me + список компаний, смена компании, список активов;
+- доступ admin/manager/viewer, запрет чужой компании, CSRF 419, повторную загрузку раздела;
+- /hrm/, /mro/, корень Portal, ETP и другие критичные адреса без изменений;
+- журналы Laravel, Inventory HTTP/FastCGI, отсутствие новых 500.
+
+Релиз не считается выполненным без evidence: оба SHA, UTC+локальное время, миграции Ran, service status, backup ID, хеши assets, 401/200, ссылки на тесты, previous/current pointers.
+
+## 5. Откат и восстановление
+
+- При отказе post-check **возвратить только Inventory junction** на ранее подтвержденные релизы и перезапустить **только Inventory службы**. Не удалять старые releases и не менять shared storage.
+- При уже примененных ADDITIVE миграциях откат кода **не означает** откат схемы; убедиться в обратной совместимости r(N-1) либо использовать согласованный план восстановления БД с владельцем данных. НЕ запускать автоматически migrate:rollback на боевой БД.
+- Если затронуты данные, оповестить владельца и применять восстановление из проверенного бэкапа по отдельному DR-процессу. Все действия отражать в incident/release журнале.
+- Проверить сразу оба компонента Inventory и соседние сайты, не считать наличие работающего Apache доказательством работы Inventory.
+
+## 6. Секреты и правила
+
+APP_KEY, DB_PASSWORD, SMTP, ключи интеграций, cookie и storageState не печатать в логи и не коммитить. Смена ключей и TLS-сертификатов проводится отдельным change с проверкой сессий/шифрования; автоматическое key:generate на уже развернутой БД запрещено.
+
+Авторитетная документация Backend (схема БД, сервисы, миграции и DR):
+https://github.com/sh-ansar/itp-inventory-backend/tree/main/docs

@@ -16,7 +16,8 @@
     "pinia": "^3.0.0",
     "qrcode": "^1.5.4",
     "vue": "^3.5.0",
-    "vue-router": "^4.5.0"
+    "vue-router": "^4.5.0",
+    "@itpmining/vue-basic-components": "file:vendor/itpmining-vue-basic-components-0.10.0-reserve.4.tgz"
   },
   "devDependencies": {
     "@playwright/test": "^1.64.1",

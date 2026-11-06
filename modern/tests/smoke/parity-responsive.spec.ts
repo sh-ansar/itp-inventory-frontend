@@ -55,7 +55,8 @@ for(const width of [360,390,768,1440]){
     await page.setViewportSize({width,height:900});
     await context.addCookies([{name:"INVENTORY-XSRF-TOKEN",value:"smoke",url:"http://127.0.0.1:5174"}]);
     await mockApi(page);
-    await page.goto("/inventory/");
+    // /inventory/ is the public Portal-style landing; the protected registry stays at /inventory/registry.
+    await page.goto("/inventory/registry");
     await expect(page.getByRole("heading",{name:"Реестр активов"}).first()).toBeVisible();
     const portal = page.locator('a.portal-home:visible');
     await expect(portal).toHaveCount(1);

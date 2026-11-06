@@ -1,19 +1,19 @@
 <script setup lang="ts">
-import BaseDropdownSelect from "./components/ui/BaseDropdownSelect.vue";
 import hrmMenuIcon from "./assets/hrm-menu.svg";
-import { computed, nextTick, onMounted, onUnmounted, reactive, ref, watch } from "vue";
+import { computed, nextTick, onMounted, onUnmounted, ref, watch } from "vue";
 import { RouterLink, RouterView, useRoute, useRouter } from "vue-router";
-import { Boxes, ClipboardList, BookOpen, Package, Building2, Users, Warehouse, LogOut, Sun, Moon, Eye, EyeOff, RefreshCw, FileCheck2, ShieldCheck, BarChart3, Settings, Menu, X } from "lucide-vue-next";
+import { Boxes, ClipboardList, BookOpen, Package, Building2, Users, Warehouse, Bell, Search, Sun, Moon, RefreshCw, FileCheck2, ShieldCheck, BarChart3, CreditCard, Settings, Menu, X } from "lucide-vue-next";
 import BaseButton from "./components/ui/BaseButton.vue";
-import BaseCard from "./components/ui/BaseCard.vue";
+import InventoryAccountMenu from "./components/InventoryAccountMenu.vue";
 import BaseLoadingState from "./components/ui/BaseLoadingState.vue";
 import PortalHomeLink from "./components/ui/PortalHomeLink.vue";
 
-import { health, login, currentUser, logout, companies } from "./api/session";
+import { health, currentUser, logout, companies } from "./api/session";
 import type { InventoryUser, CompanyAccess } from "./api/session";
 import { InventoryApiError } from "./api/client";
+import { commercialApi } from "./api/commercial";
+import { commercialT } from "./commercialTranslations";
 import { useUiSettings } from "./stores/uiSettings";
-import type { InventoryLocale } from "./i18n";
 
 const ui = useUiSettings();
 const route = useRoute();
@@ -43,20 +43,26 @@ onUnmounted(()=>{
   document.body.classList.remove("inventory-mobile-nav-open");
 });
 const user = ref<InventoryUser | null>(null);
+const canOpenPlatformAdmin = ref(false);
+const platformAdminTitle = computed(()=>commercialT(ui.locale,"adminLink"));
 function updateAccountName(name:string){if(user.value)user.value={...user.value,name};}
 const availableCompanies = ref<CompanyAccess[]>([]);
 const companyId = ref("");
 const connected = ref(false);
-const browserLoginEnabled = ref(false);
 const booting = ref(true);
-const loginBusy = ref(false);
 const signoutBusy = ref(false);
+const headerSearch=ref("");
+const notificationOpen=ref(false);
+const headerInput=ref<HTMLInputElement|null>(null);
+const inventoryBrand=computed(()=>ui.locale==="ru"?"ITP Инвентаризация":ui.locale==="ka"?"ITP ინვენტარიზაცია":"ITP Inventory");
+const headerCopy=computed(()=>ui.locale==="en"?{search:"Search assets",notifications:"Notifications",empty:"No notifications yet"}:ui.locale==="ka"?{search:"აქტივების ძიება",notifications:"შეტყობინებები",empty:"შეტყობინებები ჯერ არ არის"}:{search:"Поиск по имуществу",notifications:"Уведомления",empty:"Пока нет уведомлений"});
+function searchRegistry(){const q=headerSearch.value.trim();notificationOpen.value=false;void router.push({name:"assets",query:q?{search:q}:{}});}
+watch(()=>route.query.search, q=>{if(route.name==="assets")headerSearch.value=typeof q==="string"?q:"";},{immediate:true});
 const error = ref("");
-const credentials = reactive({ email:"", password:"" });
-const passwordVisible = ref(false);
 const companySettingsTitle=computed(()=>ui.locale==='en'?'Company settings':ui.locale==='ka'?'კომპანიის პარამეტრები':'Настройки компании');
 const reportsTitle=computed(()=>ui.locale==="ka"?"ანგარიშები":ui.locale==="en"?"Reports":"Отчёты");
-const currentTitle = computed(() => route.name === "company-settings" ? companySettingsTitle.value : route.name === "profile" ? profileTitle.value : route.name === "reports" ? reportsTitle.value : ui.t(
+const billingTitle=computed(()=>commercialT(ui.locale,"adminPayments"));
+const currentTitle = computed(() => route.name === "platform-admin" ? platformAdminTitle.value : route.name === "billing" ? billingTitle.value : route.name === "company-settings" ? companySettingsTitle.value : route.name === "profile" ? profileTitle.value : route.name === "reports" ? reportsTitle.value : ui.t(
    route.name === "disposals" ? "disposal.title" :
    route.name === "company-roles" ? "roles.title" :
    route.name === "references" ? "heading.references" :
@@ -73,14 +79,6 @@ const accountCaption=computed(()=>ui.locale==="en"?"Work account":ui.locale==="k
 const selectedCompany = computed(() =>
   availableCompanies.value.find(c => c.id === companyId.value) ?? null
 );
-const companyOptions=computed(()=>availableCompanies.value.map(company=>({
-  value:company.id,label:company.name,
-})));
-const localeOptions=[
-  {value:"ru",label:"RU"},
-  {value:"en",label:"EN"},
-  {value:"ka",label:"GE"},
-];
 watch(()=>[selectedCompany.value?.role_code,route.name],([role,name])=>{
   if(user.value&&role&&(name==="company-roles"||name==="company-settings")&&role!=="company_admin"){
     void router.replace("/registry");
@@ -97,6 +95,13 @@ async function loadIdentity(): Promise<void> {
   const [identity, memberships] = await Promise.all([currentUser(), companies()]);
   user.value = identity;
   availableCompanies.value = memberships;
+  try {
+    const overview = await commercialApi.overview();
+    canOpenPlatformAdmin.value = overview.permissions.length>0;
+  } catch {
+    // 403 is expected for regular Inventory users. Keep platform UI hidden.
+    canOpenPlatformAdmin.value = false;
+  }
   const saved = typeof localStorage !== "undefined" ? localStorage.getItem("inventory.companyId") : null;
   const regular=memberships.find(c=>!c.name.startsWith("[DEMO]"));
   companyId.value = memberships.some(c => c.id === companyId.value)
@@ -109,13 +114,13 @@ async function boot() {
   try {
     const status = await health();
     connected.value = status.status === "ok";
-    browserLoginEnabled.value = status.browser_login === true;
     try { await loadIdentity(); }
     catch (e) {
       if (!(e instanceof InventoryApiError && e.status === 401)) {
         error.value = e instanceof Error ? e.message : ui.t("generic.unknownError");
       }
       user.value = null;
+      canOpenPlatformAdmin.value = false;
       availableCompanies.value = []; companyId.value = "";
     }
   } catch(e) {
@@ -124,50 +129,44 @@ async function boot() {
   } finally { booting.value = false; }
 }
 
-async function signIn() {
-  if (loginBusy.value || !browserLoginEnabled.value) return;
-  loginBusy.value = true; error.value = "";
-  try {
-    await login(credentials.email.trim(), credentials.password);
-    credentials.password = "";
-    await loadIdentity();
-  } catch(e) {
-    error.value = e instanceof Error ? e.message : ui.t("generic.unknownError");
-  } finally { loginBusy.value = false; }
-}
-
 async function signOut() {
   if (signoutBusy.value) return;
   signoutBusy.value = true; error.value = "";
   try {
     await logout();
     user.value = null;
+    canOpenPlatformAdmin.value = false;
     availableCompanies.value = [];
     companyId.value = "";
-    credentials.password = "";
     closeMobileNav();
+    // Unmount the private workspace. The public login page is the ONLY login form.
+    await router.replace("/auth/login");
   } catch(e) { error.value = e instanceof Error ? e.message : ui.t("generic.unknownError"); }
   finally { signoutBusy.value = false; }
 }
 
-function switchLocale(next:string) {
-  if (["ru","en","ka"].includes(next)) ui.locale = next as InventoryLocale;
-}
 watch(() => [route.name,ui.locale,!!user.value], () => {
-  document.title = "ITP Inventory";
+  document.title = inventoryBrand.value;
 },{immediate:true});
-onMounted(boot);
+onMounted(async () => {
+  await boot();
+  // Direct private links with no session must never show a second, inline login.
+  if (!user.value) {
+    await router.replace({path:"/auth/login",query:{next:route.fullPath}});
+  }
+});
 </script>
 
 <template>
-  <div class="shell" :class="{'shell--guest':!user&&!booting,'shell--collapsed':ui.sidebarCollapsed}">
+  <BaseLoadingState v-if="booting && !user" :label="ui.t('generic.loading')" />
+  <div v-else-if="user" class="shell" :class="{'shell--collapsed':ui.sidebarCollapsed}">
     <button v-if="user&&mobileNavOpen" class="nav-backdrop" type="button"
       :aria-label="menuLabels.close" @click="closeMobileNav"/>
     <aside class="sidebar" :class="{'sidebar--open':mobileNavOpen}" aria-label="Inventory">
       <div class="sidebar-head">
         <div class="brand">
           <div class="brand-mark"><Boxes :size="24" aria-hidden="true"/></div>
-          <div class="brand-text"><strong>ITP Inventory</strong></div>
+          <div class="brand-text"><strong>{{ inventoryBrand }}</strong></div>
         </div>
         <button v-if="user" type="button" class="sidebar-collapse icon-control"
           :title="ui.sidebarCollapsed?menuLabels.expand:menuLabels.collapse"
@@ -205,6 +204,16 @@ onMounted(boot);
         <RouterLink to="/reports" class="nav-item" active-class="nav-item--active" :aria-label="reportsTitle" :title="ui.sidebarCollapsed&&!mobileNavOpen?reportsTitle:undefined" @click="closeMobileNav">
           <BarChart3 :size="19" aria-hidden="true"/><span class="nav-label">{{reportsTitle}}</span>
         </RouterLink>
+        <RouterLink v-if="selectedCompany" to="/billing" class="nav-item"
+          active-class="nav-item--active" :aria-label="billingTitle"
+          :title="ui.sidebarCollapsed&&!mobileNavOpen?billingTitle:undefined" @click="closeMobileNav">
+          <CreditCard :size="19" aria-hidden="true"/><span class="nav-label">{{billingTitle}}</span>
+        </RouterLink>
+        <RouterLink v-if="canOpenPlatformAdmin" to="/admin/companies" class="nav-item"
+          active-class="nav-item--active" :aria-label="platformAdminTitle"
+          :title="ui.sidebarCollapsed&&!mobileNavOpen?platformAdminTitle:undefined" @click="closeMobileNav">
+          <ShieldCheck :size="19" aria-hidden="true"/><span class="nav-label">{{platformAdminTitle}}</span>
+        </RouterLink>
         <RouterLink v-if="selectedCompany?.role_code==='company_admin'" to="/company-settings" class="nav-item"
           active-class="nav-item--active" :aria-label="companySettingsTitle"
           :title="ui.sidebarCollapsed&&!mobileNavOpen?companySettingsTitle:undefined" @click="closeMobileNav">
@@ -219,40 +228,45 @@ onMounted(boot);
       </div>
     </aside>
     <div class="app-main">
-      <header class="topbar">
+      <header class="topbar unified-inventory-topbar">
         <button v-if="user" type="button" class="mobile-nav-trigger icon-control"
           :aria-label="menuLabels.open" :title="menuLabels.open" @click="openMobileNav">
           <Menu :size="21" aria-hidden="true"/>
         </button>
-        <div v-if="!user" class="topbar-leading">
-          <div class="guest-brand"><div class="brand-mark"><Boxes :size="22" aria-hidden="true"/></div>
-            <strong>ITP Inventory</strong>
+        <form class="inventory-header-search" role="search" @submit.prevent="searchRegistry">
+          <div class="inventory-header-search-field">
+            <Search :size="17" aria-hidden="true"/>
+            <input ref="headerInput" v-model="headerSearch" type="search"
+              :aria-label="headerCopy.search" :placeholder="headerCopy.search" autocomplete="off"/>
           </div>
-        </div>
-        <div class="topbar-trailing">
-          <PortalHomeLink compact class="portal-link--mobile" />
-          <div v-if="user && availableCompanies.length > 0" class="company-switcher">
-            <span>{{ ui.t("auth.company") }}</span>
-            <BaseDropdownSelect v-model="companyId" class="company-picker"
-              :label="ui.t('auth.company')" :options="companyOptions" :locale="ui.locale"
-              :searchable="availableCompanies.length>7"/>
-          </div>
-          <BaseDropdownSelect :model-value="ui.locale" @update:modelValue="switchLocale"
-            class="locale-select" label="Язык / Language"
-            :options="localeOptions" :locale="ui.locale"/>
-          <button type="button" class="theme-toggle"
-            :title="ui.t(ui.theme === 'dark' ? 'generic.light' : 'generic.dark')"
-            :aria-label="ui.t(ui.theme === 'dark' ? 'generic.light' : 'generic.dark')"
-            @click="ui.toggleTheme">
-            <Sun v-if="ui.theme==='dark'" :size="18" aria-hidden="true"/>
-            <Moon v-else :size="18" aria-hidden="true"/>
+          <button type="submit" class="inventory-header-search-submit" :aria-label="headerCopy.search">
+            <Search :size="18" aria-hidden="true"/>
           </button>
-                    <RouterLink v-if="user" to="/profile" class="profile-summary profile-account-link" :title="profileTitle" :aria-label="profileTitle">
-            <span class="user-avatar" aria-hidden="true">{{ profileInitials }}</span>
-            <span class="profile-copy"><strong>{{ user.name }}</strong><small>{{ accountCaption }}</small></span>
-          </RouterLink>          <BaseButton v-if="user" variant="secondary" :disabled="signoutBusy" @click="signOut">
-            <LogOut :size="16" aria-hidden="true"/> {{ ui.t("auth.logout") }}
-          </BaseButton>
+        </form>
+        <div class="topbar-trailing inventory-unified-actions">
+          <div class="inventory-notifications-anchor">
+            <button class="inventory-unified-icon" type="button" :title="headerCopy.notifications"
+              :aria-label="headerCopy.notifications" :aria-expanded="notificationOpen"
+              @click="notificationOpen=!notificationOpen">
+              <Bell :size="20" aria-hidden="true"/>
+            </button>
+            <div v-if="notificationOpen" class="inventory-notifications-popover" role="dialog"
+              :aria-label="headerCopy.notifications">
+              <strong>{{ headerCopy.notifications }}</strong>
+              <p>{{ headerCopy.empty }}</p>
+            </div>
+          </div>
+          <button class="inventory-unified-icon" type="button"
+            :title="ui.t(ui.theme==='dark'?'generic.light':'generic.dark')"
+            :aria-label="ui.t(ui.theme==='dark'?'generic.light':'generic.dark')"
+            :aria-pressed="ui.theme==='dark'" @click="ui.toggleTheme">
+            <Sun v-if="ui.theme==='dark'" :size="20" aria-hidden="true"/>
+            <Moon v-else :size="20" aria-hidden="true"/>
+          </button>
+          <InventoryAccountMenu v-if="user" :user="user" :locale="ui.locale"
+            :companies="availableCompanies" :company-id="companyId"
+            :admin="canOpenPlatformAdmin" :signout-busy="signoutBusy"
+            @update:companyId="companyId=$event" @logout="signOut"/>
         </div>
       </header>
       <main class="view-content">
@@ -260,35 +274,7 @@ onMounted(boot);
           <BaseButton v-if="!connected" variant="secondary" @click="boot"><RefreshCw :size="16"/>{{ ui.t("actions.retry") }}</BaseButton>
         </div>
         <BaseLoadingState v-if="booting" :label="ui.t('generic.loading')" />
-        <BaseCard v-else-if="!user" class="login-card">
-          <div class="login-heading"><div class="login-icon"><Boxes :size="25" aria-hidden="true"/></div>
-            <div><h2>{{ ui.t("heading.login") }}</h2></div>
-          </div>
-          <form class="login-form" @submit.prevent="signIn">
-            <label>{{ ui.t("auth.email") }}
-              <input v-model="credentials.email" type="email" autocomplete="username"
-                :disabled="!browserLoginEnabled || loginBusy || !connected" required/>
-            </label>
-            <div class="password-field">
-              <label for="inventory-password">{{ ui.t("auth.password") }}</label>
-              <div class="password-control">
-                <input id="inventory-password" v-model="credentials.password" :type="passwordVisible?'text':'password'"
-                  autocomplete="current-password" minlength="8"
-                  :disabled="!browserLoginEnabled || loginBusy || !connected" required/>
-                <button type="button" :aria-label="ui.t(passwordVisible?'actions.hidePassword':'actions.showPassword')"
-                  :disabled="loginBusy" @click="passwordVisible=!passwordVisible">
-                  <EyeOff v-if="passwordVisible" :size="18" aria-hidden="true"/>
-                  <Eye v-else :size="18" aria-hidden="true"/>
-                </button>
-              </div>
-            </div>
-            <BaseButton type="submit" :disabled="!browserLoginEnabled || loginBusy || !connected">
-              {{ loginBusy ? ui.t("auth.signing") : ui.t("auth.login") }}
-            </BaseButton>
-          </form>
-          <p v-if="!browserLoginEnabled" class="muted login-note">{{ ui.t("auth.disabled") }}</p>
-        </BaseCard>
-        <div v-else-if="!selectedCompany && route.name!=='profile'" class="no-company">
+        <div v-else-if="!selectedCompany && route.name!=='profile' && route.name!=='platform-admin'" class="no-company">
           <Package :size="28" aria-hidden="true"/>
           <h2>{{ ui.t("auth.noCompanies") }}</h2>
         </div>
@@ -301,6 +287,36 @@ onMounted(boot);
   </div>
 </template>
 <style scoped>
+.unified-inventory-topbar{display:flex;align-items:center;flex-wrap:nowrap!important;gap:18px;
+ background:transparent!important;min-height:64px;padding:0 24px;position:relative;z-index:28}
+.inventory-header-search{display:flex;align-items:center;gap:8px;width:100%;flex:0 1 455px;min-width:0;margin-right:auto}
+.inventory-header-search-field{display:flex;align-items:center;gap:9px;flex:1;min-width:0;height:38px;padding:0 11px;
+ background:var(--color-surface);border:1px solid var(--color-stroke);border-radius:8px;box-shadow:var(--shadow-control);color:var(--color-muted)}
+.inventory-header-search-field:focus-within{border-color:var(--color-primary-stroke)}
+.inventory-header-search-field input{width:100%;min-width:0;height:100%;border:0;outline:0;background:transparent;
+ color:var(--color-text);font:inherit;font-size:13px;box-shadow:none;padding:0}
+.inventory-header-search-submit{display:grid;place-items:center;width:38px;height:38px;flex:none;
+ border:1px solid var(--color-primary);border-radius:7px;background:var(--color-primary);color:var(--color-on-primary);cursor:pointer}
+.inventory-unified-actions{display:flex;align-items:center;justify-content:flex-end;gap:8px;flex:none;margin-left:auto}
+.inventory-unified-icon{display:grid;place-items:center;width:38px;height:38px;background:transparent;border:1px solid transparent;
+ border-radius:8px;color:var(--color-muted);cursor:pointer}
+.inventory-unified-icon:hover{background:var(--color-hover);color:var(--color-primary)}
+.inventory-notifications-anchor{position:relative}
+.inventory-notifications-popover{position:absolute;z-index:120;right:-76px;top:calc(100% + 12px);
+ width:min(320px,calc(100vw - 24px));padding:20px;border:1px solid var(--color-stroke);
+ border-radius:12px;background:color-mix(in srgb,var(--color-surface-raised) 85%,transparent);
+ -webkit-backdrop-filter:blur(16px);backdrop-filter:blur(16px);box-shadow:0 14px 36px rgba(13,40,56,.16)}
+.inventory-notifications-popover strong{font-size:14px}
+.inventory-notifications-popover p{font-size:12px;color:var(--color-muted);margin:25px 0}
+@media(max-width:860px){.unified-inventory-topbar{gap:8px;padding:0 14px}
+ .inventory-header-search{flex:1 1 0;width:auto;margin-right:0}
+ .inventory-unified-actions{gap:3px}}
+@media(max-width:520px){.unified-inventory-topbar{gap:5px;padding:0 10px}
+ .inventory-header-search{gap:5px}
+ .inventory-header-search-field{height:36px;padding:0 7px}
+ .inventory-header-search-submit{width:36px;height:36px}
+ .inventory-unified-actions{gap:0}
+ .inventory-unified-icon{width:32px;height:34px}}
 .profile-account-link{text-decoration:none;color:inherit;cursor:pointer;border-radius:var(--radius-sm)}
 .profile-account-link:hover{background:var(--color-hover)}
 .profile-account-link:focus-visible{outline:2px solid var(--color-primary);outline-offset:2px}

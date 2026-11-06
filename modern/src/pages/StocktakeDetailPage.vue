@@ -2,7 +2,7 @@
 import BaseSelect from "../components/ui/BaseSelect.vue";
 import { computed, nextTick, onUnmounted, ref, watch } from "vue";
 import { RouterLink, useRoute, useRouter } from "vue-router";
-import { ArrowLeft, Check, ClipboardCheck, Download, History, QrCode, RefreshCw, RotateCcw, Paperclip, Upload, Printer } from "lucide-vue-next";
+import { ArrowLeft, Check, ClipboardCheck, Download, History, QrCode, RefreshCw, RotateCcw, Printer } from "lucide-vue-next";
 import BaseButton from "../components/ui/BaseButton.vue";
 import BaseCard from "../components/ui/BaseCard.vue";
 import BaseDataTable from "../components/ui/BaseDataTable.vue";
@@ -11,9 +11,9 @@ import BaseLoadingState from "../components/ui/BaseLoadingState.vue";
 import BasePagination from "../components/ui/BasePagination.vue";
 import BaseSearchField from "../components/ui/BaseSearchField.vue";
 import BaseStatusPill from "../components/ui/BaseStatusPill.vue";
+import StocktakeDocumentsPanel from "../components/stocktakes/StocktakeDocumentsPanel.vue";
 import { InventoryApiError } from "../api/client";
-import {reportDocuments,reportDocumentHref,uploadReportDocument,stocktakeXlsxHref} from "../api/parity";
-import type {ReportDocument} from "../api/parity";
+import {stocktakeXlsxHref} from "../api/parity";
 import { referenceData } from "../api/inventory";
 import type { ReferenceData } from "../api/inventory";
 import { getFacilityNodes } from "../api/topology";
@@ -25,27 +25,12 @@ import {
 } from "../api/stocktakes";
 import type { InventorySession, InventorySessionItem, InventorySessionEvent } from "../api/stocktakes";
 import { useUiSettings } from "../stores/uiSettings";
+import { scanUuid, formatStocktakeDate } from "../utils/stocktakeFormat";
 
 const props=defineProps<{companyId:string;companyName:string;role:string}>();
 const ui=useUiSettings(),route=useRoute(),router=useRouter();
 const sessionId=computed(()=>String(route.params.sessionId||""));
 const stocktake=ref<InventorySession|null>(null);
-const documents=ref<ReportDocument[]>([]),documentFile=ref<File|null>(null),documentBusy=ref(false),documentError=ref("");
-const documentText=computed(()=>ui.locale==="ru"?{title:"Подписанные отчёты и вложения",upload:"Прикрепить документ",info:"Документы доступны участникам этой компании после завершения инвентаризации."}:ui.locale==="ka"?{title:"ხელმოწერილი ანგარიშები და ფაილები",upload:"დოკუმენტის ატვირთვა",info:"ფაილები ხელმისაწვდომია კომპანიის წევრებისთვის ინვენტარიზაციის დასრულების შემდეგ."}:{title:"Signed reports and attachments",upload:"Attach document",info:"Files are available to company members after completing the stocktake."});
-async function loadDocuments(){
-  if(!props.companyId||!sessionId.value)return;
-  const company=props.companyId,id=sessionId.value;
-  try{const result=await reportDocuments(company,id);if(props.companyId===company&&sessionId.value===id)documents.value=result.data;}
-  catch(e){documentError.value=e instanceof Error?e.message:String(e);}
-}
-function chooseDocument(event:Event){documentFile.value=(event.target as HTMLInputElement).files?.[0]??null;}
-async function uploadDocument(){
-  if(!stocktake.value||!documentFile.value||!canWrite.value||documentBusy.value)return;
-  documentBusy.value=true;documentError.value="";
-  try{await uploadReportDocument(props.companyId,sessionId.value,stocktake.value.version,documentFile.value);
-    documentFile.value=null;await loadDocuments();const refreshed=await getInventorySession(props.companyId,sessionId.value);stocktake.value=refreshed.data;
-  }catch(e){documentError.value=e instanceof Error?e.message:String(e);}finally{documentBusy.value=false;}
-}
 const rows=ref<InventorySessionItem[]>([]);
 const references=ref<ReferenceData>({categories:[],accounting_locations:[],physical_locations:[]});
 const facilities=ref<FacilityNode[]>([]);
@@ -88,7 +73,7 @@ watch(()=>props.companyId,(id,oldId)=>{
 });
 watch([()=>props.companyId,sessionId],()=>{
   const current=++sessionSerial;
-  stocktake.value=null;rows.value=[];documents.value=[];documentFile.value=null;documentError.value="";references.value={categories:[],accounting_locations:[],physical_locations:[]};
+  stocktake.value=null;rows.value=[];references.value={categories:[],accounting_locations:[],physical_locations:[]};
   facilities.value=[];
   issue.value="";notice.value="";page.value=1;search.value="";debouncedSearch.value="";filter.value="";
   showEvents.value=false;counting.value=null;action.value=null;total.value=0;
@@ -98,7 +83,7 @@ watch([()=>props.companyId,sessionId],()=>{
   void Promise.all([getInventorySession(currentCompany,currentId),referenceData(currentCompany),getFacilityNodes(currentCompany)]).then(([response,refs,map])=>{
     if(current!==sessionSerial)return;
     stocktake.value=response.data;
-    void loadDocuments();
+
     references.value=refs;facilities.value=map.data;
     scanLocation.value=refs.physical_locations[0]?.id||"";
     scanFacility.value=response.data.scope_facility_node_id||map.data[0]?.id||"";
@@ -142,9 +127,7 @@ async function refresh(){
     void loadItems();
   }catch(e){issue.value=e instanceof Error?e.message:ui.t("generic.unknownError");}
 }
-function formatDate(raw:string|null){
-  return raw?new Date(raw).toLocaleString(ui.locale==="en"?"en-GB":ui.locale==="ka"?"ka-GE":"ru-RU"):"—";
-}
+function formatDate(raw:string|null){return formatStocktakeDate(raw,ui.locale);}
 function beginCount(row:InventorySessionItem){
   if(!active.value||!canWrite.value)return;
   counting.value=row;
@@ -176,10 +159,6 @@ async function saveCount(){
   finally{savingCount.value=false;}
 }
 
-function scanUuid(value:string):string|null{
-  const match=value.match(/[0-9a-f]{8}(?:-[0-9a-f]{4}){3}-[0-9a-f]{12}/i);
-  return match?.[0]||null;
-}
 async function scan(){
   if(!active.value||!canWrite.value||scanning.value||
     !(stocktake.value?.scope_type==="facility"?scanFacility.value:scanLocation.value))return;
@@ -264,15 +243,8 @@ onUnmounted(()=>{listCtrl?.abort();if(searchTimer)clearTimeout(searchTimer);});
         <span class="muted">{{ formatDate(stocktake.created_at) }}</span>
         <span class="muted">{{ stocktake.scope_facility_node_name||stocktake.scope_location_name||ui.t("stock.allLocations") }}</span>
       </div>
-      <BaseCard class="document-panel"><div class="document-header"><h3><Paperclip :size="18"/>{{documentText.title}}</h3><p class="muted">{{documentText.info}}</p></div>
-        <p v-if="documentError" class="error" role="alert">{{documentError}}</p>
-        <div v-if="documents.length" class="document-list"><a v-for="doc in documents" :key="doc.id" class="download-link"
-          :href="reportDocumentHref(companyId,stocktake.id,doc.id)" :download="doc.original_name"><Download :size="16"/>{{doc.original_name}}</a></div>
-        <form v-if="canWrite&&!active" class="document-upload" @submit.prevent="uploadDocument">
-          <input type="file" accept=".pdf,.png,.jpg,.jpeg" required @change="chooseDocument"/>
-          <BaseButton type="submit" :disabled="documentBusy||!documentFile"><Upload :size="16"/>{{documentText.upload}}</BaseButton>
-        </form>
-      </BaseCard>
+      <StocktakeDocumentsPanel :company-id="companyId" :stocktake="stocktake"
+        :can-write="canWrite" :active="active" @session-updated="stocktake=$event"/>
       <div class="detail-kpis">
         <BaseCard><ClipboardCheck :size="22" aria-hidden="true"/><strong>{{ stocktake.total_items }}</strong><span class="muted">{{ ui.t("stock.totalAssets") }}</span></BaseCard>
         <BaseCard><Check :size="22" aria-hidden="true"/><strong>{{ stocktake.counted_items }}</strong><span class="muted">{{ ui.t("stock.checked") }}</span></BaseCard>
@@ -442,7 +414,6 @@ onUnmounted(()=>{listCtrl?.abort();if(searchTimer)clearTimeout(searchTimer);});
 </template>
 
 <style scoped>
-.document-panel{display:grid;gap:12px}.document-header h3{display:flex;align-items:center;gap:9px;margin:0}.document-header p{margin:6px 0 0}.document-list{display:flex;gap:8px;flex-wrap:wrap}.document-upload{display:flex;gap:12px;align-items:center;flex-wrap:wrap}.document-upload input{max-width:100%}
 .detail-page{display:grid;gap:18px;min-width:0}
 .detail-heading{display:flex;justify-content:space-between;align-items:flex-start;gap:14px;flex-wrap:wrap}
 .detail-heading-text{display:grid;gap:7px;min-width:0;flex:1 1 260px}

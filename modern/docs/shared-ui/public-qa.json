@@ -1,0 +1,163 @@
+{
+  "system": "inventory",
+  "kind": "public-pages-and-responsive-smoke; NOT business E2E",
+  "checks": [
+    {
+      "name": "home-320",
+      "pass": true,
+      "overflow": {
+        "actual": 320,
+        "viewport": 320
+      },
+      "screenshot": "home-320.png"
+    },
+    {
+      "name": "home-375",
+      "pass": true,
+      "overflow": {
+        "actual": 375,
+        "viewport": 375
+      },
+      "screenshot": "home-375.png"
+    },
+    {
+      "name": "mobile-menu",
+      "pass": true
+    },
+    {
+      "name": "mobile-menu-closes",
+      "pass": true
+    },
+    {
+      "name": "home-768",
+      "pass": true,
+      "overflow": {
+        "actual": 768,
+        "viewport": 768
+      },
+      "screenshot": "home-768.png"
+    },
+    {
+      "name": "home-1024",
+      "pass": true,
+      "overflow": {
+        "actual": 1024,
+        "viewport": 1024
+      },
+      "screenshot": "home-1024.png"
+    },
+    {
+      "name": "home-1440",
+      "pass": true,
+      "overflow": {
+        "actual": 1440,
+        "viewport": 1440
+      },
+      "screenshot": "home-1440.png"
+    },
+    {
+      "name": "home-1920",
+      "pass": true,
+      "overflow": {
+        "actual": 1920,
+        "viewport": 1920
+      },
+      "screenshot": "home-1920.png"
+    },
+    {
+      "name": "pricing",
+      "pass": true,
+      "screenshot": "pricing.png",
+      "url": "http://127.0.0.1:6172/inventory/pricing"
+    },
+    {
+      "name": "auth/login",
+      "pass": true,
+      "screenshot": "auth-login.png",
+      "url": "http://127.0.0.1:6172/inventory/auth/login"
+    },
+    {
+      "name": "legal",
+      "pass": true,
+      "screenshot": "legal.png",
+      "url": "http://127.0.0.1:6172/inventory/legal"
+    },
+    {
+      "name": "no-uncaught-js-errors",
+      "pass": true
+    }
+  ],
+  "errors": [],
+  "httpFailures": [
+    {
+      "status": 500,
+      "url": "http://127.0.0.1:6172/inventory-api/api/v1/commercial/site-content?locale=ru"
+    },
+    {
+      "status": 500,
+      "url": "http://127.0.0.1:6172/inventory-api/api/v1/commercial/plans"
+    },
+    {
+      "status": 500,
+      "url": "http://127.0.0.1:6172/inventory-api/api/v1/commercial/site-content?locale=ru"
+    },
+    {
+      "status": 500,
+      "url": "http://127.0.0.1:6172/inventory-api/api/v1/commercial/plans"
+    },
+    {
+      "status": 500,
+      "url": "http://127.0.0.1:6172/inventory-api/api/v1/commercial/site-content?locale=ru"
+    },
+    {
+      "status": 500,
+      "url": "http://127.0.0.1:6172/inventory-api/api/v1/commercial/plans"
+    },
+    {
+      "status": 500,
+      "url": "http://127.0.0.1:6172/inventory-api/api/v1/commercial/site-content?locale=ru"
+    },
+    {
+      "status": 500,
+      "url": "http://127.0.0.1:6172/inventory-api/api/v1/commercial/plans"
+    },
+    {
+      "status": 500,
+      "url": "http://127.0.0.1:6172/inventory-api/api/v1/commercial/site-content?locale=ru"
+    },
+    {
+      "status": 500,
+      "url": "http://127.0.0.1:6172/inventory-api/api/v1/commercial/plans"
+    },
+    {
+      "status": 500,
+      "url": "http://127.0.0.1:6172/inventory-api/api/v1/commercial/site-content?locale=ru"
+    },
+    {
+      "status": 500,
+      "url": "http://127.0.0.1:6172/inventory-api/api/v1/commercial/plans"
+    },
+    {
+      "status": 500,
+      "url": "http://127.0.0.1:6172/inventory-api/api/v1/commercial/site-content?locale=ru"
+    },
+    {
+      "status": 500,
+      "url": "http://127.0.0.1:6172/inventory-api/api/v1/commercial/plans"
+    },
+    {
+      "status": 500,
+      "url": "http://127.0.0.1:6172/inventory-api/api/v1/commercial/site-content?locale=ru"
+    },
+    {
+      "status": 500,
+      "url": "http://127.0.0.1:6172/inventory-api/api/v1/commercial/site-content?locale=ru"
+    },
+    {
+      "status": 500,
+      "url": "http://127.0.0.1:6172/inventory-api/api/v1/commercial/legal?locale=ru&jurisdiction=KZ"
+    }
+  ],
+  "passed": 12,
+  "total": 12
+}
