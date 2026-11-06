@@ -1,3 +1,4 @@
+import '@itpmining/vue-basic-components/shared.css'
 import { createApp } from "vue";
 import { createPinia } from "pinia";
 import Root from "./Root.vue";
@@ -6,4 +7,5 @@ import "./styles/tokens.css";
 import "./style.css";
 import "./styles/commercial.css";
 
-createApp(Root).use(createPinia()).use(router).mount("#app");
+const app = createApp(Root).use(createPinia()).use(router);
+void router.isReady().then(() => app.mount("#app"));

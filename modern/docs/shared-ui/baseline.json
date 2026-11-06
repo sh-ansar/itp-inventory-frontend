@@ -1,0 +1,336 @@
+{
+  "system": "inventory",
+  "baseCommit": "ede6a491441b243bfb0c543b2cf514bbb14106b0",
+  "files": [
+    {
+      "path": "src/App.vue",
+      "libraryImports": [],
+      "localUi": false
+    },
+    {
+      "path": "src/components/AssetFieldBuilder.vue",
+      "libraryImports": [],
+      "localUi": false
+    },
+    {
+      "path": "src/components/commercial/AdminDialog.vue",
+      "libraryImports": [],
+      "localUi": false
+    },
+    {
+      "path": "src/components/commercial/AdminGate.vue",
+      "libraryImports": [],
+      "localUi": false
+    },
+    {
+      "path": "src/components/commercial/BillingEditor.vue",
+      "libraryImports": [],
+      "localUi": false
+    },
+    {
+      "path": "src/components/commercial/InvoiceEditor.vue",
+      "libraryImports": [],
+      "localUi": false
+    },
+    {
+      "path": "src/components/commercial/LegalEditor.vue",
+      "libraryImports": [],
+      "localUi": false
+    },
+    {
+      "path": "src/components/commercial/PlanEditor.vue",
+      "libraryImports": [],
+      "localUi": false
+    },
+    {
+      "path": "src/components/commercial/PublicFooter.vue",
+      "libraryImports": [],
+      "localUi": false
+    },
+    {
+      "path": "src/components/commercial/PublicHeader.vue",
+      "libraryImports": [],
+      "localUi": false
+    },
+    {
+      "path": "src/components/commercial/PublicLayout.vue",
+      "libraryImports": [],
+      "localUi": false
+    },
+    {
+      "path": "src/components/commercial/PublicTariffs.vue",
+      "libraryImports": [],
+      "localUi": false
+    },
+    {
+      "path": "src/components/commercial/SiteContentEditor.vue",
+      "libraryImports": [],
+      "localUi": false
+    },
+    {
+      "path": "src/components/facilities/FacilityEditorDialog.vue",
+      "libraryImports": [],
+      "localUi": false
+    },
+    {
+      "path": "src/components/facilities/FacilityNavigation.vue",
+      "libraryImports": [],
+      "localUi": false
+    },
+    {
+      "path": "src/components/facilities/FacilityPlanCatalog.vue",
+      "libraryImports": [],
+      "localUi": false
+    },
+    {
+      "path": "src/components/IndustryCatalogPanel.vue",
+      "libraryImports": [],
+      "localUi": false
+    },
+    {
+      "path": "src/components/InventoryAccountMenu.vue",
+      "libraryImports": [],
+      "localUi": false
+    },
+    {
+      "path": "src/components/registry/ArchiveAssetDialog.vue",
+      "libraryImports": [],
+      "localUi": false
+    },
+    {
+      "path": "src/components/registry/AssetDisposalDialog.vue",
+      "libraryImports": [],
+      "localUi": false
+    },
+    {
+      "path": "src/components/registry/AssetEditorDialog.vue",
+      "libraryImports": [],
+      "localUi": false
+    },
+    {
+      "path": "src/components/registry/AssetHistoryDialog.vue",
+      "libraryImports": [],
+      "localUi": false
+    },
+    {
+      "path": "src/components/registry/AssetMovementHistoryDialog.vue",
+      "libraryImports": [],
+      "localUi": false
+    },
+    {
+      "path": "src/components/registry/BulkQrDialog.vue",
+      "libraryImports": [],
+      "localUi": false
+    },
+    {
+      "path": "src/components/registry/MoveAssetDialog.vue",
+      "libraryImports": [],
+      "localUi": false
+    },
+    {
+      "path": "src/components/registry/QrLabelDialog.vue",
+      "libraryImports": [],
+      "localUi": false
+    },
+    {
+      "path": "src/components/stocktakes/StocktakeCreateDialog.vue",
+      "libraryImports": [],
+      "localUi": false
+    },
+    {
+      "path": "src/components/stocktakes/StocktakeDocumentsPanel.vue",
+      "libraryImports": [],
+      "localUi": false
+    },
+    {
+      "path": "src/components/ui/BaseButton.vue",
+      "libraryImports": [],
+      "localUi": true
+    },
+    {
+      "path": "src/components/ui/BaseCard.vue",
+      "libraryImports": [],
+      "localUi": true
+    },
+    {
+      "path": "src/components/ui/BaseConfirmDialog.vue",
+      "libraryImports": [],
+      "localUi": true
+    },
+    {
+      "path": "src/components/ui/BaseDataTable.vue",
+      "libraryImports": [],
+      "localUi": true
+    },
+    {
+      "path": "src/components/ui/BaseDialog.vue",
+      "libraryImports": [],
+      "localUi": true
+    },
+    {
+      "path": "src/components/ui/BaseDropdownSelect.vue",
+      "libraryImports": [],
+      "localUi": true
+    },
+    {
+      "path": "src/components/ui/BaseIconButton.vue",
+      "libraryImports": [],
+      "localUi": true
+    },
+    {
+      "path": "src/components/ui/BaseLoadingState.vue",
+      "libraryImports": [],
+      "localUi": true
+    },
+    {
+      "path": "src/components/ui/BaseMultiSelect.vue",
+      "libraryImports": [],
+      "localUi": true
+    },
+    {
+      "path": "src/components/ui/BasePagination.vue",
+      "libraryImports": [],
+      "localUi": true
+    },
+    {
+      "path": "src/components/ui/BaseSearchField.vue",
+      "libraryImports": [],
+      "localUi": true
+    },
+    {
+      "path": "src/components/ui/BaseSelect.vue",
+      "libraryImports": [],
+      "localUi": true
+    },
+    {
+      "path": "src/components/ui/BaseStatusPill.vue",
+      "libraryImports": [],
+      "localUi": true
+    },
+    {
+      "path": "src/components/ui/EquipmentTypeIcon.vue",
+      "libraryImports": [],
+      "localUi": true
+    },
+    {
+      "path": "src/components/ui/PortalHomeLink.vue",
+      "libraryImports": [],
+      "localUi": true
+    },
+    {
+      "path": "src/components/ui/TableSettingsDialog.vue",
+      "libraryImports": [],
+      "localUi": true
+    },
+    {
+      "path": "src/pages/AssetsPage.vue",
+      "libraryImports": [],
+      "localUi": false
+    },
+    {
+      "path": "src/pages/CompanyBillingPage.vue",
+      "libraryImports": [],
+      "localUi": false
+    },
+    {
+      "path": "src/pages/CompanyRolesPage.vue",
+      "libraryImports": [],
+      "localUi": false
+    },
+    {
+      "path": "src/pages/CompanySettingsPage.vue",
+      "libraryImports": [],
+      "localUi": false
+    },
+    {
+      "path": "src/pages/DisposalCasesPage.vue",
+      "libraryImports": [],
+      "localUi": false
+    },
+    {
+      "path": "src/pages/FacilitiesPage.vue",
+      "libraryImports": [],
+      "localUi": false
+    },
+    {
+      "path": "src/pages/FacilityPlanPage.vue",
+      "libraryImports": [],
+      "localUi": false
+    },
+    {
+      "path": "src/pages/PlatformAdminPage.vue",
+      "libraryImports": [],
+      "localUi": false
+    },
+    {
+      "path": "src/pages/ProfilePage.vue",
+      "libraryImports": [],
+      "localUi": false
+    },
+    {
+      "path": "src/pages/public/AuthPage.vue",
+      "libraryImports": [],
+      "localUi": false
+    },
+    {
+      "path": "src/pages/public/LandingPage.vue",
+      "libraryImports": [],
+      "localUi": false
+    },
+    {
+      "path": "src/pages/public/LegalPage.vue",
+      "libraryImports": [],
+      "localUi": false
+    },
+    {
+      "path": "src/pages/public/ModulePage.vue",
+      "libraryImports": [],
+      "localUi": false
+    },
+    {
+      "path": "src/pages/public/PricingPage.vue",
+      "libraryImports": [],
+      "localUi": false
+    },
+    {
+      "path": "src/pages/ReferencesPage.vue",
+      "libraryImports": [],
+      "localUi": false
+    },
+    {
+      "path": "src/pages/ReportsPage.vue",
+      "libraryImports": [],
+      "localUi": false
+    },
+    {
+      "path": "src/pages/ResponsiblePeoplePage.vue",
+      "libraryImports": [],
+      "localUi": false
+    },
+    {
+      "path": "src/pages/ScanPage.vue",
+      "libraryImports": [],
+      "localUi": false
+    },
+    {
+      "path": "src/pages/StocktakeDetailPage.vue",
+      "libraryImports": [],
+      "localUi": false
+    },
+    {
+      "path": "src/pages/StocktakesPage.vue",
+      "libraryImports": [],
+      "localUi": false
+    },
+    {
+      "path": "src/pages/WarehousesPage.vue",
+      "libraryImports": [],
+      "localUi": false
+    },
+    {
+      "path": "src/Root.vue",
+      "libraryImports": [],
+      "localUi": false
+    }
+  ]
+}

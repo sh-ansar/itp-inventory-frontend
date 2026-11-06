@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { SiteFooter } from "@itpmining/vue-basic-components"
 import { useUiSettings } from "../../stores/uiSettings";
 import { commercialT } from "../../commercialTranslations";
 const ui=useUiSettings();
@@ -7,8 +8,8 @@ const modules=["assets","facilities","references","people","warehouses","stockta
 const docs=["offer","tariff_policy","acceptable_use","personal_data_consent","privacy"];
 </script>
 <template>
-  <footer class="inv-public-footer">
-    <div class="inv-footer-cols">
+  <SiteFooter>
+    <template #columns>
       <nav :aria-label="t('product')">
         <h2>{{t("product")}}</h2>
         <RouterLink to="/">{{t("home")}}</RouterLink>
@@ -39,10 +40,10 @@ const docs=["offer","tariff_policy","acceptable_use","personal_data_consent","pr
         <RouterLink to="/#pricing">{{t("pricing")}}</RouterLink>
         <RouterLink to="/legal">{{t("legalLabel")}}</RouterLink>
       </nav>
-    </div>
-    <div class="inv-footer-bottom">
+    </template>
+<template #bottom>
       <span>© {{ new Date().getFullYear() }} ITP Mining · ITP Inventory</span>
       <RouterLink to="/legal/privacy">{{t("privacy")}}</RouterLink>
-    </div>
-  </footer>
+    </template>
+</SiteFooter>
 </template>

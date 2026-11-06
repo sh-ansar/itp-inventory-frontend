@@ -1,13 +1,15 @@
 <script setup lang="ts">
+import {SiteLegalContent} from "@itpmining/vue-basic-components";
 import {onMounted,ref,watch} from "vue";
-import {useRoute} from "vue-router";
+import {useRoute,useRouter} from "vue-router";
 import PublicLayout from "../../components/commercial/PublicLayout.vue";
 import {commercialApi} from "../../api/commercial";
 import type {LegalRecord} from "../../api/commercial";
 import {useUiSettings} from "../../stores/uiSettings";
 import {commercialT} from "../../commercialTranslations";
 
-const ui=useUiSettings(),route=useRoute();
+const ui=useUiSettings(),route=useRoute(),router=useRouter();
+function navigateLegal(_item:unknown,event:MouseEvent){if(event.button!==0||event.ctrlKey||event.metaKey||event.shiftKey||event.altKey)return;event.preventDefault();void router.push("/legal")}
 const t=(key:string)=>commercialT(ui.locale,key);
 const documents=ref<LegalRecord[]>([]);
 const selected=ref<LegalRecord|null>(null);
@@ -50,7 +52,7 @@ watch(()=>ui.locale,()=>{void load()});
 onMounted(load);
 </script>
 <template><PublicLayout>
- <div class="inv-page-intro">
+ <div v-if="!selected" class="inv-page-intro">
   <div class="inv-breadcrumb"><RouterLink to="/">{{t("home")}}</RouterLink> / {{t("documents")}}</div>
   <h1>{{route.params.document?t(String(route.params.document)):t("legalLabel")}}</h1>
   <p>{{t("privacyNotice")}}</p>
@@ -60,17 +62,13 @@ onMounted(load);
   <p v-else-if="error" role="alert" class="inv-error">{{error}}
     <button class="inv-btn inv-btn-secondary" type="button" @click="load">{{t("retry")}}</button>
   </p>
-  <article v-else-if="selected" class="inv-legal-body">
-    <div class="inv-breadcrumb">
-      <RouterLink to="/legal">{{t("documents")}}</RouterLink> / {{selected.title}}
-    </div>
-    <h2>{{selected.title}}</h2>
+  <SiteLegalContent v-else-if="selected" :title="selected.title" :back-href="router.resolve('/legal').href" :back-label="t('documents')" @navigate="navigateLegal">
     <p style="color:#7993a0;font-size:12px">
       {{t("version")}} {{selected.version}} · {{selected.jurisdiction}} ·
       {{t("effective")}} {{selected.effective_at?.slice(0,10)||"—"}}
     </p>
-    <pre>{{selected.body}}</pre>
-  </article>
+    <div style="white-space:pre-wrap;overflow-wrap:anywhere">{{selected.body}}</div>
+  </SiteLegalContent>
   <template v-else-if="route.params.document">
     <p class="inv-empty-plans">{{t("legalEmpty")}}</p>
     <RouterLink to="/legal" class="inv-public-pricing-link">{{t("back")}}</RouterLink>

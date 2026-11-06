@@ -7,5 +7,6 @@ export default defineConfig({
     environment: "jsdom",
     include: ["tests/unit/**/*.spec.ts"],
     clearMocks: true,
+    server: { deps: { inline: ["@itpmining/vue-basic-components"] } },
   },
 });

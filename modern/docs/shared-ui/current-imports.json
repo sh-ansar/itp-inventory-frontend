@@ -1,0 +1,9 @@
+[
+  "src/components/commercial/PublicFooter.vue",
+  "src/components/commercial/PublicHeader.vue",
+  "src/components/ui/BaseButton.vue",
+  "src/components/ui/BaseCard.vue",
+  "src/components/ui/BaseDropdownSelect.vue",
+  "src/main.ts",
+  "src/pages/public/LegalPage.vue"
+]
