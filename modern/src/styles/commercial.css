@@ -310,8 +310,9 @@
   .inv-bento-config{grid-template-columns:1fr;padding:20px;gap:12px}
   .inv-module-list{max-height:220px}
   .inv-bento-card{grid-column:span 12;min-height:225px;padding:20px}
-  .inv-bento-card .inv-card-visual{opacity:.4}
-  .inv-bento-reports .inv-visual-reports{width:48%}
+  .inv-bento-card .inv-card-visual{position:relative;inset:auto;order:1;align-self:center;opacity:1;width:100%;max-width:300px;height:145px;margin:12px 0}
+  .inv-bento-card .inv-feature-link{order:2}
+  .inv-bento-reports .inv-visual-reports{width:100%}
   .inv-demo-section{padding:45px 0}
   .inv-demo-header{flex-direction:column;align-items:flex-start}
   .inv-demo-header .inv-btn{width:auto}

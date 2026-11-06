@@ -1,0 +1,42 @@
+{
+  "checks": [
+    {
+      "width": 320,
+      "pass": true,
+      "cards": [
+        {
+          "label": "Цифровая карта объектов",
+          "pass": true
+        },
+        {
+          "label": "QR-коды и проверки",
+          "pass": true
+        },
+        {
+          "label": "Единая аналитика",
+          "pass": true
+        }
+      ]
+    },
+    {
+      "width": 375,
+      "pass": true,
+      "cards": [
+        {
+          "label": "Цифровая карта объектов",
+          "pass": true
+        },
+        {
+          "label": "QR-коды и проверки",
+          "pass": true
+        },
+        {
+          "label": "Единая аналитика",
+          "pass": true
+        }
+      ]
+    }
+  ],
+  "passed": 2,
+  "total": 2
+}
